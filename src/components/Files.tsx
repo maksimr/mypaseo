@@ -1,0 +1,118 @@
+import { isLanguageSupported } from '@getpaseo/highlight'
+import { ChevronRight, File, FileCode, FolderClosed, FolderOpen, RefreshCw } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { clickable } from '../a11y'
+import { daemon, errorText, type DirEntry } from '../daemon'
+import { Code } from './Code'
+
+const sortEntries = (entries: DirEntry[]) =>
+  entries
+    .filter((e) => e.name !== '.git')
+    .sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === 'directory' ? -1 : 1))
+
+export function FileTree({ cwd, rootName, onOpen, activePath }: { cwd: string; rootName: string; onOpen: (path: string) => void; activePath?: string }) {
+  const [dirs, setDirs] = useState<Record<string, DirEntry[] | string>>({})
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+
+  const load = useCallback(
+    (path: string) =>
+      daemon.listDirectory(cwd, path).then(
+        (r) => setDirs((d) => ({ ...d, [path]: sortEntries(r.entries) })),
+        (e) => setDirs((d) => ({ ...d, [path]: errorText(e) })),
+      ),
+    [cwd],
+  )
+
+  useEffect(() => void load('.'), [load])
+
+  const toggle = (path: string) => {
+    const next = new Set(expanded)
+    if (!next.delete(path)) {
+      next.add(path)
+      if (!dirs[path]) void load(path)
+    }
+    setExpanded(next)
+  }
+
+  const refresh = () => [...expanded, '.'].forEach((p) => void load(p))
+
+  const render = (path: string, depth: number): React.ReactNode => {
+    const entries = dirs[path]
+    if (entries === undefined) return <div className="row muted" style={{ paddingLeft: 8 + depth * 14 }}>Loading…</div>
+    if (typeof entries === 'string') return <div className="row err" style={{ paddingLeft: 8 + depth * 14 }}>{entries}</div>
+    return entries.map((e) => {
+      const isDir = e.kind === 'directory'
+      const open = expanded.has(e.path)
+      const Icon = isDir ? (open ? FolderOpen : FolderClosed) : isLanguageSupported(e.name) ? FileCode : File
+      return (
+        <div key={e.path}>
+          <div
+            className={`row file ${activePath === e.path ? 'active' : ''}`}
+            style={{ paddingLeft: 8 + depth * 14 }}
+            aria-expanded={isDir ? open : undefined}
+            {...clickable(() => (isDir ? toggle(e.path) : onOpen(e.path)))}
+            title={e.path}
+          >
+            <ChevronRight size={12} className={`chev ${open ? 'rot90' : ''}`} style={{ visibility: isDir ? 'visible' : 'hidden' }} />
+            <Icon size={14} className="muted" />
+            <span className="truncate">{e.name}</span>
+          </div>
+          {isDir && open && render(e.path, depth + 1)}
+        </div>
+      )
+    })
+  }
+
+  return (
+    <div className="file-tree">
+      <div className="row panel-root">
+        <FolderOpen size={14} className="muted" />
+        <span className="grow truncate">{rootName}</span>
+        <button className="icon-btn" title="Refresh" onClick={refresh}>
+          <RefreshCw size={13} />
+        </button>
+      </div>
+      {render('.', 0)}
+    </div>
+  )
+}
+
+type Loaded = { kind: 'text'; text: string } | { kind: 'image'; url: string } | { kind: 'binary' } | { kind: 'error'; message: string }
+
+export function FileView({ cwd, path }: { cwd: string; path: string }) {
+  const [file, setFile] = useState<Loaded | null>(null)
+  useEffect(() => {
+    let url: string | undefined
+    let alive = true
+    daemon.readFile(cwd, path, undefined, 2 * 1024 * 1024).then(
+      (f) => {
+        if (!alive) return
+        if (f.kind === 'text') setFile({ kind: 'text', text: new TextDecoder().decode(f.bytes) })
+        else if (f.kind === 'image') setFile({ kind: 'image', url: (url = URL.createObjectURL(new Blob([f.bytes as BlobPart], { type: f.mime }))) })
+        else setFile({ kind: 'binary' })
+      },
+      (e) => alive && setFile({ kind: 'error', message: errorText(e) }),
+    )
+    return () => {
+      alive = false
+      if (url) URL.revokeObjectURL(url)
+    }
+  }, [cwd, path])
+
+  return (
+    <div className="file-view">
+      <div className="file-path">{path}</div>
+      {!file ? (
+        <div className="empty">Loading…</div>
+      ) : file.kind === 'text' ? (
+        <Code code={file.text} filename={path} lineNumbers />
+      ) : file.kind === 'image' ? (
+        <img className="file-image" src={file.url} alt={path} />
+      ) : file.kind === 'binary' ? (
+        <div className="empty">Binary file</div>
+      ) : (
+        <div className="empty err">{file.message}</div>
+      )}
+    </div>
+  )
+}
