@@ -1,4 +1,4 @@
-import { FileCode, FileDiff, Files, MessageCirclePlus, PanelLeft, PanelRight, X } from 'lucide-react'
+import { FileCode, FileDiff, Files, Loader2, MessageCirclePlus, PanelLeft, PanelRight, X } from 'lucide-react'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { ChangesList, ChangesView } from './components/Changes'
 import { Chat, type Target } from './components/Chat'
@@ -112,7 +112,6 @@ export default function App() {
   const [panelW, setPanelW] = useWidth('mypaseoPanelWidth', 280)
   const sidebarKey = useShortcut('toggleSidebar')
   const panelKey = useShortcut('togglePanel')
-  const diffKey = useShortcut('toggleDiff')
   const addKey = useShortcut('addToChat')
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -124,9 +123,11 @@ export default function App() {
         e.preventDefault()
         setPanel((p) => (p ? null : 'files'))
       }
-      if (changesTab && isShortcut(e, 'toggleDiff')) {
+      const tabStep = isShortcut(e, 'nextTab') ? 1 : isShortcut(e, 'prevTab') ? -1 : 0
+      if (target && tabStep) {
         e.preventDefault()
-        setTab((t) => (t === 'changes' ? 'chat' : 'changes'))
+        const tabs: Tab[] = ['chat', ...(changesTab ? ['changes' as const] : []), ...files.map((p) => `file:${p}` as const)]
+        setTab(tabs[(tabs.indexOf(tab) + tabStep + tabs.length) % tabs.length])
       }
       if (projectId && isShortcut(e, 'newWorkspace')) {
         e.preventDefault()
@@ -227,10 +228,11 @@ export default function App() {
               <button className={`tab agent-tab ${tab === 'chat' ? 'on' : ''}`} onClick={() => setTab('chat')}>
                 <MessageCirclePlus size={13} />
                 <span className="truncate">{agent ? agent.title || 'Agent' : 'New agent'}</span>
+                {agent?.status === 'running' && <Loader2 size={13} className="spin muted" aria-label="Working" />}
               </button>
             )}
             {changesTab && (
-              <button className={`tab ${tab === 'changes' ? 'on' : ''}`} title={`Changes (${formatCombo(diffKey)})`} onClick={() => setTab('changes')}>
+              <button className={`tab ${tab === 'changes' ? 'on' : ''}`} onClick={() => setTab('changes')}>
                 <FileDiff size={13} />
                 {/* one inline run so the smaller counters sit on the label's baseline */}
                 <span>
