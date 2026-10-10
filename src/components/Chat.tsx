@@ -1,6 +1,7 @@
-import { ArrowUp, FolderClosed, Import, Loader2, ShieldQuestion, Square } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { ArrowUp, Bot, Brain, ChevronDown, Import, Loader2, Plus, Shield, ShieldQuestion, Sparkles, Square, X } from 'lucide-react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { daemon, errorText, type Agent, type Permission, type Workspace } from '../daemon'
+import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { rememberAgent, useStore } from '../store'
 import { useTimeline } from '../useTimeline'
 import { Timeline, ToolDetailView } from './Timeline'
@@ -12,11 +13,15 @@ export function Chat({
   target,
   onCreated,
   onImport,
+  initialText,
+  onInitialTextUsed,
 }: {
   agent: Agent | undefined
   target: Target
   onCreated: (agent: Agent) => void
   onImport: () => void
+  initialText?: string
+  onInitialTextUsed?: () => void
 }) {
   const tl = useTimeline(agent?.id ?? null)
   const running = agent?.status === 'running'
@@ -45,11 +50,6 @@ export function Chat({
       >
         {agent ? (
           <>
-            {tl.hasOlder && (
-              <button className="load-older" onClick={() => void tl.loadOlder()}>
-                Load earlier messages
-              </button>
-            )}
             {tl.loading && <div className="empty">Loading…</div>}
             {tl.error && <div className="empty err">{tl.error}</div>}
             <Timeline items={tl.items} running={running} />
@@ -64,13 +64,13 @@ export function Chat({
                 : `Starts a new workspace in ${target.name}`}
             </p>
             <button className="btn ghost" onClick={onImport}>
-              <Import size={13} /> Import an existing session…
+              <Import size={13} /> Import Session
             </button>
           </div>
         )}
       </div>
       {agent?.pendingPermissions.map((p) => <PermissionCard key={p.id} agentId={agent.id} request={p} />)}
-      <Composer agent={agent} target={target} onCreated={onCreated} />
+      <Composer agent={agent} target={target} onCreated={onCreated} initialText={initialText} onInitialTextUsed={onInitialTextUsed} />
     </div>
   )
 }
@@ -126,10 +126,46 @@ function PermissionCard({ agentId, request: r }: { agentId: string; request: Per
 type Draft = { provider?: string; model?: string; thinking?: string; mode?: string }
 const loadDraft = (): Draft => JSON.parse(localStorage.mypaseoDraft ?? '{}')
 
-function Composer({ agent, target, onCreated }: { agent?: Agent; target: Target; onCreated: (a: Agent) => void }) {
+type PastedImage = { data: string; mimeType: string }
+const readImage = (file: File) =>
+  new Promise<PastedImage>((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve({ mimeType: file.type, data: (r.result as string).split(',')[1] })
+    r.onerror = () => reject(r.error)
+    r.readAsDataURL(file)
+  })
+
+function Composer({
+  agent,
+  target,
+  onCreated,
+  initialText,
+  onInitialTextUsed,
+}: {
+  agent?: Agent
+  target: Target
+  onCreated: (a: Agent) => void
+  initialText?: string
+  onInitialTextUsed?: () => void
+}) {
   const { providers } = useStore()
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initialText ?? '')
+  useEffect(() => {
+    if (initialText) onInitialTextUsed?.()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const [images, setImages] = useState<PastedImage[]>([])
   const [busy, setBusy] = useState(false)
+  const fileInput = useRef<HTMLInputElement>(null)
+  const sendKey = useShortcut('send')
+  const input = useRef<HTMLTextAreaElement>(null)
+  const modelSelect = useRef<HTMLSelectElement>(null)
+  // Mount only: a new chat takes focus, and so does the remount after a send creates its agent (focus fell to <body>).
+  useEffect(() => {
+    const el = input.current
+    if (!el || (agent && document.activeElement !== document.body)) return
+    el.focus()
+    el.setSelectionRange(el.value.length, el.value.length) // after any inserted selection ref
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [draft, setDraftState] = useState<Draft>(loadDraft)
   const setDraft = (d: Draft) => {
     setDraftState(d)
@@ -161,11 +197,11 @@ function Composer({ agent, target, onCreated }: { agent?: Agent; target: Target;
 
   const send = async () => {
     const prompt = text.trim()
-    if (!prompt || busy) return
+    if ((!prompt && !images.length) || busy) return
     setBusy(true)
     try {
       if (agent) {
-        await daemon.sendAgentMessage(agent.id, prompt)
+        await daemon.sendAgentMessage(agent.id, prompt, { images })
       } else if (provider) {
         const config = {
           provider,
@@ -173,6 +209,7 @@ function Composer({ agent, target, onCreated }: { agent?: Agent; target: Target;
           thinkingOptionId: validThinking,
           modeId: modes.some((m) => m.id === mode) ? (mode ?? undefined) : undefined,
           initialPrompt: prompt,
+          images,
         }
         const { workspace } = target
         if (workspace) {
@@ -190,6 +227,7 @@ function Composer({ agent, target, onCreated }: { agent?: Agent; target: Target;
         }
       }
       setText('')
+      setImages([])
     } catch (e) {
       alert(`Send failed: ${errorText(e)}`)
     } finally {
@@ -197,44 +235,106 @@ function Composer({ agent, target, onCreated }: { agent?: Agent; target: Target;
     }
   }
 
-  const ws = target.workspace
-  const branch = ws?.project?.checkout?.currentBranch
+  // Returns whether any images were found, so paste can fall back to text.
+  const addImages = (files: File[]) => {
+    const imgs = files.filter((f) => f.type.startsWith('image/'))
+    if (imgs.length)
+      Promise.all(imgs.map(readImage))
+        .then((read) => setImages((prev) => [...prev, ...read]))
+        .catch((err) => alert(`Image failed: ${errorText(err)}`))
+    return imgs.length > 0
+  }
+
+  const empty = !text.trim() && !images.length
   return (
     <div className="composer">
+      {images.length > 0 && (
+        <div className="composer-images">
+          {images.map((img, i) => (
+            <span key={i} className="composer-image">
+              <img src={`data:${img.mimeType};base64,${img.data}`} alt={`Pasted image ${i + 1}`} />
+              <button title="Remove" aria-label={`Remove Image ${i + 1}`} onClick={() => setImages(images.filter((_, j) => j !== i))}>
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
       <textarea
         name="prompt"
+        ref={input}
         value={text}
         placeholder={agent ? 'Message the agent…' : provider ? 'What should the agent do?' : 'No ready providers — check Settings'}
-        rows={3}
+        rows={2}
         onChange={(e) => setText(e.target.value)}
+        onPaste={(e) => {
+          if (addImages([...e.clipboardData.files])) e.preventDefault()
+        }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+          if (e.nativeEvent.isComposing) return
+          if (isShortcut(e, 'send')) {
             e.preventDefault()
             void send()
+          } else if (isShortcut(e, 'cycleThinking') && thinkingOptions.length > 0) {
+            e.preventDefault()
+            const i = thinkingOptions.findIndex((o) => o.id === validThinking)
+            change('thinking', thinkingOptions[(i + 1) % thinkingOptions.length].id)
+          } else if (isShortcut(e, 'pickModel') && modelSelect.current) {
+            e.preventDefault()
+            modelSelect.current.focus()
+            // showPicker is missing in older Safari; focus alone still lets Space/arrows open it.
+            try {
+              modelSelect.current.showPicker()
+            } catch {}
           }
         }}
       />
       <div className="composer-bar">
-        <span className="crumb truncate">
-          <FolderClosed size={13} />
-          {target.name}
-          {(branch || ws) && <span className="muted"> / {branch ?? ws?.title ?? ws?.name}</span>}
-        </span>
-        <span className="grow" />
+        <button className="icon-btn composer-add" title="Attach Image" onClick={() => fileInput.current?.click()}>
+          <Plus size={16} />
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="image/*"
+          multiple
+          hidden
+          onChange={(e) => {
+            addImages([...(e.target.files ?? [])])
+            e.target.value = ''
+          }}
+        />
         {!agent && (
-          <Pick value={provider} onChange={(v) => change('provider', v)} options={usable.map((p) => [p.provider, p.label ?? p.provider])} title="Provider" />
+          <Pick
+            icon={<Bot size={14} />}
+            value={provider}
+            onChange={(v) => change('provider', v)}
+            options={usable.map((p) => [p.provider, p.label ?? p.provider])}
+            title="Provider"
+          />
         )}
-        {modes.length > 0 && <Pick value={mode ?? undefined} onChange={(v) => change('mode', v)} options={modes.map((m) => [m.id, m.label])} title="Mode" />}
+        {models.length > 0 && (
+          <Pick ref={modelSelect} icon={<Sparkles size={14} />} value={model?.id} onChange={(v) => change('model', v)} options={models.map((m) => [m.id, m.label])} title="Model" />
+        )}
         {thinkingOptions.length > 0 && (
-          <Pick value={validThinking} onChange={(v) => change('thinking', v)} options={thinkingOptions.map((o) => [o.id, o.label])} title="Thinking" />
+          <Pick
+            icon={<Brain size={14} />}
+            value={validThinking}
+            onChange={(v) => change('thinking', v)}
+            options={thinkingOptions.map((o) => [o.id, o.label])}
+            title="Thinking"
+          />
         )}
-        {models.length > 0 && <Pick value={model?.id} onChange={(v) => change('model', v)} options={models.map((m) => [m.id, m.label])} title="Model" />}
-        {agent?.status === 'running' && !text.trim() ? (
+        {modes.length > 0 && (
+          <Pick icon={<Shield size={14} />} value={mode ?? undefined} onChange={(v) => change('mode', v)} options={modes.map((m) => [m.id, m.label])} title="Mode" />
+        )}
+        <span className="grow" />
+        {agent?.status === 'running' && empty ? (
           <button className="send stop" title="Stop" onClick={() => void daemon.cancelAgent(agent.id)}>
             <Square size={12} fill="currentColor" />
           </button>
         ) : (
-          <button className="send" title="Send (Enter)" disabled={!text.trim() || busy || !provider} onClick={() => void send()}>
+          <button className="send" title={`Send (${formatCombo(sendKey)})`} disabled={empty || busy || !provider} onClick={() => void send()}>
             {busy ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} />}
           </button>
         )}
@@ -244,24 +344,33 @@ function Composer({ agent, target, onCreated }: { agent?: Agent; target: Target;
 }
 
 function Pick({
+  ref,
+  icon,
   value,
   onChange,
   options,
   title,
 }: {
+  ref?: Ref<HTMLSelectElement>
+  icon: ReactNode
   value: string | undefined
   onChange: (v: string) => void
   options: [string, string][]
   title: string
 }) {
+  // Icons overlay the native select (pointer-events: none) so the whole pill opens the picker.
   return (
-    <select className="pick" name={title} title={title} value={value ?? ''} onChange={(e) => onChange(e.target.value)}>
-      {value === undefined && <option value="">{title}</option>}
-      {options.map(([id, label]) => (
-        <option key={id} value={id}>
-          {label}
-        </option>
-      ))}
-    </select>
+    <span className="pick" title={title}>
+      {icon}
+      <select ref={ref} name={title} aria-label={title} value={value ?? ''} onChange={(e) => onChange(e.target.value)}>
+        {value === undefined && <option value="">{title}</option>}
+        {options.map(([id, label]) => (
+          <option key={id} value={id}>
+            {label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown size={12} />
+    </span>
   )
 }

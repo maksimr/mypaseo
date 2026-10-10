@@ -198,12 +198,47 @@ code.inline {
 
 /* Layout */
 .app {
+  --sidebar-w: 270px;
+  --panel-w: 280px;
+  position: relative;
   display: grid;
-  grid-template-columns: 270px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
   height: 100svh;
 }
 .app.with-panel {
-  grid-template-columns: 270px minmax(0, 1fr) 280px;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--panel-w);
+}
+/* The sidebar stays mounted while hidden so its collapsed rows survive. */
+.app.no-sidebar {
+  grid-template-columns: minmax(0, 1fr);
+}
+.app.no-sidebar.with-panel {
+  grid-template-columns: minmax(0, 1fr) var(--panel-w);
+}
+/* Out of the grid flow, centered on the pane border. */
+.resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  z-index: 5;
+  cursor: col-resize;
+  touch-action: none;
+}
+.resizer.left {
+  left: calc(var(--sidebar-w) - 3px);
+}
+.resizer.right {
+  right: calc(var(--panel-w) - 3px);
+}
+.resizer:hover,
+.resizer:active,
+.resizer:focus-visible {
+  outline: none;
+  background: linear-gradient(var(--accent), var(--accent)) center / 2px 100% no-repeat;
+}
+.app.no-sidebar .sidebar {
+  display: none;
 }
 
 /* Sidebar & tree rows */
@@ -230,6 +265,45 @@ code.inline {
   padding: 0 8px 0 12px;
   border-bottom: 1px solid var(--border);
   flex: none;
+}
+.panel-tabs {
+  padding-left: 6px;
+}
+/* Sidebar/panel toggles stay pinned to the window corners; the bars under them make room. */
+.corner {
+  position: absolute;
+  top: 6.5px;
+  z-index: 6;
+}
+.corner.left {
+  left: 8px;
+}
+.corner.right {
+  right: 8px;
+}
+.sidebar-head,
+.app.no-sidebar .tabbar {
+  padding-left: 36px;
+}
+.panel-tabs,
+.app:not(.with-panel) .tabbar {
+  padding-right: 36px;
+}
+.panel-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 6px;
+  color: var(--text-muted);
+}
+.panel-tab:hover {
+  color: var(--text);
+}
+.panel-tab.on {
+  background: var(--bg-hover);
+  color: var(--text);
 }
 .section-label {
   flex: 1;
@@ -258,11 +332,69 @@ code.inline {
 .row.active {
   background: var(--bg-active);
 }
-.row .hover-only {
+.row .hover-only,
+.sidebar-head .hover-only {
   visibility: hidden;
+}
+.sidebar:hover .sidebar-head .hover-only,
+.sidebar-head:focus-within .hover-only {
+  visibility: visible;
 }
 .row:hover .hover-only {
   visibility: visible;
+}
+.row:has(+ .menu:popover-open) .hover-only {
+  visibility: visible;
+}
+/* Actions take the status mark's slot on hover, so the mark always sits at the right edge. */
+/* Action grid, see doc/action-grid.md: marks and actions share a 13px slot; negative margins give buttons an 18px hit area. */
+.dot.status-mark {
+  margin-inline: 3px;
+}
+.row .icon-btn {
+  width: 18px;
+  height: 18px;
+  margin-inline: -2.5px;
+}
+.row .icon-btn + .icon-btn {
+  margin-left: -4.5px; /* centers 18px apart: buttons touch without overlapping */
+}
+.row .hover-swap {
+  display: none;
+}
+.row:is(:hover, :focus-within) .hover-swap,
+.row:has(+ .menu:popover-open) .hover-swap {
+  display: inline-flex;
+}
+.row:is(:hover, :focus-within) .hover-swap ~ .status-mark,
+.row:has(+ .menu:popover-open) .hover-swap ~ .status-mark {
+  display: none;
+}
+.menu {
+  inset: auto;
+  margin: 0;
+  min-width: 170px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg-elev);
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 4px;
+}
+.menu button:hover {
+  background: var(--bg-hover);
+}
+.menu button.danger {
+  color: var(--red);
 }
 .row.workspace {
   padding-left: 14px;
@@ -321,6 +453,17 @@ code.inline {
   color: var(--text-muted);
   cursor: pointer;
   flex: none;
+}
+.tab .stat {
+  gap: 2px;
+  margin-left: 3px;
+  font-size: 10px;
+  line-height: 1;
+}
+.agent-tab {
+  max-width: none;
+  flex: 0 1 auto;
+  min-width: 80px;
 }
 .tab:hover {
   background: var(--bg-hover);
@@ -674,51 +817,100 @@ code.inline {
   width: calc(100% - 48px);
   max-width: 812px;
   margin: 0 auto 16px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
   background: var(--bg-elev);
 }
 .composer:focus-within {
-  border-color: #50545e;
+  border-color: var(--border-strong);
 }
 .composer textarea {
   display: block;
   width: 100%;
-  padding: 10px 12px 4px;
+  field-sizing: content;
+  min-height: calc(2lh + 18px);
+  max-height: 40vh;
+  padding: 14px 16px 4px;
   border: 0;
   outline: none;
   resize: none;
   background: none;
   font-family: var(--mono);
 }
+.composer-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 16px 0;
+}
+.composer-image {
+  position: relative;
+}
+.composer-image img {
+  display: block;
+  height: 56px;
+  max-width: 120px;
+  object-fit: cover;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+}
+.composer-image button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 50%;
+  background: var(--bg-active);
+  color: var(--text);
+}
 .composer-bar {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 6px 6px 12px;
-  font-size: 12px;
+  gap: 2px;
+  padding: 4px 10px 10px;
 }
-.crumb {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.composer-add {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
 }
 .pick {
-  appearance: none;
-  max-width: 180px;
-  height: 24px;
-  padding: 0 6px;
-  border: 0;
-  border-radius: 5px;
-  background: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
   color: var(--text-muted);
-  font-size: 12px;
+}
+.pick:hover {
+  color: var(--text);
+}
+.pick svg {
+  position: absolute;
+  pointer-events: none;
+}
+.pick svg:first-child {
+  left: 8px;
+}
+.pick svg:last-child {
+  right: 7px;
+}
+.pick select {
+  appearance: none;
+  field-sizing: content;
+  min-width: 0;
+  max-width: 200px;
+  height: 28px;
+  padding: 0 23px 0 28px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
   cursor: pointer;
   text-overflow: ellipsis;
 }
-.pick:hover {
+.pick:hover select {
   background: var(--bg-hover);
-  color: var(--text);
 }
 .pick option {
   background: var(--bg-elev);
@@ -728,10 +920,10 @@ code.inline {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  margin-left: 4px;
-  border-radius: 6px;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   background: var(--text);
   color: var(--bg);
 }
@@ -792,7 +984,8 @@ code.inline {
 .changes {
   flex: 1;
   overflow: auto;
-  padding-bottom: 40vh;
+  /* Scroll past the end, so Go to Next Hunk can bring any chunk up under its file header. */
+  padding-bottom: calc(100vh - 72px);
 }
 .changes-toolbar {
   position: sticky;
@@ -800,11 +993,35 @@ code.inline {
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
   height: 38px;
-  padding: 0 16px;
+  padding: 0 12px;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
+  /* Narrow panes scroll the toolbar itself instead of widening the whole diff view. */
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+.changes-toolbar .segmented {
+  margin-left: 8px;
+}
+.changes-toolbar .sep {
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin: 0 6px;
+  background: var(--border);
+}
+/* Zed-style plain text action. */
+.text-btn {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.text-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
 }
 .segmented {
   display: inline-flex;
@@ -839,27 +1056,41 @@ code.inline {
   cursor: pointer;
   user-select: none;
 }
+/* Zed-style file checkbox: dark box, accent check. */
+.check {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--accent);
+}
+.check:hover {
+  border-color: var(--text-faint);
+}
 .excerpt-name {
   font-weight: 600;
   flex: none;
 }
+/* Soft wrap, not a horizontal scroller: a scroll container here would stop .chunk-actions sticking to the view. */
 .hunks {
   padding: 4px 0;
-  overflow-x: auto;
   font: 12.5px/1.6 var(--mono);
-}
-.hunks > div {
-  min-width: max-content;
 }
 .dl {
   display: flex;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   border-left: 3px solid transparent;
 }
 .dl .ln {
   width: 5.5ch;
 }
 .dl .dc {
+  min-width: 0;
   padding: 0 24px 0 12px;
 }
 .dl.add {
@@ -869,6 +1100,52 @@ code.inline {
 .dl.remove {
   background: var(--del-bg);
   border-left-color: var(--red);
+}
+/* Zed-style tab over the chunk's first line (negative margin: takes no space). It sticks under the file header:
+   top = toolbar 38px + .excerpt-head 34px. */
+.chunk-actions {
+  position: sticky;
+  top: 72px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  height: 30px;
+  margin: 0 8px -30px auto;
+  padding: 0 4px;
+  border-radius: 0 0 8px 8px;
+  background: var(--bg-panel);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  font: 13px var(--sans);
+  opacity: 0;
+}
+.chunk:is(:hover, :focus-within) .chunk-actions {
+  opacity: 1;
+}
+.chunk {
+  scroll-margin-top: 72px;
+}
+/* Staged chunks are hollow, like Zed: hairlines above and below, a faint fill and colored line numbers instead of the gutter bar. */
+.chunk.staged {
+  border-block: 0.5px solid color-mix(in srgb, var(--green) 60%, transparent);
+}
+.chunk.staged:not(:has(.add)) {
+  border-color: color-mix(in srgb, var(--red) 60%, transparent);
+}
+.chunk.staged .dl {
+  border-left-color: transparent;
+}
+.chunk.staged .dl.add {
+  background: rgba(161, 193, 129, 0.06);
+}
+.chunk.staged .dl.remove {
+  background: rgba(224, 108, 117, 0.06);
+}
+.chunk.staged .add .ln {
+  color: var(--green);
+}
+.chunk.staged .remove .ln {
+  color: var(--red);
 }
 .hunk-sep {
   height: 1px;
@@ -980,7 +1257,8 @@ code.inline {
   color: var(--text);
 }
 .settings-group,
-.provider {
+.provider,
+.setting-row {
   scroll-margin-top: 16px;
 }
 .settings-body {
@@ -1124,6 +1402,22 @@ code.inline {
 .settings-group + .settings-group {
   margin-top: 32px;
 }
+kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-panel);
+  font: 12px var(--mono);
+}
+.shortcut {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn.recording {
+  border-color: var(--accent);
+  color: var(--text-muted);
+}
 
 /* Dialog (import session) */
 .dialog {
@@ -1193,4 +1487,91 @@ code.inline {
   padding: 8px 18px;
   border-top: 1px solid var(--border);
   font-size: 12px;
+}
+
+/* Commit dialog */
+.commit-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(640px, 92vw);
+  height: min(420px, 80vh);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg-elev);
+  /* Zed's double frame: a panel-colored ring around the card. */
+  box-shadow: 0 0 0 7px var(--bg-panel), 0 0 0 8px var(--border), 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.commit-message {
+  flex: 1;
+  padding: 14px 16px;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: none;
+  font: 13px/1.6 var(--mono);
+}
+.commit-message::placeholder {
+  color: var(--text-faint);
+}
+.commit-error {
+  max-height: 30%;
+  overflow: auto;
+  padding: 0 16px 6px;
+  font-size: 12px;
+}
+.commit-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 10px 16px;
+}
+.commit-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.commit-foot .text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+}
+.split-btn {
+  display: inline-flex;
+  height: 26px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.split-btn button {
+  padding: 0 10px;
+}
+.split-btn button + button {
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+  border-left: 1px solid var(--border-strong);
+}
+.split-btn button:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+.menu kbd {
+  margin-left: 16px;
+}
+
+/* Add-to-chat button in the gutter beside the last selected line. */
+.selection-action {
+  position: fixed;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  transform: translate(2px, -50%);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
 }

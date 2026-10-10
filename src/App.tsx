@@ -1,17 +1,64 @@
-import { FileCode, FileDiff, FolderTree, MessageSquare, PanelRight, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { FileCode, FileDiff, Files, MessageCirclePlus, PanelLeft, PanelRight, X } from 'lucide-react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { ChangesList, ChangesView } from './components/Changes'
 import { Chat, type Target } from './components/Chat'
 import { FileTree, FileView } from './components/Files'
 import { ImportSession } from './components/ImportSession'
 import { Settings } from './components/Settings'
 import { Sidebar, type Selection } from './components/Sidebar'
-import type { DiffMode } from './daemon'
+import type { DiffMode, Workspace } from './daemon'
+import { formatCombo, isShortcut, useShortcut } from './keymap'
+import { useAttentionNotifications } from './notifications'
 import { OpenFileContext } from './openFile'
-import { startSync, useStore } from './store'
+import { selectionRef } from './selection'
+import { SelectionAction } from './components/SelectionAction'
+import { archiveWorkspace, byRecent, projectWorkspaces, startSync, useStore } from './store'
 import { totals, useCheckoutDiff } from './useCheckoutDiff'
 
 type Tab = 'chat' | 'changes' | `file:${string}`
+
+const MIN_W = 180
+const MAX_W = 600
+
+/** Pane width in px, persisted to localStorage[key]. */
+function useWidth(key: string, initial: number) {
+  const [w, setW] = useState(() => Number(localStorage[key]) || initial)
+  const set = (v: number) => {
+    const c = Math.round(Math.min(Math.max(v, MIN_W), MAX_W))
+    setW(c)
+    localStorage[key] = c
+  }
+  return [w, set] as const
+}
+
+/** Drag handle on the inner edge of a side pane; arrow keys resize too. */
+function Resizer({ side, label, width, onResize }: { side: 'left' | 'right'; label: string; width: number; onResize: (w: number) => void }) {
+  return (
+    <div
+      className={`resizer ${side}`}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={label}
+      aria-valuenow={width}
+      aria-valuemin={MIN_W}
+      aria-valuemax={MAX_W}
+      tabIndex={0}
+      onPointerDown={(e) => {
+        e.preventDefault() // no text selection while dragging
+        e.currentTarget.setPointerCapture(e.pointerId)
+      }}
+      onPointerMove={(e) => {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) onResize(side === 'left' ? e.clientX : window.innerWidth - e.clientX)
+      }}
+      onKeyDown={(e) => {
+        const d = e.key === 'ArrowLeft' ? -10 : e.key === 'ArrowRight' ? 10 : 0
+        if (!d) return
+        e.preventDefault()
+        onResize(width + (side === 'left' ? d : -d))
+      }}
+    />
+  )
+}
 
 export default function App() {
   useEffect(() => startSync(), [])
@@ -22,26 +69,106 @@ export default function App() {
     setSel(s)
     localStorage.mypaseoSelection = JSON.stringify(s)
   }
+  const openWorkspace = (w: Workspace) =>
+    select({ projectId: w.projectId, workspaceId: w.id, agentId: agents.filter((a) => a.workspaceId === w.id).sort(byRecent)[0]?.id })
+  /** Archives or removes a workspace; if it was selected, selects the one above it in the sidebar. */
+  const archive = async (w: Workspace, deleteAgents: boolean) => {
+    const list = projects.flatMap((p) => projectWorkspaces(p.projectId, workspaces, agents))
+    const i = list.findIndex((x) => x.id === w.id)
+    const near = list[i - 1] ?? list[i + 1] // the first one has none above: take the one below
+    if (!(await archiveWorkspace(w.id, deleteAgents)) || sel.workspaceId !== w.id) return
+    if (near) openWorkspace(near)
+    else select({ projectId: w.projectId })
+  }
   const workspace = workspaces.find((w) => w.id === sel.workspaceId)
   const project = projects.find((p) => p.projectId === (workspace?.projectId ?? sel.projectId))
   const agent = agents.find((a) => a.id === sel.agentId)
+  useAttentionNotifications(sel.agentId, (agentId) => {
+    const w = workspaces.find((x) => x.id === agents.find((a) => a.id === agentId)?.workspaceId)
+    if (w) select({ projectId: w.projectId, workspaceId: w.id, agentId })
+  })
   const target: Target | null = workspace
     ? { projectId: workspace.projectId, name: workspace.projectDisplayName, rootPath: workspace.projectRootPath, workspace }
     : project
       ? { projectId: project.projectId, name: project.projectCustomName || project.projectDisplayName, rootPath: project.projectRootPath }
       : null
+  const projectId = project?.projectId
   const cwd = workspace?.workspaceDirectory
   const isGit = workspace?.projectKind === 'git'
 
   const [tab, setTab] = useState<Tab>('chat')
   const [files, setFiles] = useState<string[]>([])
-  const [panel, setPanel] = useState<'files' | 'changes' | null>('files')
+  const [panel, setPanel] = useState<'files' | 'changes' | null>(() => JSON.parse(localStorage.mypaseoPanel ?? '"files"'))
   const [diffMode, setDiffMode] = useState<DiffMode>('uncommitted')
   const [focus, setFocus] = useState<{ path: string; n: number } | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [chatText, setChatText] = useState('') // handed to the composer when the chat tab mounts
+  const [sidebar, setSidebar] = useState(() => localStorage.mypaseoSidebar !== 'false')
+  useEffect(() => {
+    localStorage.mypaseoSidebar = sidebar
+    localStorage.mypaseoPanel = JSON.stringify(panel)
+  }, [sidebar, panel])
+  const [sidebarW, setSidebarW] = useWidth('mypaseoSidebarWidth', 270)
+  const [panelW, setPanelW] = useWidth('mypaseoPanelWidth', 280)
+  const sidebarKey = useShortcut('toggleSidebar')
+  const panelKey = useShortcut('togglePanel')
+  const diffKey = useShortcut('toggleDiff')
+  const addKey = useShortcut('addToChat')
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (isShortcut(e, 'toggleSidebar')) {
+        e.preventDefault()
+        setSidebar((s) => !s)
+      }
+      if (cwd && isShortcut(e, 'togglePanel')) {
+        e.preventDefault()
+        setPanel((p) => (p ? null : 'files'))
+      }
+      if (changesTab && isShortcut(e, 'toggleDiff')) {
+        e.preventDefault()
+        setTab((t) => (t === 'changes' ? 'chat' : 'changes'))
+      }
+      if (projectId && isShortcut(e, 'newWorkspace')) {
+        e.preventDefault()
+        select({ projectId })
+      }
+      const s = target && isShortcut(e, 'addToChat') && selectionRef()
+      if (s) {
+        e.preventDefault()
+        addToChat(s.ref)
+      }
+      if (isShortcut(e, 'openSettings')) {
+        e.preventDefault()
+        setSettingsOpen(true)
+      }
+      if (workspace && isShortcut(e, 'archiveWorkspace')) {
+        e.preventDefault()
+        void archive(workspace, false)
+      }
+      if (workspace && isShortcut(e, 'removeWorkspace')) {
+        e.preventDefault()
+        void archive(workspace, true)
+      }
+      const step = isShortcut(e, 'nextWorkspace') ? 1 : isShortcut(e, 'prevWorkspace') ? -1 : 0
+      if (step) {
+        const list = projects.flatMap((p) => projectWorkspaces(p.projectId, workspaces, agents))
+        const i = list.findIndex((w) => w.id === sel.workspaceId)
+        // Wraps around; with no workspace selected, next lands on the first and previous on the last.
+        const w = list[((i < 0 && step < 0 ? 0 : i) + step + list.length) % list.length]
+        if (!w) return
+        e.preventDefault()
+        openWorkspace(w)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }) // reads most of the render's state, so it re-binds every render
   const [importTarget, setImportTarget] = useState<Target | null>(null)
   const diff = useCheckoutDiff(isGit ? cwd : undefined, diffMode)
   const t = totals(diff.files)
+  // Loading keeps it open so a mode switch doesn't close it; an empty diff (all committed) does.
+  const changesTab = isGit && (diff.files.length > 0 || (diff.loading && tab === 'changes'))
+  if (tab === 'changes' && !changesTab) setTab('chat')
 
   // Tabs belong to a workspace: reset them while rendering when the workspace changes.
   const [tabsCwd, setTabsCwd] = useState(cwd)
@@ -59,6 +186,10 @@ export default function App() {
     setFiles((f) => f.filter((p) => p !== path))
     if (tab === `file:${path}`) setTab('chat')
   }
+  const addToChat = (ref: string) => {
+    setChatText((t) => `${t}${t ? ' ' : ''}${ref} `)
+    setTab('chat')
+  }
   const showChange = (path: string) => {
     setTab('changes')
     setFocus((f) => ({ path, n: (f?.n ?? 0) + 1 }))
@@ -66,30 +197,49 @@ export default function App() {
 
   return (
     <OpenFileContext value={openFile}>
-      <div className={`app ${panel && cwd ? 'with-panel' : ''}`}>
+      <div
+        className={`app ${panel && cwd ? 'with-panel' : ''} ${sidebar ? '' : 'no-sidebar'}`}
+        style={{ '--sidebar-w': `${sidebarW}px`, '--panel-w': `${panelW}px` } as CSSProperties}
+      >
         <Sidebar
           selection={sel}
           onSelect={select}
+          onArchive={archive}
           onOpenSettings={() => setSettingsOpen(true)}
           onImport={(projectId) => {
             const p = projects.find((x) => x.projectId === projectId)
             if (p) setImportTarget({ projectId, name: p.projectCustomName || p.projectDisplayName, rootPath: p.projectRootPath })
           }}
         />
+        {sidebar && <Resizer side="left" label="Resize Sidebar" width={sidebarW} onResize={setSidebarW} />}
+        <button className={`icon-btn corner left ${sidebar ? 'on' : ''}`} title={`Toggle Sidebar (${formatCombo(sidebarKey)})`} onClick={() => setSidebar(!sidebar)}>
+          <PanelLeft size={15} />
+        </button>
+        {cwd && (
+          <button className={`icon-btn corner right ${panel ? 'on' : ''}`} title={`Toggle File Panel (${formatCombo(panelKey)})`} onClick={() => setPanel(panel ? null : 'files')}>
+            <PanelRight size={15} />
+          </button>
+        )}
 
         <main className="center">
           <div className="tabbar">
             {target && (
-              <button className={`tab ${tab === 'chat' ? 'on' : ''}`} onClick={() => setTab('chat')}>
-                <MessageSquare size={13} />
+              <button className={`tab agent-tab ${tab === 'chat' ? 'on' : ''}`} onClick={() => setTab('chat')}>
+                <MessageCirclePlus size={13} />
                 <span className="truncate">{agent ? agent.title || 'Agent' : 'New agent'}</span>
               </button>
             )}
-            {isGit && (
-              <button className={`tab ${tab === 'changes' ? 'on' : ''}`} onClick={() => setTab('changes')}>
+            {changesTab && (
+              <button className={`tab ${tab === 'changes' ? 'on' : ''}`} title={`Changes (${formatCombo(diffKey)})`} onClick={() => setTab('changes')}>
                 <FileDiff size={13} />
-                Changes
-                {diff.files.length > 0 && <span className="badge">{diff.files.length}</span>}
+                {/* one inline run so the smaller counters sit on the label's baseline */}
+                <span>
+                  Changes{' '}
+                  <span className="stat">
+                    <span className="add">+{t.add}</span>
+                    <span className="del">−{t.del}</span>
+                  </span>
+                </span>
               </button>
             )}
             {files.map((path) => (
@@ -108,12 +258,6 @@ export default function App() {
                 </button>
               </div>
             ))}
-            <span className="grow" />
-            {cwd && (
-              <button className={`icon-btn ${panel ? 'on' : ''}`} title="Toggle file panel" onClick={() => setPanel(panel ? null : 'files')}>
-                <PanelRight size={15} />
-              </button>
-            )}
           </div>
 
           {!target ? (
@@ -132,19 +276,22 @@ export default function App() {
               target={target}
               onCreated={(a) => select({ projectId: target.projectId, workspaceId: a.workspaceId, agentId: a.id })}
               onImport={() => setImportTarget(target)}
+              initialText={chatText}
+              onInitialTextUsed={() => setChatText('')}
             />
           )}
         </main>
 
+        {panel && cwd && <Resizer side="right" label="Resize File Panel" width={panelW} onResize={setPanelW} />}
         {panel && cwd && workspace && (
           <aside className="panel">
             <div className="panel-tabs">
-              <button className={`icon-btn ${panel === 'files' ? 'on' : ''}`} title="Files" onClick={() => setPanel('files')}>
-                <FolderTree size={15} />
+              <button className={`panel-tab ${panel === 'files' ? 'on' : ''}`} onClick={() => setPanel('files')}>
+                <Files size={14} /> Files
               </button>
               {isGit && (
-                <button className={`icon-btn ${panel === 'changes' ? 'on' : ''}`} title="Changes" onClick={() => setPanel('changes')}>
-                  <FileDiff size={15} />
+                <button className={`panel-tab ${panel === 'changes' ? 'on' : ''}`} onClick={() => setPanel('changes')}>
+                  <FileDiff size={14} /> Changes
                 </button>
               )}
               <span className="grow" />
@@ -162,6 +309,7 @@ export default function App() {
           </aside>
         )}
 
+        {target && tab !== 'chat' && <SelectionAction title={`Add to Chat (${formatCombo(addKey)})`} onAdd={addToChat} />}
         {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
         {importTarget && (
           <ImportSession

@@ -1,12 +1,14 @@
-import { ChevronDown, ChevronRight, Plus, RefreshCw, Search, Stethoscope, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, RefreshCw, RotateCcw, Search, Stethoscope, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useEscape } from '../a11y'
 import { DAEMON_URL, daemon, errorText, type DaemonConfig, type ProviderEntry } from '../daemon'
+import { SHORTCUTS, SHORTCUT_IDS, binding, comboOf, formatCombo, setShortcut, useShortcut, type ShortcutId } from '../keymap'
+import { notificationsOn, notificationsSupported } from '../notifications'
 import { useStore } from '../store'
 
-const SECTIONS = ['General', 'LLM Providers'] as const
+const SECTIONS = ['General', 'Providers', 'Keymap'] as const
 type Section = (typeof SECTIONS)[number]
-const GENERAL_GROUPS = ['Connection', 'Agents'] as const
+const GENERAL_GROUPS = ['Connection', 'Agents', 'Notifications'] as const
 const anchor = (...parts: string[]) => `settings-${parts.join('-')}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-')
 const toggled = <T,>(set: Set<T>, v: T, on = !set.has(v)) => {
   const next = new Set(set)
@@ -44,7 +46,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
   // Sidebar sub-items: [label, anchor id, provider to expand].
   const children: Record<Section, [string, string, string?][]> = {
     General: GENERAL_GROUPS.map((g) => [g, anchor('general', g)]),
-    'LLM Providers': providers.map((p) => [p.label ?? p.provider, anchor('provider', p.provider), p.provider]),
+    'Providers': providers.map((p) => [p.label ?? p.provider, anchor('provider', p.provider), p.provider]),
+    'Keymap': [...SHORTCUT_IDS.map((id) => [SHORTCUTS[id].label, anchor('keymap', id)] as [string, string]), ['Close Dialog', anchor('keymap', 'close')]],
   }
   const go = (s: Section, target?: string, providerId?: string) => {
     setSection(s)
@@ -95,23 +98,28 @@ export function Settings({ onClose }: { onClose: () => void }) {
             <X size={16} />
           </button>
           {error && <div className="banner err">{error}</div>}
-          {!config ? (
-            <div className="empty">Loading…</div>
-          ) : (
-            shown.map((s) =>
-              s === 'General' ? (
-                <General key={s} config={config} patch={patch} q={q} />
-              ) : (
-                <Providers
-                  key={s}
-                  config={config}
-                  patch={patch}
-                  q={q}
-                  open={openProviders}
-                  onToggle={(id) => setOpenProviders((o) => toggled(o, id))}
-                />
-              ),
-            )
+          {shown.map((s) =>
+            // Shortcuts live in localStorage, so they don't wait for the daemon config.
+            s === 'Keymap' ? (
+              <Shortcuts key={s} q={q} />
+            ) : !config ? (
+              s === shown[0] && (
+                <div key={s} className="empty">
+                  Loading…
+                </div>
+              )
+            ) : s === 'General' ? (
+              <General key={s} config={config} patch={patch} q={q} />
+            ) : (
+              <Providers
+                key={s}
+                config={config}
+                patch={patch}
+                q={q}
+                open={openProviders}
+                onToggle={(id) => setOpenProviders((o) => toggled(o, id))}
+              />
+            ),
           )}
         </div>
       </div>
@@ -122,9 +130,9 @@ export function Settings({ onClose }: { onClose: () => void }) {
 type SectionProps = { config: DaemonConfig; patch: (p: Patch) => Promise<void>; q: string }
 const matches = (q: string, ...texts: (string | undefined)[]) => !q || texts.some((t) => t?.toLowerCase().includes(q))
 
-function Row({ title, description, children }: { title: string; description?: React.ReactNode; children: React.ReactNode }) {
+function Row({ id, title, description, children }: { id?: string; title: string; description?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="setting-row">
+    <div className="setting-row" id={id}>
       <div className="grow">
         <div className="setting-title">{title}</div>
         {description && <div className="setting-desc">{description}</div>}
@@ -145,6 +153,12 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
 function General({ config, patch, q }: SectionProps) {
   const { status } = useStore()
   const [prompt, setPrompt] = useState(config.appendSystemPrompt)
+  const [notify, setNotify] = useState(notificationsOn)
+  const toggleNotify = async (on: boolean) => {
+    if (on && (await Notification.requestPermission()) !== 'granted') return alert('Notifications are blocked for this site in your browser settings.')
+    localStorage.mypaseoNotifications = on ? 'on' : 'off'
+    setNotify(on)
+  }
   const groups: [(typeof GENERAL_GROUPS)[number], React.ReactNode[]][] = [
     [
       'Connection',
@@ -183,6 +197,20 @@ function General({ config, patch, q }: SectionProps) {
         ),
       ],
     ],
+    [
+      'Notifications',
+      [
+        matches(q, 'desktop browser notifications alerts finished permission') && (
+          <Row
+            key="notify"
+            title="Desktop Notifications"
+            description={notificationsSupported ? 'Notify when an agent finishes, fails or needs permission while you look elsewhere.' : 'Not supported in this browser.'}
+          >
+            {notificationsSupported && <Toggle label="Desktop notifications" checked={notify} onChange={(v) => void toggleNotify(v)} />}
+          </Row>
+        ),
+      ],
+    ],
   ]
   const visible = groups.map(([label, rows]) => [label, rows.filter(Boolean)] as const).filter(([, rows]) => rows.length)
   if (!visible.length) return null
@@ -206,9 +234,9 @@ function Providers({ config, patch, q, open, onToggle }: SectionProps & { open: 
   return (
     <section className="settings-section">
       <h2>
-        LLM Providers
+        Providers
         <button className="btn" onClick={() => void daemon.refreshProvidersSnapshot().catch((e) => alert(errorText(e)))}>
-          <RefreshCw size={13} /> Refresh all
+          <RefreshCw size={13} /> Refresh All
         </button>
       </h2>
       <div className="group-label">Agent providers on this daemon</div>
@@ -302,7 +330,7 @@ function ProviderRow({
               </div>
             ))}
             <button className="btn ghost" onClick={() => setEnv([...env, ['', '']])}>
-              <Plus size={13} /> Add variable
+              <Plus size={13} /> Add Variable
             </button>
           </div>
           <div className="provider-actions">
@@ -320,5 +348,72 @@ function ProviderRow({
         </div>
       )}
     </div>
+  )
+}
+
+function Shortcuts({ q }: { q: string }) {
+  const ids = SHORTCUT_IDS.filter((id) => matches(q, SHORTCUTS[id].label, SHORTCUTS[id].description, 'keyboard shortcuts keymap'))
+  const esc = matches(q, 'close dialog escape keyboard shortcuts keymap')
+  if (!ids.length && !esc) return null
+  return (
+    <section className="settings-section">
+      <h2>Keymap</h2>
+      <div className="group-label">Click a shortcut, then press the new keys. Esc cancels.</div>
+      {ids.map((id) => (
+        <ShortcutRow key={id} id={id} />
+      ))}
+      {esc && (
+        <Row id={anchor('keymap', 'close')} title="Close Dialog" description="Close Settings and other dialogs. Can't be remapped.">
+          <kbd>Esc</kbd>
+        </Row>
+      )}
+    </section>
+  )
+}
+
+function ShortcutRow({ id }: { id: ShortcutId }) {
+  const { label, description, default: initial } = SHORTCUTS[id]
+  const combo = useShortcut(id)
+  const [recording, setRecording] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const record = (e: React.KeyboardEvent) => {
+    if (!recording || (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey)) return // Tab still moves focus
+    // Keep Esc from closing Settings and the pressed keys from triggering their current action.
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.key === 'Escape') return setRecording(false)
+    if (['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return
+    const next = comboOf(e)
+    const taken = SHORTCUT_IDS.find((other) => other !== id && binding(other) === next)
+    setError(taken ? `${formatCombo(next)} is already used by ${SHORTCUTS[taken].label}.` : null)
+    if (taken) return
+    setShortcut(id, next)
+    setRecording(false)
+  }
+
+  return (
+    <Row id={anchor('keymap', id)} title={label} description={error ? <span className="err">{error}</span> : description}>
+      <span className="shortcut">
+        <button
+          className={`btn ${recording ? 'recording' : ''}`}
+          aria-label={`Change ${label} Shortcut (${formatCombo(combo)})`}
+          aria-pressed={recording}
+          onClick={() => setRecording(!recording)}
+          onKeyDown={record}
+          onBlur={() => {
+            setRecording(false)
+            setError(null)
+          }}
+        >
+          {recording ? 'Press keys…' : <kbd>{formatCombo(combo)}</kbd>}
+        </button>
+        {combo !== initial && (
+          <button className="icon-btn" title="Reset" aria-label={`Reset ${label} Shortcut`} onClick={() => setShortcut(id)}>
+            <RotateCcw size={13} />
+          </button>
+        )}
+      </span>
+    </Row>
   )
 }

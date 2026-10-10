@@ -100,7 +100,7 @@ export function FileView({ cwd, path }: { cwd: string; path: string }) {
   }, [cwd, path])
 
   return (
-    <div className="file-view">
+    <div className="file-view" data-path={path}>
       <div className="file-path">{path}</div>
       {!file ? (
         <div className="empty">Loading…</div>

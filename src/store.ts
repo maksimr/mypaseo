@@ -69,7 +69,7 @@ export function startSync() {
       else set({ agents: state.agents.filter((a) => a.id !== p.agentId) })
     },
   })
-  daemon.observeEvents(['project.update', 'providers_snapshot_update'])
+  daemon.observeEvents(['project.update', 'providers_snapshot_update', 'agent_attention_required'])
   daemon.on((e) => {
     if (e.type === 'providers_snapshot_update' && !e.payload.cwd) set({ providers: e.payload.entries })
     if (e.type !== 'project.update') return
@@ -79,6 +79,30 @@ export function startSync() {
   })
 
   daemon.connect().catch((e) => set({ error: errorText(e) }))
+}
+
+export const byRecent = (a: Agent, b: Agent) => b.createdAt.localeCompare(a.createdAt)
+
+/** A project's workspaces in sidebar order. */
+export function projectWorkspaces(projectId: string, workspaces: Workspace[], agents: Agent[]) {
+  // shortcut: the daemon doesn't send workspace createdAt, so its oldest active agent stands in (agentless = just created, sorts last); use the real field once the protocol exposes it.
+  const oldestAgentAt = (workspaceId: string) =>
+    agents.reduce((min, a) => (a.workspaceId === workspaceId && a.createdAt < min ? a.createdAt : min), '\uffff')
+  return workspaces.filter((w) => w.projectId === projectId).sort((a, b) => oldestAgentAt(a.id).localeCompare(oldestAgentAt(b.id)))
+}
+
+/** The daemon has no workspace delete: removing permanently deletes the agents, then archives the workspace. */
+export async function archiveWorkspace(workspaceId: string, deleteAgents: boolean) {
+  try {
+    // shortcut: only deletes agents in the sidebar; agents archived earlier stay in history.
+    if (deleteAgents) await Promise.all(state.agents.filter((a) => a.workspaceId === workspaceId).map((a) => daemon.deleteAgent(a.id)))
+    const { error } = await daemon.archiveWorkspace(workspaceId)
+    if (error) throw new Error(error)
+    return true
+  } catch (e) {
+    alert(`Could not ${deleteAgents ? 'remove' : 'archive'} workspace: ${errorText(e)}`)
+    return false
+  }
 }
 
 /** Apply an agent snapshot returned by an RPC before its agent_update arrives. */

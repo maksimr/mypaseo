@@ -76,10 +76,10 @@ export function ImportSession({ target, onClose, onImported }: { target: Target;
 
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="dialog" role="dialog" aria-label="Import session">
+      <div className="dialog" role="dialog" aria-label="Import Session">
         <header className="dialog-head">
           <Import size={16} className="muted" />
-          <h2 className="grow truncate">Import session into {target.workspace ? target.workspace.title || target.workspace.name : target.name}</h2>
+          <h2 className="grow truncate">Import Session into {target.workspace ? target.workspace.title || target.workspace.name : target.name}</h2>
           <button className="icon-btn" title="Close (Esc)" onClick={onClose}>
             <X size={16} />
           </button>
@@ -129,7 +129,7 @@ export function ImportSession({ target, onClose, onImported }: { target: Target;
           })}
           {shown && shown.entries.length >= limit && limit < 200 && (
             <button className="load-older" onClick={() => setLimit(Math.min(limit + PAGE, 200))}>
-              {current ? 'Load more' : 'Loading…'}
+              {current ? 'Load More' : 'Loading…'}
             </button>
           )}
         </div>

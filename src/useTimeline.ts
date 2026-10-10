@@ -1,16 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { daemon, errorText, type TimelineItem, type TimelinePage } from './daemon'
+import { useEffect, useState } from 'react'
+import { daemon, errorText, type TimelineItem } from './daemon'
 import { applyStreamItem } from './timeline'
 
-type Cursor = TimelinePage['startCursor']
-type Timeline = { items: TimelineItem[]; hasOlder: boolean; loading: boolean; error: string | null }
-
-const PAGE = 150
+type Timeline = { items: TimelineItem[]; loading: boolean; error: string | null }
 
 export function useTimeline(agentId: string | null) {
   // Callers remount per agent (key), so initial state never needs resetting.
-  const [tl, setTl] = useState<Timeline>({ items: [], hasOlder: false, loading: !!agentId, error: null })
-  const start = useRef<Cursor>(null)
+  const [tl, setTl] = useState<Timeline>({ items: [], loading: !!agentId, error: null })
 
   useEffect(() => {
     if (!agentId) return
@@ -30,15 +26,15 @@ export function useTimeline(agentId: string | null) {
     const load = async () => {
       fetching = true
       try {
-        const page = await daemon.fetchAgentTimeline(agentId, { direction: 'tail', limit: PAGE, projection: 'projected' })
+        // limit 0 = the whole timeline.
+        const page = await daemon.fetchAgentTimeline(agentId, { direction: 'tail', limit: 0, projection: 'projected' })
         if (!alive) return
         items = page.entries.map((e) => e.item)
         lastSeq = page.endCursor?.seq ?? 0
-        start.current = page.startCursor
         fetching = false
         buffered.forEach((b) => apply(b.seq, b.item))
         buffered = []
-        setTl({ items, hasOlder: page.hasOlder, loading: false, error: null })
+        setTl({ items, loading: false, error: null })
       } catch (e) {
         fetching = false
         if (alive) setTl((t) => ({ ...t, loading: false, error: errorText(e) }))
@@ -62,17 +58,5 @@ export function useTimeline(agentId: string | null) {
     }
   }, [agentId])
 
-  const loadOlder = useCallback(async () => {
-    if (!agentId || !start.current) return
-    const page = await daemon.fetchAgentTimeline(agentId, {
-      direction: 'before',
-      cursor: start.current,
-      limit: PAGE,
-      projection: 'projected',
-    })
-    start.current = page.startCursor
-    setTl((t) => ({ ...t, items: [...page.entries.map((e) => e.item), ...t.items], hasOlder: page.hasOlder }))
-  }, [agentId])
-
-  return { ...tl, loadOlder }
+  return tl
 }
