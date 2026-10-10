@@ -533,82 +533,59 @@ code.inline {
   padding: 6px 0;
   min-width: 0;
 }
-.msg.assistant {
-  padding-left: 30px;
-}
 .msg.error {
   color: var(--red);
 }
-.gutter-icon {
-  flex: none;
-  width: 18px;
-  margin-top: 3px;
-}
-.avatar {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  margin-top: 1px;
-  border-radius: 50%;
-  background: #3b5a85;
-  color: #cfe0f5;
-}
 .msg.user {
   margin-top: 10px;
-  padding: 8px 10px;
-  margin-left: -10px;
+  padding: 10px 12px;
   border-radius: 6px;
-  background: var(--bg-elev);
+  background: #273947;
 }
 .user-text {
   white-space: pre-wrap;
   word-break: break-word;
   min-width: 0;
 }
-.disclosure {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 100%;
+.thinking {
   color: var(--text-muted);
-  text-align: left;
+  font-style: italic;
 }
-.disclosure:hover {
-  color: var(--text);
-}
-.reasoning {
-  margin-top: 4px;
-  padding-left: 12px;
-  border-left: 2px solid var(--border-strong);
-  color: var(--text-muted);
-}
-.tool-list {
-  margin-top: 6px;
-  border: 1px solid var(--border);
+.tool {
+  margin: 6px 0;
   border-radius: 6px;
-  overflow: hidden;
+  background: var(--bg-elev);
 }
-.tool + .tool {
-  border-top: 1px solid var(--border);
+.tool.completed {
+  background: #2c3e33;
+}
+.tool.failed,
+.tool.canceled {
+  background: #542a2c;
 }
 .tool-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: block;
   width: 100%;
-  padding: 5px 10px;
-  color: var(--text-muted);
+  padding: 8px 12px;
   text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
-.tool-head:hover {
-  background: var(--bg-hover);
-  color: var(--text);
+.tool-arg {
+  color: var(--accent);
 }
 .tool-body {
-  padding: 0 10px 8px;
+  max-height: 400px;
+  overflow: auto;
+  padding: 0 12px 10px;
+}
+.tool .term,
+.tool .code {
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
 }
 .term {
   margin: 4px 0 0;

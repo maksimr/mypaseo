@@ -28,6 +28,8 @@ export const SHORTCUTS = {
   amend: { label: 'Amend Commit', description: 'Amend the last commit from the commit dialog. An empty message keeps its message.', default: isMac ? 'Shift+Meta+Enter' : 'Ctrl+Shift+Enter' },
   cycleThinking: { label: 'Cycle Thinking Level', description: 'Switch to the next thinking level from the chat composer.', default: 'Shift+Tab' },
   pickModel: { label: 'Choose Model', description: 'Open the model picker from the chat composer.', default: isMac ? 'Alt+Meta+Slash' : 'Ctrl+Alt+Slash' },
+  // Pi's binding, Ctrl on Mac too.
+  expandTools: { label: 'Expand Tool Output', description: 'Expand or collapse the output of every tool call in the chat.', default: 'Ctrl+KeyO' },
   // Ctrl on Mac too: Safari keeps ⌘, and ⇧⌘, for itself and never passes them to the page.
   openSettings: { label: 'Open Settings', description: 'Open this settings window.', default: 'Ctrl+Comma' },
 }
