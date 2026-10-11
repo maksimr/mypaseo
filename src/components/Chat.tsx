@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref 
 import { daemon, errorText, type Agent, type Permission, type Workspace } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { rememberAgent, useStore } from '../store'
+import { useAutocomplete } from '../useAutocomplete'
 import { useTimeline } from '../useTimeline'
 import { Timeline, ToolDetailView } from './Timeline'
 
@@ -183,6 +184,15 @@ function Composer({
   const modes = agent ? agent.availableModes : (entry?.modes ?? [])
   const mode = agent ? agent.currentModeId : (draft.mode ?? entry?.defaultModeId)
   const validThinking = (thinkingOptions.some((o) => o.id === thinking) ? thinking : model?.defaultThinkingOptionId) ?? undefined
+  const cwd = agent?.cwd ?? target.workspace?.workspaceDirectory ?? target.rootPath
+  const ac = useAutocomplete({
+    input,
+    text,
+    setText,
+    cwd,
+    agentId: agent?.id,
+    draftConfig: !agent && provider ? { provider, cwd, model: model?.id } : undefined,
+  })
 
   const change = (field: keyof Draft, value: string) => {
     if (!agent) return setDraft({ ...draft, provider, [field]: value, ...(field === 'provider' ? { model: undefined, thinking: undefined, mode: undefined } : {}) })
@@ -248,6 +258,7 @@ function Composer({
   const empty = !text.trim() && !images.length
   return (
     <div className="composer">
+      {ac.popup}
       {images.length > 0 && (
         <div className="composer-images">
           {images.map((img, i) => (
@@ -266,12 +277,17 @@ function Composer({
         value={text}
         placeholder={agent ? 'Message the agent…' : provider ? 'What should the agent do?' : 'No ready providers — check Settings'}
         rows={2}
-        onChange={(e) => setText(e.target.value)}
+        {...ac.inputProps}
+        onChange={(e) => {
+          setText(e.target.value)
+          ac.track(e.target)
+        }}
+        onSelect={(e) => ac.track(e.currentTarget)}
         onPaste={(e) => {
           if (addImages([...e.clipboardData.files])) e.preventDefault()
         }}
         onKeyDown={(e) => {
-          if (e.nativeEvent.isComposing) return
+          if (e.nativeEvent.isComposing || ac.onKeyDown(e)) return
           if (isShortcut(e, 'send')) {
             e.preventDefault()
             void send()

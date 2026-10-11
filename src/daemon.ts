@@ -32,6 +32,8 @@ export type DiffFile = Awaited<ReturnType<DC['getCheckoutDiff']>>['files'][numbe
 export type DirEntry = Awaited<ReturnType<DC['listDirectory']>>['entries'][number]
 export type SessionEntry = Awaited<ReturnType<DC['fetchRecentProviderSessions']>>['entries'][number]
 export type DaemonConfig = Awaited<ReturnType<DC['getDaemonConfig']>>['config']
+export type SlashCommand = Awaited<ReturnType<DC['listCommands']>>['commands'][number]
+export type DraftConfig = Parameters<DC['listProviderFeatures']>[0]
 export type DiffMode = 'uncommitted' | 'base'
 
 export const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e))
