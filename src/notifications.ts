@@ -17,7 +17,11 @@ export function useAttentionNotifications(viewedAgentId: string | undefined, onO
     const reason = notification?.title ?? 'Agent needs attention'
     const title = agents.find((a) => a.id === agentId)?.title
     // tag: a second open tab replaces this notification instead of stacking a copy.
-    const n = new Notification(title ? `${reason}: ${title}` : reason, { body: notification?.body, tag: agentId })
+    const n = new Notification(title ? `${reason}: ${title}` : reason, {
+      body: notification?.body,
+      tag: agentId,
+      icon: '/favicon.png',
+    })
     n.onclick = () => {
       window.focus()
       onOpen(agentId)
