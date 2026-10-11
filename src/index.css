@@ -832,7 +832,8 @@ code.inline {
   background: var(--bg-elev);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
-.composer:not(:focus-within) .autocomplete {
+.composer:not(:focus-within) .autocomplete,
+.path-field:not(:focus-within) .autocomplete {
   display: none;
 }
 .autocomplete-item {
@@ -1340,8 +1341,14 @@ code.inline {
   flex: none;
   max-width: 50%;
 }
-.setting-control textarea {
-  width: 340px;
+/* textarea goes under the text so it never overflows narrow/zoomed screens */
+.setting-row:has(textarea) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+.setting-row:has(textarea) .setting-control {
+  max-width: none;
 }
 .banner {
   margin-bottom: 16px;
@@ -1521,6 +1528,22 @@ kbd {
 }
 .dialog.narrow {
   width: min(480px, 92vw);
+  overflow: visible; /* lets the path autocomplete hang below the dialog */
+}
+.path-field {
+  position: relative;
+}
+.autocomplete.below {
+  top: calc(100% + 6px);
+  bottom: auto;
+  flex-direction: column;
+}
+/* Long paths truncate instead of squeezing out the folder icon. */
+.autocomplete.below svg {
+  flex: none;
+}
+.autocomplete.below .autocomplete-label {
+  flex-shrink: 1;
 }
 .dialog-actions {
   display: flex;

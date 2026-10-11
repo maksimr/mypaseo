@@ -12,7 +12,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useEffect, useState, type FormEvent, type MouseEvent } from 'react'
+import { useEffect, useId, useState, type FormEvent, type MouseEvent } from 'react'
 import { daemon, errorText, type Agent, type Workspace } from '../daemon'
 import { clickable, useEscape } from '../a11y'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
@@ -186,7 +186,32 @@ function AddProjectDialog({ onClose }: { onClose: () => void }) {
   const [cwd, setCwd] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [sel, setSel] = useState(0)
+  const [closedFor, setClosedFor] = useState<string>() // a pick or Escape hides the list until the path changes
+  const listId = useId()
   useEscape(onClose)
+
+  const query = cwd.trim()
+  useEffect(() => {
+    if (!query) return
+    let alive = true
+    const timer = setTimeout(() => {
+      // The daemon matches fuzzily under the home dir and returns absolute paths; failures just leave the list as is.
+      daemon.getDirectorySuggestions({ query, limit: 30, includeDirectories: true }).then(
+        (r) => alive && setSuggestions(r.entries.map((e) => e.path)),
+        () => {},
+      )
+    }, 180) // debounce typing
+    return () => {
+      alive = false
+      clearTimeout(timer)
+    }
+  }, [query])
+  const open = !!query && cwd !== closedFor && suggestions.length > 0
+  const selected = Math.min(sel, suggestions.length - 1)
+  const edit = (path: string) => (setCwd(path), setSel(0))
+  const pick = (path: string) => (edit(path), setClosedFor(path))
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -214,19 +239,57 @@ function AddProjectDialog({ onClose }: { onClose: () => void }) {
           </button>
         </header>
         <div className="dialog-toolbar">
-          <input
-            autoFocus
-            className="input mono"
-            name="cwd"
-            aria-label="Project Directory"
-            placeholder="/absolute/path/to/project"
-            autoComplete="off"
-            spellCheck={false}
-            value={cwd}
-            onChange={(e) => setCwd(e.target.value)}
-          />
+          <div className="path-field grow">
+            <input
+              autoFocus
+              className="input mono"
+              name="cwd"
+              role="combobox"
+              aria-label="Project Directory"
+              aria-autocomplete="list"
+              aria-expanded={open}
+              aria-controls={listId}
+              aria-activedescendant={open ? `${listId}-${selected}` : undefined}
+              placeholder="/absolute/path/to/project"
+              autoComplete="off"
+              spellCheck={false}
+              value={cwd}
+              onChange={(e) => edit(e.target.value)}
+              onKeyDown={(e) => {
+                if (!open || e.nativeEvent.isComposing) return
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') setSel((selected + (e.key === 'ArrowDown' ? 1 : suggestions.length - 1)) % suggestions.length)
+                else if (e.key === 'Enter') pick(suggestions[selected])
+                // Shell-style: Tab completes into the directory to keep drilling down.
+                else if (e.key === 'Tab' && !e.shiftKey) edit(suggestions[selected].replace(/\/?$/, '/'))
+                else if (e.key === 'Escape') {
+                  e.stopPropagation() // closes the list, not the dialog
+                  setClosedFor(cwd)
+                } else return
+                e.preventDefault()
+              }}
+            />
+            {open && (
+              // preventDefault keeps focus in the input.
+              <div className="autocomplete below" id={listId} role="listbox" aria-label="Directories" onMouseDown={(e) => e.preventDefault()}>
+                {suggestions.map((path, i) => (
+                  <div
+                    key={path}
+                    id={`${listId}-${i}`}
+                    ref={i === selected ? (el) => el?.scrollIntoView({ block: 'nearest' }) : undefined}
+                    className="autocomplete-item"
+                    role="option"
+                    aria-selected={i === selected}
+                    onClick={() => pick(path)}
+                  >
+                    <Folder size={14} className="muted" />
+                    <span className="autocomplete-label">{path}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        <p className="dialog-note muted">Absolute path of a directory on the daemon's machine.</p>
+        <p className="dialog-note muted">A directory on the daemon's machine. Type any part to search.</p>
         {error && <div className="banner err">{error}</div>}
         <footer className="dialog-actions">
           <button type="button" className="text-btn muted" onClick={onClose}>
