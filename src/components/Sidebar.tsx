@@ -138,7 +138,7 @@ export function Sidebar({
             return (
               <div key={p.projectId}>
                 <div
-                  className={`row project ${selection.projectId === p.projectId && !selection.workspaceId ? 'active' : ''}`}
+                  className="row project"
                   aria-expanded={open}
                   {...clickable(() => toggle(p.projectId))}
                 >

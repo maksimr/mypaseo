@@ -25,7 +25,7 @@ export function Chat({
   onImport: () => void
   initialText?: string
   onInitialTextUsed?: () => void
-  onProjectChange: (projectId: string, text: string) => void
+  onProjectChange: (projectId: string) => void
 }) {
   const daemon = useDaemon()
   const tl = useTimeline(agent?.id ?? null)
@@ -154,6 +154,9 @@ const readImage = (file: File) =>
     r.readAsDataURL(file)
   })
 
+// Unsent composer text per agent, plus one shared by every "New agent" composer; switching tabs/workspaces remounts Chat. In-memory: lost on reload.
+const drafts = new Map<string, string>()
+
 function Composer({
   agent,
   target,
@@ -167,15 +170,27 @@ function Composer({
   onCreated: (a: Agent) => void
   initialText?: string
   onInitialTextUsed?: () => void
-  onProjectChange: (projectId: string, text: string) => void
+  onProjectChange: (projectId: string) => void
 }) {
   const daemon = useDaemon()
   const hostId = useHostId()
   const { providers } = useHost()
   const { hosts, projects } = useStore()
-  const [text, setText] = useState(initialText ?? '')
+  const draftKey = agent ? `${hostId}/${agent.id}` : 'new'
+  const [text, setTextState] = useState(() => {
+    const d = drafts.get(draftKey) ?? ''
+    return d && initialText ? `${d}${/\s$/.test(d) ? '' : ' '}${initialText}` : d || initialText || ''
+  })
+  const setText = (t: string) => {
+    setTextState(t)
+    if (t) drafts.set(draftKey, t)
+    else drafts.delete(draftKey)
+  }
   useEffect(() => {
-    if (initialText) onInitialTextUsed?.()
+    if (initialText) {
+      drafts.set(draftKey, text)
+      onInitialTextUsed?.()
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [images, setImages] = useState<PastedImage[]>([])
   const [busy, setBusy] = useState(false)
@@ -353,8 +368,7 @@ function Composer({
             ref={projectSelect}
             icon={<Folder size={14} />}
             value={target.projectId}
-            // The chat remounts for the new project: hand it the typed text.
-            onChange={(id) => onProjectChange(id, text)}
+            onChange={onProjectChange}
             options={projects.map((p) => [p.projectId, `${p.projectCustomName || p.projectDisplayName}${hosts.length > 1 ? ` · ${hostLabel(p.hostId)}` : ''}`])}
             title="Project"
           />

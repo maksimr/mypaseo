@@ -315,10 +315,7 @@ export default function App() {
               onImport={() => setImportTarget(target)}
               initialText={chatText}
               onInitialTextUsed={() => setChatText('')}
-              onProjectChange={(projectId, text) => {
-                setChatText(text)
-                select({ projectId })
-              }}
+              onProjectChange={(projectId) => select({ projectId })}
             />
           )}
         </main>
