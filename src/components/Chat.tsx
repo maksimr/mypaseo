@@ -18,6 +18,7 @@ export function Chat({
   initialText,
   onInitialTextUsed,
   onProjectChange,
+  onDraftProvider,
 }: {
   agent: Agent | undefined
   target: Target
@@ -26,6 +27,7 @@ export function Chat({
   initialText?: string
   onInitialTextUsed?: () => void
   onProjectChange: (projectId: string) => void
+  onDraftProvider?: (provider: string | undefined) => void
 }) {
   const daemon = useDaemon()
   const tl = useTimeline(agent?.id ?? null)
@@ -82,6 +84,7 @@ export function Chat({
         initialText={initialText}
         onInitialTextUsed={onInitialTextUsed}
         onProjectChange={onProjectChange}
+        onDraftProvider={onDraftProvider}
       />
     </div>
   )
@@ -164,6 +167,7 @@ function Composer({
   initialText,
   onInitialTextUsed,
   onProjectChange,
+  onDraftProvider,
 }: {
   agent?: Agent
   target: Target
@@ -171,6 +175,7 @@ function Composer({
   initialText?: string
   onInitialTextUsed?: () => void
   onProjectChange: (projectId: string) => void
+  onDraftProvider?: (provider: string | undefined) => void
 }) {
   const daemon = useDaemon()
   const hostId = useHostId()
@@ -222,6 +227,9 @@ function Composer({
   const usable = providers.filter((p) => p.enabled && p.status === 'ready')
   const provider = agent?.provider ?? (usable.some((p) => p.provider === draft.provider) ? draft.provider : usable[0]?.provider)
   const entry = providers.find((p) => p.provider === provider)
+  useEffect(() => {
+    if (!agent) onDraftProvider?.(provider)
+  }, [agent, provider]) // eslint-disable-line react-hooks/exhaustive-deps
   const models = (entry?.models ?? []).filter((m) => m.isSelectable !== false)
   const modelId = agent ? (agent.runtimeInfo?.model ?? agent.model) : draft.model
   const model = models.find((m) => m.id === modelId) ?? models.find((m) => m.isDefault) ?? models[0]

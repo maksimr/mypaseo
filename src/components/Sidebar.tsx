@@ -10,7 +10,6 @@ import {
   Import,
   ListFilter,
   Loader2,
-  MessageCirclePlus,
   Plus,
   Server,
   Settings,
@@ -23,6 +22,7 @@ import { clickable, useEscape } from '../a11y'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { byRecent, client, hostLabel, projectWorkspaces as sortedWorkspaces, sidebarWorkspaces, useHostId, useStore } from '../store'
 import { AddHostDialog, HostMenu } from './Hosts'
+import { ProviderIcon } from './ProviderIcon'
 
 export type Selection = { projectId?: string; workspaceId?: string; agentId?: string }
 
@@ -465,7 +465,7 @@ function WorkspaceRow({
             className={`row agent ${selection.agentId === a.id ? 'active' : ''}`}
             {...clickable(() => select(a.id))}
           >
-            <MessageCirclePlus size={9} className="muted" />
+            <ProviderIcon provider={a.provider} size={9} />
             <span className="grow truncate">{a.title || 'New agent'}</span>
             <StatusMark agents={[a]} />
           </div>

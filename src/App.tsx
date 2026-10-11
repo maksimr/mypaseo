@@ -1,9 +1,10 @@
-import { FileCode, FileDiff, Files, Loader2, MessageCirclePlus, PanelLeft, PanelRight, X } from 'lucide-react'
+import { FileCode, FileDiff, Files, Loader2, PanelLeft, PanelRight, X } from 'lucide-react'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { ChangesList, ChangesView } from './components/Changes'
 import { Chat, type Target } from './components/Chat'
 import { FileTree, FileView } from './components/Files'
 import { ImportSession } from './components/ImportSession'
+import { ProviderIcon } from './components/ProviderIcon'
 import { Settings, type Section } from './components/Settings'
 import { Sidebar, type Selection } from './components/Sidebar'
 import type { Agent, Workspace } from './daemon'
@@ -184,6 +185,8 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }) // reads most of the render's state, so it re-binds every render
   const [importTarget, setImportTarget] = useState<Target | null>(null)
+  // Provider the "New agent" composer will use, for its tab icon.
+  const [draftProvider, setDraftProvider] = useState<string>()
   const diff = useCheckoutDiff(hostId, isGit ? cwd : undefined)
   const t = totals(diff.files)
   // Loading keeps it open while the diff arrives; an empty diff (all committed) closes it.
@@ -250,7 +253,7 @@ export default function App() {
             {target &&
               chatTabs.map((a) => (
                 <button key={a?.id ?? 'new'} className={`tab agent-tab ${tab === 'chat' && a === agent ? 'on' : ''}`} onClick={() => openChat(a)}>
-                  <MessageCirclePlus size={13} />
+                  <ProviderIcon provider={a ? a.provider : draftProvider} size={13} />
                   <span className="truncate">{a ? a.title || 'Agent' : 'New agent'}</span>
                   {a?.status === 'running' && <Loader2 size={13} className="spin muted" aria-label="Working" />}
                 </button>
@@ -315,6 +318,7 @@ export default function App() {
               initialText={chatText}
               onInitialTextUsed={() => setChatText('')}
               onProjectChange={(projectId) => select({ projectId })}
+              onDraftProvider={setDraftProvider}
             />
           )}
         </main>
