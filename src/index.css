@@ -521,10 +521,23 @@ code.inline {
   background: var(--bg-active);
   color: var(--text);
 }
+/* The X glyph has ~3px of empty box around it: line its edge up with the 10px padding. */
+.tab:has(.tab-close) {
+  padding-right: 7px;
+}
 .tab-close {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px; /* the status mark's slot, so swapping them doesn't resize the tab */
+  height: 13px;
   border-radius: 3px;
   color: var(--text-faint);
+}
+/* Agent tabs: a running spinner holds the close button's slot until hover (like .row .hover-swap). */
+.tab:has(.status-mark):not(:hover, :focus-within) .hover-swap,
+.tab:is(:hover, :focus-within) .hover-swap ~ .status-mark {
+  display: none;
 }
 .tab-close:hover {
   color: var(--text);

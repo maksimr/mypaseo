@@ -13,7 +13,8 @@ import { useAttentionNotifications } from './notifications'
 import { OpenFileContext } from './openFile'
 import { selectionRef } from './selection'
 import { SelectionAction } from './components/SelectionAction'
-import { archiveWorkspace, byRecent, HostContext, sidebarWorkspaces, startSync, useStore } from './store'
+import { clickable } from './a11y'
+import { archiveAgent, archiveWorkspace, byRecent, HostContext, sidebarWorkspaces, startSync, useStore } from './store'
 import { useTabStatus } from './tabStatus'
 import { totals, useCheckoutDiff } from './useCheckoutDiff'
 
@@ -83,6 +84,14 @@ export default function App() {
     if (!(await archiveWorkspace(w, deleteAgents)) || sel.workspaceId !== w.id) return
     if (near) openWorkspace(near)
     else select({ projectId: w.projectId })
+  }
+  /** Archives an agent; if it was selected, selects the next one in its workspace (or the composer). */
+  const closeAgent = async (a: Agent) => {
+    const list = agents.filter((x) => x.workspaceId === a.workspaceId).sort(byRecent)
+    const i = list.findIndex((x) => x.id === a.id)
+    const near = list[i + 1] ?? list[i - 1]
+    if (!(await archiveAgent(a)) || sel.agentId !== a.id) return
+    select({ ...sel, agentId: near?.id })
   }
   const workspace = workspaces.find((w) => w.id === sel.workspaceId)
   const project = projects.find((p) => p.projectId === (workspace?.projectId ?? sel.projectId))
@@ -229,6 +238,7 @@ export default function App() {
           selection={sel}
           onSelect={select}
           onArchive={archive}
+          onCloseAgent={closeAgent}
           activeOnly={activeOnly}
           onToggleActiveOnly={() => setActiveOnly(!activeOnly)}
           onOpenSettings={() => setSettings({ hostId })}
@@ -252,11 +262,23 @@ export default function App() {
           <div className="tabbar">
             {target &&
               chatTabs.map((a) => (
-                <button key={a?.id ?? 'new'} className={`tab agent-tab ${tab === 'chat' && a === agent ? 'on' : ''}`} onClick={() => openChat(a)}>
+                <div key={a?.id ?? 'new'} className={`tab agent-tab ${tab === 'chat' && a === agent ? 'on' : ''}`} {...clickable(() => openChat(a))}>
                   <ProviderIcon provider={a ? a.provider : draftProvider} size={13} />
                   <span className="truncate">{a ? a.title || 'Agent' : 'New agent'}</span>
-                  {a?.status === 'running' && <Loader2 size={13} className="spin muted" aria-label="Working" />}
-                </button>
+                  {a && (
+                    <button
+                      className="tab-close hover-swap"
+                      title="Close"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        void closeAgent(a)
+                      }}
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                  {a?.status === 'running' && <Loader2 size={13} className="spin muted status-mark" aria-label="Working" />}
+                </div>
               ))}
             {changesTab && (
               <button className={`tab ${tab === 'changes' ? 'on' : ''}`} onClick={() => setTab('changes')}>

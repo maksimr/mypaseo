@@ -56,6 +56,7 @@ export function Sidebar({
   selection,
   onSelect,
   onArchive,
+  onCloseAgent,
   onOpenSettings,
   onOpenHost,
   onImport,
@@ -65,6 +66,7 @@ export function Sidebar({
   selection: Selection
   onSelect: (s: Selection) => void
   onArchive: (w: Workspace, deleteAgents: boolean) => void
+  onCloseAgent: (a: Agent) => void
   onOpenSettings: () => void
   onOpenHost: (hostId: string) => void
   onImport: (projectId: string) => void
@@ -191,6 +193,7 @@ export function Sidebar({
                       selection={selection}
                       onSelect={onSelect}
                       onArchive={onArchive}
+                      onCloseAgent={onCloseAgent}
                     />
                   ))}
               </div>
@@ -361,6 +364,7 @@ function WorkspaceRow({
   selection,
   onSelect,
   onArchive,
+  onCloseAgent,
 }: {
   workspace: Workspace
   agents: Agent[]
@@ -369,6 +373,7 @@ function WorkspaceRow({
   selection: Selection
   onSelect: (s: Selection) => void
   onArchive: (w: Workspace, deleteAgents: boolean) => void
+  onCloseAgent: (a: Agent) => void
 }) {
   // A lone agent folds into its workspace row: the row already opens it.
   const collapsed = userCollapsed || agents.length < 2
@@ -467,6 +472,16 @@ function WorkspaceRow({
           >
             <ProviderIcon provider={a.provider} size={9} />
             <span className="grow truncate">{a.title || 'New agent'}</span>
+            <button
+              className="icon-btn hover-swap"
+              title="Close"
+              onClick={(e) => {
+                e.stopPropagation()
+                onCloseAgent(a)
+              }}
+            >
+              <X size={11} strokeWidth={1.75} />
+            </button>
             <StatusMark agents={[a]} />
           </div>
         ))}

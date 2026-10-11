@@ -231,6 +231,18 @@ export async function archiveWorkspace(w: Workspace, deleteAgents: boolean) {
   }
 }
 
+/** Closing an agent archives it: it leaves the sidebar and tabs but stays in the daemon's history. */
+export async function archiveAgent(a: Agent) {
+  try {
+    const { archivedAt } = await client(a.hostId).archiveAgent(a.id)
+    patchHost(a.hostId, (h) => ({ agents: withAgent(h.agents, { ...a, archivedAt }) }))
+    return true
+  } catch (e) {
+    alert(`Could not close agent: ${errorText(e)}`)
+    return false
+  }
+}
+
 /** Apply an agent snapshot returned by an RPC before its agent_update arrives. */
 export function rememberAgent(hostId: string, raw: RawAgent) {
   const agent = { ...raw, hostId }
