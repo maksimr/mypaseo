@@ -2,7 +2,8 @@ import { isLanguageSupported } from '@getpaseo/highlight'
 import { ChevronRight, File, FileCode, FolderClosed, FolderOpen, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { clickable } from '../a11y'
-import { daemon, errorText, type DirEntry } from '../daemon'
+import { errorText, type DirEntry } from '../daemon'
+import { useDaemon } from '../store'
 import { Code } from './Code'
 
 const sortEntries = (entries: DirEntry[]) =>
@@ -11,6 +12,7 @@ const sortEntries = (entries: DirEntry[]) =>
     .sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === 'directory' ? -1 : 1))
 
 export function FileTree({ cwd, rootName, onOpen, activePath }: { cwd: string; rootName: string; onOpen: (path: string) => void; activePath?: string }) {
+  const daemon = useDaemon()
   const [dirs, setDirs] = useState<Record<string, DirEntry[] | string>>({})
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
@@ -20,7 +22,7 @@ export function FileTree({ cwd, rootName, onOpen, activePath }: { cwd: string; r
         (r) => setDirs((d) => ({ ...d, [path]: sortEntries(r.entries) })),
         (e) => setDirs((d) => ({ ...d, [path]: errorText(e) })),
       ),
-    [cwd],
+    [daemon, cwd],
   )
 
   useEffect(() => void load('.'), [load])
@@ -80,6 +82,7 @@ export function FileTree({ cwd, rootName, onOpen, activePath }: { cwd: string; r
 type Loaded = { kind: 'text'; text: string } | { kind: 'image'; url: string } | { kind: 'binary' } | { kind: 'error'; message: string }
 
 export function FileView({ cwd, path }: { cwd: string; path: string }) {
+  const daemon = useDaemon()
   const [file, setFile] = useState<Loaded | null>(null)
   useEffect(() => {
     let url: string | undefined
@@ -97,7 +100,7 @@ export function FileView({ cwd, path }: { cwd: string; path: string }) {
       alive = false
       if (url) URL.revokeObjectURL(url)
     }
-  }, [cwd, path])
+  }, [daemon, cwd, path])
 
   return (
     <div className="file-view" data-path={path}>

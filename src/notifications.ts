@@ -1,7 +1,6 @@
 import type { AgentAttentionRequiredNotification } from '@getpaseo/client/internal/daemon-client'
 import { useEffect, useEffectEvent } from 'react'
-import { daemon } from './daemon'
-import { useStore } from './store'
+import { onAttention, useStore } from './store'
 
 export const notificationsSupported = 'Notification' in window
 
@@ -25,5 +24,5 @@ export function useAttentionNotifications(viewedAgentId: string | undefined, onO
       n.close()
     }
   })
-  useEffect(() => daemon.onAgentAttentionRequired((e) => notify(e)), [])
+  useEffect(() => onAttention((e) => notify(e)), [])
 }

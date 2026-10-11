@@ -396,6 +396,29 @@ code.inline {
 .menu button.danger {
   color: var(--red);
 }
+.host-menu {
+  min-width: 240px;
+  max-width: 340px;
+}
+/* The address takes what the name leaves and truncates first. */
+.host-addr {
+  flex: 1 1 0;
+  font-size: 12px;
+}
+.host-badge {
+  max-width: 40%;
+  font-size: 11px;
+}
+.host-password {
+  flex: 0 0 170px;
+}
+.setting-control:has([name='hostUrl']) {
+  flex: 1;
+}
+.settings-host {
+  margin: -4px 4px 8px;
+  font-size: 12px;
+}
 .row.workspace {
   padding-left: 14px;
 }
@@ -487,6 +510,18 @@ code.inline {
   border-radius: 8px;
   background: var(--bg-elev);
   color: var(--text-muted);
+}
+.setup-cmd {
+  max-width: 100%;
+  margin: 6px 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--bg-elev);
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: all;
 }
 .empty-chat {
   flex: 1;

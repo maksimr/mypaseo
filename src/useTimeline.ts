@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { daemon, errorText, type TimelineItem } from './daemon'
+import { errorText, type TimelineItem } from './daemon'
+import { useDaemon } from './store'
 import { applyStreamItem } from './timeline'
 
 type Timeline = { items: TimelineItem[]; loading: boolean; error: string | null }
 
 export function useTimeline(agentId: string | null) {
+  const daemon = useDaemon()
   // Callers remount per agent (key), so initial state never needs resetting.
   const [tl, setTl] = useState<Timeline>({ items: [], loading: !!agentId, error: null })
 
@@ -56,7 +58,7 @@ export function useTimeline(agentId: string | null) {
       alive = false
       void sub.release().catch(() => {})
     }
-  }, [agentId])
+  }, [daemon, agentId])
 
   return tl
 }

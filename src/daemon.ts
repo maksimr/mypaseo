@@ -3,8 +3,21 @@
 import { DaemonClient } from '@getpaseo/client/internal/daemon-client'
 
 // Same-origin /ws is proxied by Vite to the daemon (see vite.config.ts).
-export const DAEMON_URL =
-  import.meta.env.VITE_PASEO_URL ?? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`
+export const PROXY_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`
+
+/** A saved daemon connection. label defaults to the daemon's hostname. */
+export type Host = { id: string; url: string; label?: string; password?: string }
+
+// The daemon's default listen address. Builds served without the dev proxy (GitHub Pages) connect to it directly;
+// browsers allow ws://127.0.0.1 from https pages, the daemon must allow the page's origin (see README).
+export const LOCAL_URL = 'ws://127.0.0.1:6767/ws'
+
+/** Used until the user edits the host list. */
+export const DEFAULT_HOST: Host = {
+  id: 'local',
+  url: import.meta.env.VITE_PASEO_URL ?? (import.meta.env.DEV ? PROXY_URL : LOCAL_URL),
+  password: import.meta.env.VITE_PASEO_PASSWORD,
+}
 
 // crypto.randomUUID only exists in secure contexts (https/localhost), so LAN http access needs this.
 // DaemonClient calls it per request (not at import), so defining it here, before any use, is enough.
@@ -16,19 +29,26 @@ crypto.randomUUID ??= () =>
 // A stable client id lets the daemon resume this browser's session after reloads.
 const clientId = (localStorage.mypaseoClientId ??= crypto.randomUUID())
 
-export const daemon = new DaemonClient({
-  url: DAEMON_URL,
-  clientId,
-  clientType: 'browser',
-  password: import.meta.env.VITE_PASEO_PASSWORD,
-  reconnect: { enabled: true },
-  suppressSendErrors: true,
-})
+/** A probe (reconnect off) fails fast instead of retrying forever. */
+export const createClient = (host: Host, reconnect = true) =>
+  new DaemonClient({
+    url: host.url,
+    clientId,
+    clientType: 'browser',
+    password: host.password || undefined,
+    reconnect: { enabled: reconnect },
+    connectTimeoutMs: reconnect ? undefined : 8000,
+    suppressSendErrors: true,
+  })
 
+export type { DaemonClient }
 type DC = DaemonClient
-export type Project = Awaited<ReturnType<DC['listProjects']>>['projects'][number]
-export type Workspace = Awaited<ReturnType<DC['fetchWorkspaces']>>['entries'][number]
-export type Agent = Awaited<ReturnType<DC['fetchAgents']>>['entries'][number]['agent']
+/** Store entities carry the id of the host they came from; daemon ids are random, so unique across hosts. */
+type OnHost<T> = T & { hostId: string }
+export type RawAgent = Awaited<ReturnType<DC['fetchAgents']>>['entries'][number]['agent']
+export type Project = OnHost<Awaited<ReturnType<DC['listProjects']>>['projects'][number]>
+export type Workspace = OnHost<Awaited<ReturnType<DC['fetchWorkspaces']>>['entries'][number]>
+export type Agent = OnHost<RawAgent>
 export type Permission = Agent['pendingPermissions'][number]
 export type ProviderEntry = Awaited<ReturnType<DC['getProvidersSnapshot']>>['entries'][number]
 export type TimelinePage = Awaited<ReturnType<DC['fetchAgentTimeline']>>

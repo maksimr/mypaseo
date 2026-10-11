@@ -1,11 +1,11 @@
 import { Import, Loader2, Search, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useEscape } from '../a11y'
-import { daemon, errorText, type Agent, type SessionEntry } from '../daemon'
-import { rememberAgent, useStore } from '../store'
+import { errorText, type Agent, type DaemonClient, type SessionEntry } from '../daemon'
+import { rememberAgent, useDaemon, useHost, useHostId } from '../store'
 import type { Target } from './Chat'
 
-type Listing = Awaited<ReturnType<typeof daemon.fetchRecentProviderSessions>>
+type Listing = Awaited<ReturnType<DaemonClient['fetchRecentProviderSessions']>>
 
 const PAGE = 50
 const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
@@ -18,7 +18,9 @@ function ago(iso: string) {
 
 /** Lists provider sessions started outside Paseo (CLI runs etc.) for a directory and imports one as an agent. */
 export function ImportSession({ target, onClose, onImported }: { target: Target; onClose: () => void; onImported: (a: Agent) => void }) {
-  const { providers } = useStore()
+  const daemon = useDaemon()
+  const hostId = useHostId()
+  const { providers } = useHost()
   const [query, setQuery] = useState('')
   const [provider, setProvider] = useState('')
   const [limit, setLimit] = useState(PAGE)
@@ -49,7 +51,7 @@ export function ImportSession({ target, onClose, onImported }: { target: Target;
       alive = false
       clearTimeout(timer)
     }
-  }, [key, cwd, providerIds, q, limit])
+  }, [daemon, key, cwd, providerIds, q, limit])
 
   const current = listing?.key === key ? listing : null
   const shown = current?.data ?? listing?.data // keep previous rows while the next page/query loads
@@ -66,8 +68,7 @@ export function ImportSession({ target, onClose, onImported }: { target: Target;
         cwd,
         ...(target.workspace ? { workspaceId: target.workspace.id } : {}),
       })
-      rememberAgent(agent)
-      onImported(agent)
+      onImported(rememberAgent(hostId, agent))
     } catch (err) {
       setImportError(errorText(err))
       setImporting(null)

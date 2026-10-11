@@ -15,8 +15,9 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { clickable, useEscape } from '../a11y'
 import { chunkKey, chunkPatch, chunks, restoreChunk, stagedKeys, stagedState, type Chunk } from '../chunks'
-import { daemon, errorText, type DiffFile, type DiffMode } from '../daemon'
+import { errorText, type DiffFile, type DiffMode } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
+import { useDaemon } from '../store'
 import { totals, type DiffState } from '../useCheckoutDiff'
 import { Tokens } from './Code'
 
@@ -25,8 +26,6 @@ const split = (path: string) => {
   return [path.slice(i + 1), i > 0 ? path.slice(0, i) : ''] as const
 }
 
-// RPCs of the mypaseo-git daemon plugin, see paseo-plugin/index.server.ts.
-const git = (method: string, input: object) => daemon.invokePluginRpc('mypaseo-git', method, input)
 
 // Toolbar 38px + .excerpt-head 34px (index.css): a chunk right under them is at the top of the view.
 const HEADERS = 72
@@ -89,6 +88,9 @@ export function ChangesView({
   focus: { path: string; n: number } | null
   onOpenFile: (path: string) => void
 }) {
+  const daemon = useDaemon()
+  // RPCs of the mypaseo-git daemon plugin, see paseo-plugin/index.server.ts.
+  const git = (method: string, input: object) => daemon.invokePluginRpc('mypaseo-git', method, input)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const root = useRef<HTMLDivElement>(null)
   const t = totals(diff.files)
@@ -143,14 +145,14 @@ export function ChangesView({
   useEffect(() => {
     if (mode !== 'uncommitted') return
     let live = true
-    git('index.diff', { cwd }).then(
+    daemon.invokePluginRpc('mypaseo-git', 'index.diff', { cwd }).then(
       (r) => live && setIndex({ cwd, keys: stagedKeys((r as { files: Record<string, string> }).files) }),
       () => live && setIndex(null),
     )
     return () => {
       live = false
     }
-  }, [cwd, mode, diff.files, indexTick])
+  }, [daemon, cwd, mode, diff.files, indexTick])
 
   useEffect(() => {
     if (!focus) return
@@ -443,6 +445,7 @@ function CommitDialog({
   const [message, setMessage] = useState(failed?.input.message ?? '')
   const [signoff, setSignoff] = useState(failed?.input.signoff ?? false)
   const [noVerify, setNoVerify] = useState(failed?.input.noVerify ?? false)
+  const daemon = useDaemon()
   const [branch, setBranch] = useState<string | null>(null)
   const menu = useRef<HTMLDivElement>(null)
   const commitKey = useShortcut('commit')
@@ -459,7 +462,7 @@ function CommitDialog({
     return () => {
       live = false
     }
-  }, [cwd])
+  }, [daemon, cwd])
 
   const commit = (amend: boolean) => onCommit({ message, amend, signoff, noVerify })
 

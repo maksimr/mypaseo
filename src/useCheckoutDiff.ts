@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { daemon, errorText, type DiffFile, type DiffMode } from './daemon'
+import { errorText, type DiffFile, type DiffMode } from './daemon'
+import { useDaemon } from './store'
 
 export type DiffState = { files: DiffFile[]; error: string | null; loading: boolean; tooLarge?: boolean }
 
 /** Live diff of a checkout; the daemon pushes updates as files change. */
-export function useCheckoutDiff(cwd: string | undefined, mode: DiffMode): DiffState {
+export function useCheckoutDiff(hostId: string, cwd: string | undefined, mode: DiffMode): DiffState {
+  const daemon = useDaemon(hostId)
   const key = cwd ? `${mode}:${cwd}` : ''
   const [state, setState] = useState<DiffState & { key: string }>({ key: '', files: [], error: null, loading: false })
   useEffect(() => {
@@ -18,7 +20,7 @@ export function useCheckoutDiff(cwd: string | undefined, mode: DiffMode): DiffSt
       error: (e) => setState({ key, files: [], error: errorText(e), loading: false }),
     })
     return () => void sub.release().catch(() => {})
-  }, [cwd, mode, key])
+  }, [daemon, cwd, mode, key])
   return state.key === key ? state : { files: [], error: null, loading: !!cwd }
 }
 

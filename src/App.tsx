@@ -4,7 +4,7 @@ import { ChangesList, ChangesView } from './components/Changes'
 import { Chat, type Target } from './components/Chat'
 import { FileTree, FileView } from './components/Files'
 import { ImportSession } from './components/ImportSession'
-import { Settings } from './components/Settings'
+import { Settings, type Section } from './components/Settings'
 import { Sidebar, type Selection } from './components/Sidebar'
 import type { Agent, DiffMode, Workspace } from './daemon'
 import { formatCombo, isShortcut, useShortcut } from './keymap'
@@ -12,7 +12,7 @@ import { useAttentionNotifications } from './notifications'
 import { OpenFileContext } from './openFile'
 import { selectionRef } from './selection'
 import { SelectionAction } from './components/SelectionAction'
-import { archiveWorkspace, byRecent, sidebarWorkspaces, startSync, useStore } from './store'
+import { archiveWorkspace, byRecent, HostContext, sidebarWorkspaces, startSync, useStore } from './store'
 import { totals, useCheckoutDiff } from './useCheckoutDiff'
 
 type Tab = 'chat' | 'changes' | `file:${string}`
@@ -62,7 +62,7 @@ function Resizer({ side, label, width, onResize }: { side: 'left' | 'right'; lab
 
 export default function App() {
   useEffect(() => startSync(), [])
-  const { projects, workspaces, agents } = useStore()
+  const { hosts, byHost, projects, workspaces, agents } = useStore()
 
   const [sel, setSel] = useState<Selection>(() => JSON.parse(localStorage.mypaseoSelection ?? '{}'))
   const select = (s: Selection) => {
@@ -78,12 +78,14 @@ export default function App() {
     const list = listed()
     const i = list.findIndex((x) => x.id === w.id)
     const near = list[i - 1] ?? list[i + 1] // the first one has none above: take the one below
-    if (!(await archiveWorkspace(w.id, deleteAgents)) || sel.workspaceId !== w.id) return
+    if (!(await archiveWorkspace(w, deleteAgents)) || sel.workspaceId !== w.id) return
     if (near) openWorkspace(near)
     else select({ projectId: w.projectId })
   }
   const workspace = workspaces.find((w) => w.id === sel.workspaceId)
   const project = projects.find((p) => p.projectId === (workspace?.projectId ?? sel.projectId))
+  // The selection's host; with nothing selected (or still loading), the first one.
+  const hostId = (workspace ?? project)?.hostId ?? hosts[0].id
   const agent = agents.find((a) => a.id === sel.agentId)
   // One chat tab per workspace agent, in sidebar order; undefined is the "New agent" composer.
   const wsAgents = workspace ? agents.filter((a) => a.workspaceId === workspace.id).sort(byRecent) : []
@@ -110,7 +112,7 @@ export default function App() {
   const [panel, setPanel] = useState<'files' | 'changes' | null>(() => JSON.parse(localStorage.mypaseoPanel ?? 'null'))
   const [diffMode, setDiffMode] = useState<DiffMode>('uncommitted')
   const [focus, setFocus] = useState<{ path: string; n: number } | null>(null)
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settings, setSettings] = useState<{ hostId: string; section?: Section } | null>(null)
   const [chatText, setChatText] = useState('') // handed to the composer when the chat tab mounts
   const [sidebar, setSidebar] = useState(() => localStorage.mypaseoSidebar !== 'false')
   useEffect(() => {
@@ -156,7 +158,7 @@ export default function App() {
       }
       if (isShortcut(e, 'openSettings')) {
         e.preventDefault()
-        setSettingsOpen(true)
+        setSettings({ hostId })
       }
       if (workspace && isShortcut(e, 'archiveWorkspace')) {
         e.preventDefault()
@@ -181,7 +183,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }) // reads most of the render's state, so it re-binds every render
   const [importTarget, setImportTarget] = useState<Target | null>(null)
-  const diff = useCheckoutDiff(isGit ? cwd : undefined, diffMode)
+  const diff = useCheckoutDiff(hostId, isGit ? cwd : undefined, diffMode)
   const t = totals(diff.files)
   // Loading keeps it open so a mode switch doesn't close it; an empty diff (all committed) does.
   const changesTab = isGit && (diff.files.length > 0 || (diff.loading && tab === 'changes'))
@@ -213,6 +215,7 @@ export default function App() {
   }
 
   return (
+    <HostContext value={hostId}>
     <OpenFileContext value={openFile}>
       <div
         className={`app ${panel && cwd ? 'with-panel' : ''} ${sidebar ? '' : 'no-sidebar'}`}
@@ -224,7 +227,8 @@ export default function App() {
           onArchive={archive}
           activeOnly={activeOnly}
           onToggleActiveOnly={() => setActiveOnly(!activeOnly)}
-          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenSettings={() => setSettings({ hostId })}
+          onOpenHost={(id) => setSettings({ hostId: id, section: 'Host' })}
           onImport={(projectId) => {
             const p = projects.find((x) => x.projectId === projectId)
             if (p) setImportTarget({ projectId, name: p.projectCustomName || p.projectDisplayName, rootPath: p.projectRootPath })
@@ -284,7 +288,17 @@ export default function App() {
           {!target ? (
             <div className="empty-chat">
               <h2>mypaseo</h2>
-              <p className="muted">Pick a project or workspace on the left, or add a project.</p>
+              {hosts.some((h) => byHost[h.id]?.status === 'connected') || !hosts.some((h) => byHost[h.id]?.error) ? (
+                <p className="muted">Pick a project or workspace on the left, or add a project.</p>
+              ) : (
+                <>
+                  <p className="muted">Can't reach a Paseo daemon. Start one on this computer and let this page connect to it:</p>
+                  <pre className="setup-cmd">
+                    {`npx @getpaseo/cli daemon start\nnpx @getpaseo/cli daemon config set daemon.cors.allowedOrigins '["https://app.paseo.sh","${location.origin}"]'`}
+                  </pre>
+                  <p className="muted">Or add a remote daemon from the server button under the projects.</p>
+                </>
+              )}
             </div>
           ) : tab === 'changes' && cwd ? (
             <ChangesView cwd={cwd} diff={diff} mode={diffMode} onModeChange={setDiffMode} focus={focus} onOpenFile={openFile} />
@@ -335,18 +349,26 @@ export default function App() {
         )}
 
         {target && tab !== 'chat' && <SelectionAction title={`Add to Chat (${formatCombo(addKey)})`} onAdd={addToChat} />}
-        {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}
+        {/* A removed host's settings close themselves. */}
+        {settings && hosts.some((h) => h.id === settings.hostId) && (
+          <HostContext value={settings.hostId}>
+            <Settings initialSection={settings.section} onClose={() => setSettings(null)} />
+          </HostContext>
+        )}
         {importTarget && (
-          <ImportSession
-            target={importTarget}
-            onClose={() => setImportTarget(null)}
-            onImported={(a) => {
-              setImportTarget(null)
-              select({ projectId: importTarget.projectId, workspaceId: a.workspaceId, agentId: a.id })
-            }}
-          />
+          <HostContext value={projects.find((p) => p.projectId === importTarget.projectId)?.hostId ?? hostId}>
+            <ImportSession
+              target={importTarget}
+              onClose={() => setImportTarget(null)}
+              onImported={(a) => {
+                setImportTarget(null)
+                select({ projectId: importTarget.projectId, workspaceId: a.workspaceId, agentId: a.id })
+              }}
+            />
+          </HostContext>
         )}
       </div>
     </OpenFileContext>
+    </HostContext>
   )
 }

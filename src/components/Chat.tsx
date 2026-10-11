@@ -1,8 +1,8 @@
 import { ArrowUp, Bot, Brain, ChevronDown, Folder, Import, Loader2, Plus, Shield, ShieldQuestion, Sparkles, Square, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
-import { daemon, errorText, type Agent, type Permission, type Workspace } from '../daemon'
+import { errorText, type Agent, type Permission, type Workspace } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
-import { rememberAgent, useStore } from '../store'
+import { hostLabel, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../store'
 import { useAutocomplete } from '../useAutocomplete'
 import { useTimeline } from '../useTimeline'
 import { Timeline, ToolDetailView } from './Timeline'
@@ -26,6 +26,7 @@ export function Chat({
   onInitialTextUsed?: () => void
   onProjectChange: (projectId: string, text: string) => void
 }) {
+  const daemon = useDaemon()
   const tl = useTimeline(agent?.id ?? null)
   const running = agent?.status === 'running'
   const scroller = useRef<HTMLDivElement>(null)
@@ -39,7 +40,7 @@ export function Chat({
   // Viewing an agent acknowledges its "finished" / "error" attention flag.
   useEffect(() => {
     if (agent?.requiresAttention && !agent.pendingPermissions.length) void daemon.clearAgentAttention(agent.id).catch(() => {})
-  }, [agent?.id, agent?.requiresAttention, agent?.pendingPermissions.length])
+  }, [daemon, agent?.id, agent?.requiresAttention, agent?.pendingPermissions.length])
 
   return (
     <div className="chat">
@@ -86,6 +87,7 @@ export function Chat({
 }
 
 function PermissionCard({ agentId, request: r }: { agentId: string; request: Permission }) {
+  const daemon = useDaemon()
   const [busy, setBusy] = useState(false)
   const actions: NonNullable<Permission['actions']> = r.actions?.length
     ? r.actions
@@ -166,7 +168,10 @@ function Composer({
   onInitialTextUsed?: () => void
   onProjectChange: (projectId: string, text: string) => void
 }) {
-  const { providers, projects } = useStore()
+  const daemon = useDaemon()
+  const hostId = useHostId()
+  const { providers } = useHost()
+  const { hosts, projects } = useStore()
   const [text, setText] = useState(initialText ?? '')
   useEffect(() => {
     if (initialText) onInitialTextUsed?.()
@@ -249,16 +254,14 @@ function Composer({
         const { workspace } = target
         if (workspace) {
           const created = await daemon.createAgent({ ...config, cwd: workspace.workspaceDirectory, workspaceId: workspace.id })
-          rememberAgent(created)
-          onCreated(created)
+          onCreated(rememberAgent(hostId, created))
         } else {
           const res = await daemon.createWorkspace({
             source: { kind: 'directory', path: target.rootPath, projectId: target.projectId },
             agent: { ...config, cwd: target.rootPath },
           })
           if (res.error || !res.agent) throw new Error(res.error ?? 'Workspace was created without an agent')
-          rememberAgent(res.agent)
-          onCreated(res.agent)
+          onCreated(rememberAgent(hostId, res.agent))
         }
       }
       setText('')
@@ -351,7 +354,7 @@ function Composer({
             value={target.projectId}
             // The chat remounts for the new project: hand it the typed text.
             onChange={(id) => onProjectChange(id, text)}
-            options={projects.map((p) => [p.projectId, p.projectCustomName || p.projectDisplayName])}
+            options={projects.map((p) => [p.projectId, `${p.projectCustomName || p.projectDisplayName}${hosts.length > 1 ? ` · ${hostLabel(p.hostId)}` : ''}`])}
             title="Project"
           />
         )}

@@ -1,14 +1,15 @@
 import { ChevronDown, ChevronRight, Plus, RefreshCw, RotateCcw, Search, Stethoscope, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useEscape } from '../a11y'
-import { DAEMON_URL, daemon, errorText, type DaemonConfig, type ProviderEntry } from '../daemon'
+import { errorText, type DaemonClient, type DaemonConfig, type ProviderEntry } from '../daemon'
+import { toWsUrl } from '../hostUrl'
 import { SHORTCUTS, SHORTCUT_IDS, binding, comboOf, formatCombo, setShortcut, useShortcut, type ShortcutId } from '../keymap'
 import { notificationsOn, notificationsSupported } from '../notifications'
-import { useStore } from '../store'
+import { hostEndpoint, hostLabel, removeHost, updateHost, useDaemon, useHost, useHostId, useStore } from '../store'
 
-const SECTIONS = ['General', 'Providers', 'Keymap'] as const
-type Section = (typeof SECTIONS)[number]
-const GENERAL_GROUPS = ['Connection', 'Agents', 'Notifications'] as const
+const SECTIONS = ['Host', 'General', 'Providers', 'Keymap'] as const
+export type Section = (typeof SECTIONS)[number]
+const GENERAL_GROUPS = ['Agents', 'Notifications'] as const
 const anchor = (...parts: string[]) => `settings-${parts.join('-')}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-')
 const toggled = <T,>(set: Set<T>, v: T, on = !set.has(v)) => {
   const next = new Set(set)
@@ -16,13 +17,17 @@ const toggled = <T,>(set: Set<T>, v: T, on = !set.has(v)) => {
   else next.delete(v)
   return next
 }
-type Patch = Parameters<typeof daemon.patchDaemonConfig>[0]
+type Patch = Parameters<DaemonClient['patchDaemonConfig']>[0]
 type ProviderConfig = Record<string, unknown> & { enabled?: boolean; env?: Record<string, string>; command?: string[] }
 
-export function Settings({ onClose }: { onClose: () => void }) {
-  const { providers } = useStore()
-  const [section, setSection] = useState<Section>('General')
-  const [expanded, setExpanded] = useState<Set<Section>>(new Set(['General']))
+/** Settings of the context host's daemon, plus this browser's own (keymap, notifications, default agent). */
+export function Settings({ initialSection = 'General', onClose }: { initialSection?: Section; onClose: () => void }) {
+  const daemon = useDaemon()
+  const hostId = useHostId()
+  const { hosts } = useStore()
+  const { providers } = useHost()
+  const [section, setSection] = useState<Section>(initialSection)
+  const [expanded, setExpanded] = useState<Set<Section>>(new Set([initialSection]))
   const [openProviders, setOpenProviders] = useState<Set<string>>(new Set())
   const [query, setQuery] = useState('')
   const body = useRef<HTMLDivElement>(null)
@@ -31,7 +36,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     daemon.getDaemonConfig().then((r) => setConfig(r.config), (e) => setError(errorText(e)))
-  }, [])
+  }, [daemon])
   useEscape(onClose)
 
   const patch = async (p: Patch) => {
@@ -45,6 +50,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
   // Sidebar sub-items: [label, anchor id, provider to expand].
   const children: Record<Section, [string, string, string?][]> = {
+    Host: [],
     General: GENERAL_GROUPS.map((g) => [g, anchor('general', g)]),
     'Providers': providers.map((p) => [p.label ?? p.provider, anchor('provider', p.provider), p.provider]),
     'Keymap': [...SHORTCUT_IDS.map((id) => [SHORTCUTS[id].label, anchor('keymap', id)] as [string, string]), ['Close Dialog', anchor('keymap', 'close')]],
@@ -68,6 +74,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
             <Search size={14} />
             <input autoFocus name="search" placeholder="Search settings…" value={query} onChange={(e) => setQuery(e.target.value)} />
           </label>
+          {hosts.length > 1 && <div className="settings-host muted truncate">{hostLabel(hostId)}</div>}
           {SECTIONS.map((s) => {
             const open = expanded.has(s)
             return (
@@ -102,8 +109,10 @@ export function Settings({ onClose }: { onClose: () => void }) {
             // Shortcuts live in localStorage, so they don't wait for the daemon config.
             s === 'Keymap' ? (
               <Shortcuts key={s} q={q} />
+            ) : s === 'Host' ? (
+              <HostSection key={s} q={q} />
             ) : !config ? (
-              s === shown[0] && (
+              (s === 'General' || !q) && (
                 <div key={s} className="empty">
                   Loading…
                 </div>
@@ -150,8 +159,83 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
   )
 }
 
+/** Saved in this browser, so it renders while the host is offline: that's when its address needs fixing. */
+function HostSection({ q }: { q: string }) {
+  const id = useHostId()
+  const { hosts } = useStore()
+  const { status, error, hostname } = useHost()
+  const host = hosts.find((h) => h.id === id)!
+  const [urlError, setUrlError] = useState<string | null>(null)
+  const rows = [
+    matches(q, 'host name label') && (
+      <Row key="name" title="Name" description="Shown in the host list and next to its projects.">
+        <input
+          className="input"
+          name="hostLabel"
+          aria-label="Host name"
+          defaultValue={host.label}
+          placeholder={hostname ?? hostEndpoint(host)}
+          onBlur={(e) => e.target.value.trim() !== (host.label ?? '') && updateHost(id, { label: e.target.value.trim() || undefined })}
+        />
+      </Row>
+    ),
+    matches(q, 'host daemon address url connection') && (
+      <Row key="url" title="Address" description={urlError ? <span className="err">{urlError}</span> : status === 'connected' ? 'Connected' : (error ?? status)}>
+        <input
+          className="input mono"
+          name="hostUrl"
+          aria-label="Host address"
+          defaultValue={host.url}
+          spellCheck={false}
+          onBlur={(e) => {
+            try {
+              const url = toWsUrl(e.target.value)
+              setUrlError(null)
+              e.target.value = url
+              if (url !== host.url) updateHost(id, { url })
+            } catch (err) {
+              setUrlError(errorText(err))
+            }
+          }}
+        />
+      </Row>
+    ),
+    matches(q, 'host password') && (
+      <Row key="password" title="Password" description="Set on the host with paseo daemon set-password. Stored in this browser.">
+        <input
+          className="input"
+          type="password"
+          name="hostPassword"
+          aria-label="Host password"
+          autoComplete="off"
+          placeholder="None"
+          defaultValue={host.password}
+          onBlur={(e) => e.target.value !== (host.password ?? '') && updateHost(id, { password: e.target.value || undefined })}
+        />
+      </Row>
+    ),
+    matches(q, 'remove host') && (
+      <Row key="remove" title="Remove Host" description={hosts.length > 1 ? 'Stop connecting to it from this browser. The daemon and its agents keep running.' : "The only host can't be removed."}>
+        <button
+          className="btn danger"
+          disabled={hosts.length < 2}
+          onClick={() => confirm(`Remove host "${hostLabel(id)}"? Its daemon keeps running.`) && removeHost(id)}
+        >
+          Remove
+        </button>
+      </Row>
+    ),
+  ].filter(Boolean)
+  if (!rows.length) return null
+  return (
+    <section className="settings-section">
+      <h2>Host</h2>
+      {rows}
+    </section>
+  )
+}
+
 function General({ config, patch, q }: SectionProps) {
-  const { status } = useStore()
   const [prompt, setPrompt] = useState(config.appendSystemPrompt)
   const [notify, setNotify] = useState(notificationsOn)
   const toggleNotify = async (on: boolean) => {
@@ -160,16 +244,6 @@ function General({ config, patch, q }: SectionProps) {
     setNotify(on)
   }
   const groups: [(typeof GENERAL_GROUPS)[number], React.ReactNode[]][] = [
-    [
-      'Connection',
-      [
-        matches(q, 'daemon address connection') && (
-          <Row key="addr" title="Daemon" description="WebSocket address this UI is connected to.">
-            <code className="inline">{DAEMON_URL}</code> <span className="muted">{status}</span>
-          </Row>
-        ),
-      ],
-    ],
     [
       'Agents',
       [
@@ -236,7 +310,7 @@ type DefaultAgentPick = { provider?: string; model?: string; thinking?: string }
 
 // Stored in this browser only; Chat's Composer reads it before the last-used draft.
 function DefaultAgent() {
-  const { providers } = useStore()
+  const { providers } = useHost()
   // Until a default is saved, show the last-used draft: that is what a new agent starts with.
   const [def, setDef] = useState<DefaultAgentPick>(() => {
     const { provider, model, thinking }: DefaultAgentPick = JSON.parse(localStorage.mypaseoDefaultAgent ?? localStorage.mypaseoDraft ?? '{}')
@@ -286,7 +360,8 @@ function DefaultAgent() {
 }
 
 function Providers({ config, patch, q, open, onToggle }: SectionProps & { open: Set<string>; onToggle: (id: string) => void }) {
-  const { providers } = useStore()
+  const daemon = useDaemon()
+  const { providers } = useHost()
   const list = providers.filter((p) => matches(q, p.label, p.provider, p.description, 'provider llm model'))
   if (!list.length) return null
   return (
@@ -318,6 +393,7 @@ function ProviderRow({
   open: boolean
   onToggle: () => void
 }) {
+  const daemon = useDaemon()
   const id = p.provider
   const saved = (config.providers[id] ?? {}) as ProviderConfig
   const [command, setCommand] = useState((saved.command ?? []).join(' '))

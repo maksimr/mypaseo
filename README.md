@@ -25,11 +25,31 @@ npx paseo plugin install ./paseo-plugin   # after editing it: npx paseo plugin r
 File browsing and diffs use the SDK's internal `DaemonClient` (`@getpaseo/client/internal/daemon-client`), since the
 public API doesn't expose them yet — see `src/daemon.ts`.
 
+Hosts: the sidebar's server button lists daemons with their status; Add Host connects to more (`host:port` or
+`ws(s)://…`), and their projects merge into the sidebar. The browser connects to each directly, so a remote daemon
+must listen on a reachable address (`PASEO_LISTEN`) and allow this UI's origin (`PASEO_CORS_ORIGINS` or
+`daemon.cors.allowedOrigins`). Hosts and their passwords are saved in this browser's localStorage.
+
+## GitHub Pages
+
+`.github/workflows/pages.yml` builds and deploys every push to `main` (one-time: repo Settings → Pages → Source:
+GitHub Actions). The deployed UI has no proxy: its default host is the daemon at `ws://127.0.0.1:6767/ws`, so whoever
+opens the page talks to the daemon on their own computer. The daemon only accepts allowed origins, so allow the page
+once (a running daemon picks it up immediately; the list replaces the old one, so keep entries you need):
+
+```bash
+npx @getpaseo/cli daemon config set daemon.cors.allowedOrigins '["https://app.paseo.sh","https://maksimr.github.io"]'
+```
+
+The page shows this command when it can't reach a daemon.
+
 Env:
 - `PASEO_DAEMON` (vite.config.ts) — daemon HTTP address for the dev proxy. Default `http://127.0.0.1:6767`.
-- `VITE_PASEO_URL` — connect directly instead of via the proxy (add your origin to
+- `VITE_PASEO_URL` — the default host connects directly instead of via the proxy (add your origin to
   `daemon.cors.allowedOrigins` in `~/.paseo/config.json` or `PASEO_CORS_ORIGINS`).
-- `VITE_PASEO_PASSWORD` — if the daemon has a password (`paseo daemon set-password`).
+- `VITE_PASEO_PASSWORD` — the default host's password (`paseo daemon set-password`).
+
+Both `VITE_` values only seed the default host; once the host list is edited, it lives in localStorage.
 
 SDK docs: https://paseo.sh/docs/sdk
 

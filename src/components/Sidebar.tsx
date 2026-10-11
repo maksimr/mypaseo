@@ -9,15 +9,17 @@ import {
   Loader2,
   MessageCirclePlus,
   Plus,
+  Server,
   Settings,
   Trash2,
   X,
 } from 'lucide-react'
 import { useEffect, useId, useState, type FormEvent, type MouseEvent } from 'react'
-import { daemon, errorText, type Agent, type Workspace } from '../daemon'
+import { errorText, type Agent, type Project, type Workspace } from '../daemon'
 import { clickable, useEscape } from '../a11y'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
-import { byRecent, projectWorkspaces as sortedWorkspaces, sidebarWorkspaces, useStore } from '../store'
+import { byRecent, client, hostLabel, projectWorkspaces as sortedWorkspaces, sidebarWorkspaces, useHostId, useStore } from '../store'
+import { AddHostDialog, HostMenu } from './Hosts'
 
 export type Selection = { projectId?: string; workspaceId?: string; agentId?: string }
 
@@ -36,13 +38,14 @@ const FolderAdd = () => (
   </svg>
 )
 
-/** onClick for a popover menu trigger: keeps the row from activating and puts the menu under the trigger. */
-const placeMenu = (menuId: string) => (e: MouseEvent<HTMLElement>) => {
+/** onClick for a popover menu trigger: keeps the row from activating and puts the menu under (or above) the trigger. */
+const placeMenu = (menuId: string, above = false) => (e: MouseEvent<HTMLElement>) => {
   e.stopPropagation()
-  // shortcut: fixed placement under the trigger, no edge flipping; switch to CSS anchor positioning once Baseline.
+  // shortcut: fixed placement at the trigger, no edge flipping; switch to CSS anchor positioning once Baseline.
   const r = e.currentTarget.getBoundingClientRect()
   const menu = document.getElementById(menuId)!
-  menu.style.top = `${r.bottom + 4}px`
+  menu.style.top = above ? '' : `${r.bottom + 4}px`
+  menu.style.bottom = above ? `${innerHeight - r.top + 4}px` : ''
   menu.style.left = `${r.left}px`
 }
 
@@ -51,6 +54,7 @@ export function Sidebar({
   onSelect,
   onArchive,
   onOpenSettings,
+  onOpenHost,
   onImport,
   activeOnly,
   onToggleActiveOnly,
@@ -59,11 +63,16 @@ export function Sidebar({
   onSelect: (s: Selection) => void
   onArchive: (w: Workspace, deleteAgents: boolean) => void
   onOpenSettings: () => void
+  onOpenHost: (hostId: string) => void
   onImport: (projectId: string) => void
   activeOnly: boolean
   onToggleActiveOnly: () => void
 }) {
-  const { projects, workspaces, agents, status, error } = useStore()
+  const { hosts, byHost, projects, workspaces, agents } = useStore()
+  // The footer shows the first host that isn't connected.
+  const down = hosts.find((h) => byHost[h.id]?.status !== 'connected')
+  const downState = down && byHost[down.id]
+  const [addingHost, setAddingHost] = useState(false)
   const settingsKey = useShortcut('openSettings')
   const newWorkspaceKey = useShortcut('newWorkspace')
   const addProjectKey = useShortcut('addProject')
@@ -88,10 +97,10 @@ export function Sidebar({
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const removeProject = async (projectId: string, name: string) => {
+  const removeProject = async (p: Project, name: string) => {
     if (!confirm(`Remove project "${name}"? Its agents are archived; files on disk are kept.`)) return
     try {
-      await daemon.removeProject(projectId)
+      await client(p.hostId).removeProject(p.projectId)
     } catch (e) {
       alert(`Could not remove project: ${errorText(e)}`)
     }
@@ -115,7 +124,7 @@ export function Sidebar({
           </button>
         </div>
         <nav className="tree">
-          {projects.length === 0 && <div className="empty">{status === 'connected' ? 'No projects yet' : 'Connecting…'}</div>}
+          {projects.length === 0 && <div className="empty">{down ? 'Connecting…' : 'No projects yet'}</div>}
           {projects.map((p) => {
             const open = !collapsed.has(p.projectId)
             const projectWorkspaces = sortedWorkspaces(p.projectId, workspaces, agents)
@@ -134,6 +143,7 @@ export function Sidebar({
                   <span className="truncate">{name}</span>
                   <span className="chevron hover-only">{open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
                   <span className="grow" />
+                  {hosts.length > 1 && <span className="host-badge muted truncate">{hostLabel(p.hostId)}</span>}
                   <button
                     className="icon-btn hover-swap"
                     title="Project Actions"
@@ -162,7 +172,7 @@ export function Sidebar({
                     className="danger"
                     popoverTarget={menuId}
                     popoverTargetAction="hide"
-                    onClick={() => removeProject(p.projectId, name)}
+                    onClick={() => removeProject(p, name)}
                   >
                     <Trash2 size={14} /> Remove
                   </button>
@@ -185,21 +195,31 @@ export function Sidebar({
           })}
         </nav>
         <div className="sidebar-foot">
-          <span className={`dot ${status}`} title={error ?? status} />
-          <span className="muted grow truncate">{status === 'connected' ? 'Connected' : (error ?? status)}</span>
+          <button className="icon-btn" title="Hosts" popoverTarget="host-menu" onClick={placeMenu('host-menu', true)}>
+            <Server size={15} />
+          </button>
+          <span className={`dot ${downState?.status ?? 'connected'}`} />
+          <span className="muted grow truncate">
+            {downState ? `${hosts.length > 1 ? `${hostLabel(down.id)}: ` : ''}${downState.error ?? downState.status}` : 'Connected'}
+          </span>
           <button className="icon-btn" title={`Settings (${formatCombo(settingsKey)})`} onClick={onOpenSettings}>
             <Settings size={15} />
           </button>
         </div>
       </aside>
+      <HostMenu id="host-menu" onOpenHost={onOpenHost} onAdd={() => setAddingHost(true)} />
       {/* Outside the aside: a hidden sidebar is display: none. */}
       {adding && <AddProjectDialog onClose={() => setAdding(false)} />}
+      {addingHost && <AddHostDialog onClose={() => setAddingHost(false)} />}
     </>
   )
 }
 
 /** Asks for a project directory; a failed add keeps the dialog open so the path can be fixed. */
 function AddProjectDialog({ onClose }: { onClose: () => void }) {
+  const { hosts } = useStore()
+  const contextHost = useHostId()
+  const [hostId, setHostId] = useState(contextHost)
   const [cwd, setCwd] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -215,7 +235,7 @@ function AddProjectDialog({ onClose }: { onClose: () => void }) {
     let alive = true
     const timer = setTimeout(() => {
       // The daemon matches fuzzily under the home dir and returns absolute paths; failures just leave the list as is.
-      daemon.getDirectorySuggestions({ query, limit: 30, includeDirectories: true }).then(
+      client(hostId).getDirectorySuggestions({ query, limit: 30, includeDirectories: true }).then(
         (r) => alive && setSuggestions(r.entries.map((e) => e.path)),
         () => {},
       )
@@ -224,7 +244,7 @@ function AddProjectDialog({ onClose }: { onClose: () => void }) {
       alive = false
       clearTimeout(timer)
     }
-  }, [query])
+  }, [query, hostId])
   const open = !!query && cwd !== closedFor && suggestions.length > 0
   const selected = Math.min(sel, suggestions.length - 1)
   const edit = (path: string) => (setCwd(path), setSel(0))
@@ -235,7 +255,7 @@ function AddProjectDialog({ onClose }: { onClose: () => void }) {
     setBusy(true)
     setError(null)
     try {
-      await daemon.addProject(cwd.trim())
+      await client(hostId).addProject(cwd.trim())
       onClose()
     } catch (err) {
       setError(errorText(err))
@@ -256,6 +276,15 @@ function AddProjectDialog({ onClose }: { onClose: () => void }) {
           </button>
         </header>
         <div className="dialog-toolbar">
+          {hosts.length > 1 && (
+            <select className="input select" name="host" aria-label="Host" value={hostId} onChange={(e) => setHostId(e.target.value)}>
+              {hosts.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {hostLabel(h.id)}
+                </option>
+              ))}
+            </select>
+          )}
           <div className="path-field grow">
             <input
               autoFocus

@@ -1,7 +1,8 @@
 import { File, Folder } from 'lucide-react'
 import { useEffect, useId, useState, type KeyboardEvent, type RefObject } from 'react'
 import { activeTrigger, completion, rankCommands } from './autocomplete'
-import { daemon, errorText, type DraftConfig, type SlashCommand } from './daemon'
+import { errorText, type DraftConfig, type SlashCommand } from './daemon'
+import { useDaemon } from './store'
 
 type Option = { id: string; label: string; value: string; kind: 'command' | 'file' | 'directory'; hint?: string; description?: string }
 type Entry = { path: string; kind: 'file' | 'directory' }
@@ -23,6 +24,7 @@ export function useAutocomplete({
   /** Lists commands before the agent exists. No agent and no config: no command list. */
   draftConfig?: DraftConfig
 }) {
+  const daemon = useDaemon()
   const listId = useId()
   const [cursor, setCursor] = useState(0)
   const [closedAt, setClosedAt] = useState<number>()
@@ -61,7 +63,7 @@ export function useAutocomplete({
       alive = false
       clearTimeout(timer)
     }
-  }, [fileQuery, cwd])
+  }, [daemon, fileQuery, cwd])
 
   const options: Option[] =
     trigger?.kind === '/' && Array.isArray(cmds)
