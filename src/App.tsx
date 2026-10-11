@@ -13,6 +13,7 @@ import { OpenFileContext } from './openFile'
 import { selectionRef } from './selection'
 import { SelectionAction } from './components/SelectionAction'
 import { archiveWorkspace, byRecent, HostContext, sidebarWorkspaces, startSync, useStore } from './store'
+import { useTabStatus } from './tabStatus'
 import { totals, useCheckoutDiff } from './useCheckoutDiff'
 
 type Tab = 'chat' | 'changes' | `file:${string}`
@@ -103,6 +104,7 @@ export default function App() {
     : project
       ? { projectId: project.projectId, name: project.projectCustomName || project.projectDisplayName, rootPath: project.projectRootPath }
       : null
+  useTabStatus(agent?.title || workspace?.title || workspace?.name || target?.name, agents)
   const projectId = project?.projectId
   const cwd = workspace?.workspaceDirectory
   const isGit = workspace?.projectKind === 'git'
