@@ -572,6 +572,10 @@ code.inline {
   padding: 6px 0;
   min-width: 0;
 }
+.msg.working {
+  align-items: center;
+  gap: 8px;
+}
 .msg.error {
   color: var(--red);
 }

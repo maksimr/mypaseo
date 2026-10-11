@@ -23,7 +23,7 @@ export function Timeline({ items, running }: { items: TimelineItem[]; running: b
         <Item key={i} item={item} expanded={expanded} />
       ))}
       {running && (
-        <div className="msg muted">
+        <div className="msg muted working">
           <Loader2 size={13} className="spin" /> Working…
         </div>
       )}
