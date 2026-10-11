@@ -136,6 +136,7 @@ export default function App() {
   const sidebarKey = useShortcut('toggleSidebar')
   const panelKey = useShortcut('togglePanel')
   const addKey = useShortcut('addToChat')
+  const closeAgentKey = useShortcut('closeAgent')
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isShortcut(e, 'toggleSidebar')) {
@@ -157,6 +158,10 @@ export default function App() {
         const next = tabs[(tabs.indexOf(tab === 'chat' ? agent : tab) + tabStep + tabs.length) % tabs.length]
         if (typeof next === 'string') setTab(next)
         else openChat(next)
+      }
+      if (agent && tab === 'chat' && isShortcut(e, 'closeAgent')) {
+        e.preventDefault()
+        void closeAgent(agent)
       }
       if (projectId && isShortcut(e, 'newWorkspace')) {
         e.preventDefault()
@@ -268,7 +273,7 @@ export default function App() {
                   {a && (
                     <button
                       className="tab-close hover-swap"
-                      title="Close"
+                      title={`Close (${formatCombo(closeAgentKey)})`}
                       onClick={(e) => {
                         e.stopPropagation()
                         void closeAgent(a)
