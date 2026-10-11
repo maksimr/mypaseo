@@ -139,7 +139,7 @@ export default function App() {
       }
       if (cwd && isShortcut(e, 'togglePanel')) {
         e.preventDefault()
-        setPanel((p) => (p ? null : 'files'))
+        setPanel((p) => (p ? null : 'changes'))
       }
       const tabStep = isShortcut(e, 'nextTab') ? 1 : isShortcut(e, 'prevTab') ? -1 : 0
       if (target && tabStep) {
@@ -241,7 +241,7 @@ export default function App() {
           <PanelLeft size={15} />
         </button>
         {cwd && (
-          <button className={`icon-btn corner right ${panel ? 'on' : ''}`} title={`Toggle File Panel (${formatCombo(panelKey)})`} onClick={() => setPanel(panel ? null : 'files')}>
+          <button className={`icon-btn corner right ${panel ? 'on' : ''}`} title={`Toggle File Panel (${formatCombo(panelKey)})`} onClick={() => setPanel(panel ? null : 'changes')}>
             <PanelRight size={15} />
           </button>
         )}
@@ -324,16 +324,16 @@ export default function App() {
         {panel && cwd && workspace && (
           <aside className="panel">
             <div className="panel-tabs">
-              <button className={`panel-tab ${panel === 'files' ? 'on' : ''}`} onClick={() => setPanel('files')}>
-                <Files size={14} /> Files
-              </button>
               {isGit && (
                 <button className={`panel-tab ${panel === 'changes' ? 'on' : ''}`} onClick={() => setPanel('changes')}>
                   <FileDiff size={14} /> Changes
                 </button>
               )}
+              <button className={`panel-tab ${panel === 'files' || !isGit ? 'on' : ''}`} onClick={() => setPanel('files')}>
+                <Files size={14} /> Files
+              </button>
               <span className="grow" />
-              {panel === 'changes' && (
+              {panel === 'changes' && isGit && (
                 <span className="stat">
                   <span className="add">+{t.add}</span> <span className="del">−{t.del}</span>
                 </span>
