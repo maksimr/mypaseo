@@ -134,7 +134,13 @@ function PermissionCard({ agentId, request: r }: { agentId: string; request: Per
 }
 
 type Draft = { provider?: string; model?: string; thinking?: string; mode?: string }
-const loadDraft = (): Draft => JSON.parse(localStorage.mypaseoDraft ?? '{}')
+// The Settings default wins over the last-used draft, but keeps its mode (permissions) for the same provider.
+// Invalid ids fall back to provider defaults below.
+const loadDraft = (): Draft => {
+  const last: Draft = JSON.parse(localStorage.mypaseoDraft ?? '{}')
+  const def: Draft | undefined = localStorage.mypaseoDefaultAgent && JSON.parse(localStorage.mypaseoDefaultAgent)
+  return def ? { ...def, mode: def.provider === last.provider ? last.mode : undefined } : last
+}
 
 type PastedImage = { data: string; mimeType: string }
 const readImage = (file: File) =>

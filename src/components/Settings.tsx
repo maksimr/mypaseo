@@ -173,6 +173,11 @@ function General({ config, patch, q }: SectionProps) {
     [
       'Agents',
       [
+        matches(q, 'default provider model thinking new agent') && (
+          <Row key="default" title="Default for New Agent" description="Provider, model and thinking a new agent starts with.">
+            <DefaultAgent />
+          </Row>
+        ),
         matches(q, 'system prompt append agents') && (
           <Row key="prompt" title="Append System Prompt" description="Extra instructions appended to every agent's system prompt.">
             <textarea
@@ -224,6 +229,59 @@ function General({ config, patch, q }: SectionProps) {
         </div>
       ))}
     </section>
+  )
+}
+
+type DefaultAgentPick = { provider?: string; model?: string; thinking?: string }
+
+// Stored in this browser only; Chat's Composer reads it before the last-used draft.
+function DefaultAgent() {
+  const { providers } = useStore()
+  // Until a default is saved, show the last-used draft: that is what a new agent starts with.
+  const [def, setDef] = useState<DefaultAgentPick>(() => {
+    const { provider, model, thinking }: DefaultAgentPick = JSON.parse(localStorage.mypaseoDefaultAgent ?? localStorage.mypaseoDraft ?? '{}')
+    return { provider, model, thinking }
+  })
+  const save = (d: DefaultAgentPick) => {
+    setDef(d)
+    localStorage.mypaseoDefaultAgent = JSON.stringify(d)
+  }
+  const usable = providers.filter((p) => (p.enabled && p.status === 'ready') || p.provider === def.provider)
+  const provider = def.provider ?? usable[0]?.provider
+  const entry = providers.find((p) => p.provider === provider)
+  const models = (entry?.models ?? []).filter((m) => m.isSelectable !== false)
+  const model = models.find((m) => m.id === def.model) ?? models.find((m) => m.isDefault) ?? models[0]
+  const thinkingOptions = model?.thinkingOptions ?? []
+  return (
+    <div className="setting-selects">
+      <select className="input select" aria-label="Default provider" value={provider ?? ''} onChange={(e) => save({ provider: e.target.value })}>
+        {usable.map((p) => (
+          <option key={p.provider} value={p.provider}>
+            {p.label ?? p.provider}
+          </option>
+        ))}
+      </select>
+      {models.length > 0 && (
+        <select className="input select" aria-label="Default model" value={def.model ?? ''} onChange={(e) => save({ provider, model: e.target.value || undefined })}>
+          <option value="">Provider default</option>
+          {models.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.label}
+            </option>
+          ))}
+        </select>
+      )}
+      {thinkingOptions.length > 0 && (
+        <select className="input select" aria-label="Default thinking" value={def.thinking ?? ''} onChange={(e) => save({ ...def, provider, thinking: e.target.value || undefined })}>
+          <option value="">Model default</option>
+          {thinkingOptions.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
   )
 }
 

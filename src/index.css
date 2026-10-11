@@ -1341,6 +1341,12 @@ code.inline {
   flex: none;
   max-width: 50%;
 }
+.setting-selects {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
 /* textarea goes under the text so it never overflows narrow/zoomed screens */
 .setting-row:has(textarea) {
   flex-direction: column;
