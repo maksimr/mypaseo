@@ -183,9 +183,13 @@ export default function App() {
         if (typeof next === 'string') setTab(next)
         else openChat(next)
       }
-      if (agent && tab === 'chat' && isShortcut(e, 'closeAgent')) {
+      if (target && isShortcut(e, 'closeAgent') && (tab !== 'chat' || agent)) {
         e.preventDefault()
-        void closeAgent(agent)
+        if (tab === 'chat') void closeAgent(agent!)
+        else if (tab === 'changes') closeChanges()
+        else if (tab === 'graph') closeGraph()
+        else if (tab === 'commit') closeCommit()
+        else closeFile(tab.slice('file:'.length))
       }
       if (projectId && isShortcut(e, 'newWorkspace')) {
         e.preventDefault()
@@ -258,6 +262,18 @@ export default function App() {
     setPanel('graph')
     setGraphTab(true)
     setTab('graph')
+  }
+  const closeChanges = () => {
+    setChangesPick(false)
+    if (tab === 'changes') setTab('chat')
+  }
+  const closeGraph = () => {
+    setGraphTab(false)
+    if (tab === 'graph') setTab('chat')
+  }
+  const closeCommit = () => {
+    setCommitTab(undefined)
+    if (tab === 'commit') setTab(graphTab ? 'graph' : 'chat')
   }
   const closeFile = (path: string) => {
     setFiles((f) => f.filter((p) => p !== path))
@@ -342,8 +358,7 @@ export default function App() {
                   title="Close"
                   onClick={(e) => {
                     e.stopPropagation()
-                    setChangesPick(false)
-                    if (tab === 'changes') setTab('chat')
+                    closeChanges()
                   }}
                 >
                   <X size={12} />
@@ -359,8 +374,7 @@ export default function App() {
                   title="Close"
                   onClick={(e) => {
                     e.stopPropagation()
-                    setGraphTab(false)
-                    if (tab === 'graph') setTab('chat')
+                    closeGraph()
                   }}
                 >
                   <X size={12} />
@@ -378,8 +392,7 @@ export default function App() {
                   title="Close"
                   onClick={(e) => {
                     e.stopPropagation()
-                    setCommitTab(undefined)
-                    if (tab === 'commit') setTab(graphTab ? 'graph' : 'chat')
+                    closeCommit()
                   }}
                 >
                   <X size={12} />
