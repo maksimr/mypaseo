@@ -298,6 +298,10 @@ code.inline {
   border-radius: 6px;
   color: var(--text-muted);
   white-space: nowrap;
+  min-width: 0; /* shrink and ellipsize labels so the tabs never run under the corner toggle */
+}
+.panel-tab svg {
+  flex: none;
 }
 .panel-tab:hover {
   color: var(--text);

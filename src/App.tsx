@@ -469,15 +469,15 @@ export default function App() {
             <div className="panel-tabs">
               {isGit && (
                 <button className={`panel-tab ${panelView === 'changes' ? 'on' : ''}`} onClick={openChanges}>
-                  <FileDiff size={14} /> Changes
+                  <FileDiff size={14} /> <span className="truncate">Changes</span>
                 </button>
               )}
               <button className={`panel-tab ${panelView === 'files' ? 'on' : ''}`} onClick={() => setPanel('files')}>
-                <Files size={14} /> Files
+                <Files size={14} /> <span className="truncate">Files</span>
               </button>
               {isGit && (
                 <button className={`panel-tab ${panelView === 'graph' ? 'on' : ''}`} onClick={openGraph}>
-                  <GitGraphIcon size={14} /> Git Graph
+                  <GitGraphIcon size={14} /> <span className="truncate">Git Graph</span>
                 </button>
               )}
             </div>
