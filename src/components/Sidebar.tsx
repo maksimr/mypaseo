@@ -10,11 +10,12 @@ import {
   Plus,
   Settings,
   Trash2,
+  X,
 } from 'lucide-react'
-import { useState, type MouseEvent } from 'react'
+import { useEffect, useState, type FormEvent, type MouseEvent } from 'react'
 import { daemon, errorText, type Agent, type Workspace } from '../daemon'
-import { clickable } from '../a11y'
-import { formatCombo, useShortcut } from '../keymap'
+import { clickable, useEscape } from '../a11y'
+import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { byRecent, projectWorkspaces as sortedWorkspaces, useStore } from '../store'
 
 export type Selection = { projectId?: string; workspaceId?: string; agentId?: string }
@@ -60,6 +61,7 @@ export function Sidebar({
   const { projects, workspaces, agents, status, error } = useStore()
   const settingsKey = useShortcut('openSettings')
   const newWorkspaceKey = useShortcut('newWorkspace')
+  const addProjectKey = useShortcut('addProject')
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(JSON.parse(localStorage.mypaseoCollapsed ?? '[]')))
   const toggle = (id: string) =>
     setCollapsed((c) => {
@@ -69,15 +71,16 @@ export function Sidebar({
       return next
     })
 
-  const addProject = async () => {
-    const cwd = prompt('Project directory (absolute path)')?.trim()
-    if (!cwd) return
-    try {
-      await daemon.addProject(cwd)
-    } catch (e) {
-      alert(`Could not add project: ${errorText(e)}`)
+  const [adding, setAdding] = useState(false)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!isShortcut(e, 'addProject')) return
+      e.preventDefault()
+      setAdding(true)
     }
-  }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const removeProject = async (projectId: string, name: string) => {
     if (!confirm(`Remove project "${name}"? Its agents are archived; files on disk are kept.`)) return
@@ -89,88 +92,152 @@ export function Sidebar({
   }
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-head">
-        <span className="section-label">Projects</span>
-        <button className="icon-btn hover-only" title="Add Project" onClick={addProject}>
-          <FolderAdd />
-        </button>
-      </div>
-      <nav className="tree">
-        {projects.length === 0 && <div className="empty">{status === 'connected' ? 'No projects yet' : 'Connecting…'}</div>}
-        {projects.map((p) => {
-          const open = !collapsed.has(p.projectId)
-          const projectWorkspaces = sortedWorkspaces(p.projectId, workspaces, agents)
-          const name = p.projectCustomName || p.projectDisplayName
-          const menuId = `project-menu-${p.projectId}`
-          return (
-            <div key={p.projectId}>
-              <div
-                className={`row project ${selection.projectId === p.projectId && !selection.workspaceId ? 'active' : ''}`}
-                aria-expanded={open}
-                {...clickable(() => toggle(p.projectId))}
-              >
-                {open ? <FolderExpanded /> : <Folder size={15} />}
-                <span className="truncate">{name}</span>
-                <span className="chevron hover-only">{open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
-                <span className="grow" />
-                <button
-                  className="icon-btn hover-only"
-                  title="Project Actions"
-                  popoverTarget={menuId}
-                  onClick={placeMenu(menuId)}
+    <>
+      <aside className="sidebar">
+        <div className="sidebar-head">
+          <span className="section-label">Projects</span>
+          <button className="icon-btn hover-only" title={`Add Project (${formatCombo(addProjectKey)})`} onClick={() => setAdding(true)}>
+            <FolderAdd />
+          </button>
+        </div>
+        <nav className="tree">
+          {projects.length === 0 && <div className="empty">{status === 'connected' ? 'No projects yet' : 'Connecting…'}</div>}
+          {projects.map((p) => {
+            const open = !collapsed.has(p.projectId)
+            const projectWorkspaces = sortedWorkspaces(p.projectId, workspaces, agents)
+            const name = p.projectCustomName || p.projectDisplayName
+            const menuId = `project-menu-${p.projectId}`
+            return (
+              <div key={p.projectId}>
+                <div
+                  className={`row project ${selection.projectId === p.projectId && !selection.workspaceId ? 'active' : ''}`}
+                  aria-expanded={open}
+                  {...clickable(() => toggle(p.projectId))}
                 >
-                  <Ellipsis size={13} />
-                </button>
-                <button
-                  className="icon-btn hover-only"
-                  title={`New Workspace (${formatCombo(newWorkspaceKey)})`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onSelect({ projectId: p.projectId })
-                  }}
-                >
-                  <Plus size={13} />
-                </button>
+                  {open ? <FolderExpanded /> : <Folder size={15} />}
+                  <span className="truncate">{name}</span>
+                  <span className="chevron hover-only">{open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
+                  <span className="grow" />
+                  <button
+                    className="icon-btn hover-only"
+                    title="Project Actions"
+                    popoverTarget={menuId}
+                    onClick={placeMenu(menuId)}
+                  >
+                    <Ellipsis size={13} />
+                  </button>
+                  <button
+                    className="icon-btn hover-only"
+                    title={`New Workspace (${formatCombo(newWorkspaceKey)})`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onSelect({ projectId: p.projectId })
+                    }}
+                  >
+                    <Plus size={13} />
+                  </button>
+                </div>
+                <div id={menuId} popover="auto" className="menu">
+                  <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => onImport(p.projectId)}>
+                    <Import size={14} /> Import Session
+                  </button>
+                  <button
+                    className="danger"
+                    popoverTarget={menuId}
+                    popoverTargetAction="hide"
+                    onClick={() => removeProject(p.projectId, name)}
+                  >
+                    <Trash2 size={14} /> Remove
+                  </button>
+                </div>
+                {open &&
+                  projectWorkspaces.map((w) => (
+                    <WorkspaceRow
+                      key={w.id}
+                      workspace={w}
+                      agents={agents.filter((a) => a.workspaceId === w.id).sort(byRecent)}
+                      collapsed={collapsed.has(w.id)}
+                      onToggle={() => toggle(w.id)}
+                      selection={selection}
+                      onSelect={onSelect}
+                      onArchive={onArchive}
+                    />
+                  ))}
               </div>
-              <div id={menuId} popover="auto" className="menu">
-                <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => onImport(p.projectId)}>
-                  <Import size={14} /> Import Session
-                </button>
-                <button
-                  className="danger"
-                  popoverTarget={menuId}
-                  popoverTargetAction="hide"
-                  onClick={() => removeProject(p.projectId, name)}
-                >
-                  <Trash2 size={14} /> Remove
-                </button>
-              </div>
-              {open &&
-                projectWorkspaces.map((w) => (
-                  <WorkspaceRow
-                    key={w.id}
-                    workspace={w}
-                    agents={agents.filter((a) => a.workspaceId === w.id).sort(byRecent)}
-                    collapsed={collapsed.has(w.id)}
-                    onToggle={() => toggle(w.id)}
-                    selection={selection}
-                    onSelect={onSelect}
-                    onArchive={onArchive}
-                  />
-                ))}
-            </div>
-          )
-        })}
-      </nav>
-      <div className="sidebar-foot">
-        <span className={`dot ${status}`} title={error ?? status} />
-        <span className="muted grow truncate">{status === 'connected' ? 'Connected' : (error ?? status)}</span>
-        <button className="icon-btn" title={`Settings (${formatCombo(settingsKey)})`} onClick={onOpenSettings}>
-          <Settings size={15} />
-        </button>
-      </div>
-    </aside>
+            )
+          })}
+        </nav>
+        <div className="sidebar-foot">
+          <span className={`dot ${status}`} title={error ?? status} />
+          <span className="muted grow truncate">{status === 'connected' ? 'Connected' : (error ?? status)}</span>
+          <button className="icon-btn" title={`Settings (${formatCombo(settingsKey)})`} onClick={onOpenSettings}>
+            <Settings size={15} />
+          </button>
+        </div>
+      </aside>
+      {/* Outside the aside: a hidden sidebar is display: none. */}
+      {adding && <AddProjectDialog onClose={() => setAdding(false)} />}
+    </>
+  )
+}
+
+/** Asks for a project directory; a failed add keeps the dialog open so the path can be fixed. */
+function AddProjectDialog({ onClose }: { onClose: () => void }) {
+  const [cwd, setCwd] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  useEscape(onClose)
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    try {
+      await daemon.addProject(cwd.trim())
+      onClose()
+    } catch (err) {
+      setError(errorText(err))
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <form className="dialog narrow" role="dialog" aria-label="Add Project" onSubmit={submit}>
+        <header className="dialog-head">
+          <span className="muted">
+            <FolderAdd />
+          </span>
+          <h2 className="grow">Add Project</h2>
+          <button type="button" className="icon-btn" title="Close (Esc)" onClick={onClose}>
+            <X size={16} />
+          </button>
+        </header>
+        <div className="dialog-toolbar">
+          <input
+            autoFocus
+            className="input mono"
+            name="cwd"
+            aria-label="Project Directory"
+            placeholder="/absolute/path/to/project"
+            autoComplete="off"
+            spellCheck={false}
+            value={cwd}
+            onChange={(e) => setCwd(e.target.value)}
+          />
+        </div>
+        <p className="dialog-note muted">Absolute path of a directory on the daemon's machine.</p>
+        {error && <div className="banner err">{error}</div>}
+        <footer className="dialog-actions">
+          <button type="button" className="text-btn muted" onClick={onClose}>
+            <kbd>Esc</kbd> Cancel
+          </button>
+          <button className="btn primary" disabled={busy || !cwd.trim()}>
+            {busy && <Loader2 size={13} className="spin" />} Add Project
+          </button>
+        </footer>
+      </form>
+    </div>
   )
 }
 

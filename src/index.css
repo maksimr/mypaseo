@@ -1519,13 +1519,21 @@ kbd {
   border-top: 1px solid var(--border);
   font-size: 12px;
 }
+.dialog.narrow {
+  width: min(480px, 92vw);
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 18px 14px;
+}
 
 /* Commit dialog */
 .commit-dialog {
   display: flex;
   flex-direction: column;
   width: min(640px, 92vw);
-  height: min(420px, 80vh);
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   background: var(--bg-elev);
@@ -1533,7 +1541,6 @@ kbd {
   box-shadow: 0 0 0 7px var(--bg-panel), 0 0 0 8px var(--border), 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 .commit-message {
-  flex: 1;
   padding: 14px 16px;
   border: 0;
   outline: none;
@@ -1545,7 +1552,7 @@ kbd {
   color: var(--text-faint);
 }
 .commit-error {
-  max-height: 30%;
+  max-height: 30vh;
   overflow: auto;
   padding: 0 16px 6px;
   font-size: 12px;
@@ -1561,7 +1568,8 @@ kbd {
   align-items: center;
   gap: 6px;
 }
-.commit-foot .text-btn {
+.commit-foot .text-btn,
+.dialog-actions .text-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;

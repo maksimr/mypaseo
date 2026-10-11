@@ -8,6 +8,7 @@ import {
   ChevronsUpDown,
   FileCode,
   GitBranch,
+  Loader2,
   Minus,
   Undo2,
 } from 'lucide-react'
@@ -98,11 +99,14 @@ export function ChangesView({
   // Staged state of the chunk at the top of the view; null when there is none.
   const [current, setCurrent] = useState<boolean | null>(null)
   const [committing, setCommitting] = useState(false)
+  const [commitBusy, setCommitBusy] = useState(false)
+  // A failed commit reopens the dialog with what the user typed and the error.
+  const [failed, setFailed] = useState<{ input: CommitInput; error: string } | null>(null)
   const prevKey = useShortcut('prevHunk')
   const nextKey = useShortcut('nextHunk')
   const commitKey = useShortcut('commit')
   const stageAllKey = useShortcut('stageAll')
-  const canCommit = !!keys && keys.size > 0
+  const canCommit = !!keys && keys.size > 0 && !commitBusy
   const allCollapsed = diff.files.length > 0 && diff.files.every((f) => collapsed.has(f.path))
   const allStaged = !!keys && diff.files.length > 0 && diff.files.every((f) => stagedState(f.hunks, keys.get(f.path)) === 'all')
 
@@ -198,6 +202,25 @@ export function ChangesView({
     const els = chunkEls(root.current!)
     await runIndex(setStaged(f, chunks(f.hunks[Number(el.dataset.hunk)]), Number(el.dataset.chunk), stage))
     els[els.indexOf(el) + 1]?.scrollIntoView({ block: 'start' })
+  }
+
+  const commit = async (input: CommitInput) => {
+    setCommitting(false)
+    setCommitBusy(true)
+    try {
+      // The daemon's commit is the one that generates a message, so it handles the plain case.
+      if (input.amend || input.signoff || input.noVerify) await git('commit', { cwd, ...input })
+      else {
+        const r = await daemon.checkoutCommit(cwd, { message: input.message, addAll: false })
+        if (r.error) throw new Error(r.error.message)
+      }
+      setFailed(null)
+    } catch (e) {
+      setFailed({ input, error: errorText(e) })
+      setCommitting(true)
+    }
+    setCommitBusy(false)
+    setIndexTick((n) => n + 1)
   }
 
   const allPaths = () => diff.files.flatMap((f) => (f.oldPath ? [f.path, f.oldPath] : [f.path]))
@@ -305,7 +328,13 @@ export function ChangesView({
             )}
             <span className="sep" />
             <button className="text-btn" title={`Commit (${formatCombo(commitKey)})`} disabled={!canCommit} onClick={() => setCommitting(true)}>
-              Commit
+              {commitBusy ? (
+                <>
+                  <Loader2 size={12} className="spin" style={{ verticalAlign: -2 }} /> Committing…
+                </>
+              ) : (
+                'Commit'
+              )}
             </button>
           </>
         )}
@@ -313,11 +342,12 @@ export function ChangesView({
       {committing && (
         <CommitDialog
           cwd={cwd}
-          onClose={() => setCommitting(false)}
-          onDone={() => {
+          failed={failed}
+          onClose={() => {
             setCommitting(false)
-            setIndexTick((n) => n + 1)
+            setFailed(null)
           }}
+          onCommit={(input) => void commit(input)}
         />
       )}
       {diff.loading && <div className="empty">Loading diff…</div>}
@@ -397,12 +427,22 @@ export function ChangesView({
 }
 
 /** Zed-style commit modal: an empty message makes the daemon generate one, an empty amend keeps the last one. */
-function CommitDialog({ cwd, onClose, onDone }: { cwd: string; onClose: () => void; onDone: () => void }) {
-  const [message, setMessage] = useState('')
-  const [signoff, setSignoff] = useState(false)
-  const [noVerify, setNoVerify] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
+type CommitInput = { message: string; amend: boolean; signoff: boolean; noVerify: boolean }
+
+function CommitDialog({
+  cwd,
+  failed,
+  onClose,
+  onCommit,
+}: {
+  cwd: string
+  failed: { input: CommitInput; error: string } | null
+  onClose: () => void
+  onCommit: (input: CommitInput) => void
+}) {
+  const [message, setMessage] = useState(failed?.input.message ?? '')
+  const [signoff, setSignoff] = useState(failed?.input.signoff ?? false)
+  const [noVerify, setNoVerify] = useState(failed?.input.noVerify ?? false)
   const [branch, setBranch] = useState<string | null>(null)
   const menu = useRef<HTMLDivElement>(null)
   const commitKey = useShortcut('commit')
@@ -421,23 +461,7 @@ function CommitDialog({ cwd, onClose, onDone }: { cwd: string; onClose: () => vo
     }
   }, [cwd])
 
-  const commit = async (amend: boolean) => {
-    if (busy) return
-    setBusy(true)
-    setError('')
-    try {
-      // The daemon's commit is the one that generates a message, so it handles the plain case.
-      if (amend || signoff || noVerify) await git('commit', { cwd, message, amend, signoff, noVerify })
-      else {
-        const r = await daemon.checkoutCommit(cwd, { message, addAll: false })
-        if (r.error) throw new Error(r.error.message)
-      }
-      onDone()
-    } catch (e) {
-      setError(errorText(e))
-      setBusy(false)
-    }
-  }
+  const commit = (amend: boolean) => onCommit({ message, amend, signoff, noVerify })
 
   const toggle = (label: string, on: boolean, set: (on: boolean) => void) => (
     <button role="menuitemcheckbox" aria-checked={on} popoverTarget="commit-menu" popoverTargetAction="hide" onClick={() => set(!on)}>
@@ -455,18 +479,19 @@ function CommitDialog({ cwd, onClose, onDone }: { cwd: string; onClose: () => vo
           const amend = isShortcut(e, 'amend')
           if (!amend && !isShortcut(e, 'commit')) return
           e.preventDefault()
-          void commit(amend)
+          commit(amend)
         }}
       >
         <textarea
           autoFocus
           className="commit-message"
+          rows={2}
           aria-label="Commit Message"
           placeholder="Enter commit message (leave empty to generate one)"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
-        {error && <div className="commit-error err pre-wrap">{error}</div>}
+        {failed && <div className="commit-error err pre-wrap">{failed.error}</div>}
         <footer className="commit-foot">
           {branch && (
             <span className="commit-branch muted truncate">
@@ -478,11 +503,10 @@ function CommitDialog({ cwd, onClose, onDone }: { cwd: string; onClose: () => vo
             <kbd>Esc</kbd> Cancel
           </button>
           <div className="split-btn">
-            <button disabled={busy} title={`Commit (${formatCombo(commitKey)})`} onClick={() => void commit(false)}>
-              {busy ? 'Committing…' : 'Commit'}
+            <button title={`Commit (${formatCombo(commitKey)})`} onClick={() => commit(false)}>
+              Commit
             </button>
             <button
-              disabled={busy}
               title="Commit Options"
               popoverTarget="commit-menu"
               onClick={(e) => {
@@ -497,7 +521,7 @@ function CommitDialog({ cwd, onClose, onDone }: { cwd: string; onClose: () => vo
           </div>
         </footer>
         <div id="commit-menu" ref={menu} popover="auto" className="menu" role="menu">
-          <button role="menuitem" popoverTarget="commit-menu" popoverTargetAction="hide" onClick={() => void commit(true)}>
+          <button role="menuitem" popoverTarget="commit-menu" popoverTargetAction="hide" onClick={() => commit(true)}>
             <Check size={14} style={{ visibility: 'hidden' }} />
             <span className="grow">Amend</span>
             <kbd>{formatCombo(amendKey)}</kbd>

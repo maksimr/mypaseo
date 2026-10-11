@@ -6,7 +6,7 @@ import { Code } from './Code'
 import { Markdown } from './Markdown'
 
 export function Timeline({ items, running }: { items: TimelineItem[]; running: boolean }) {
-  // Like pi's Ctrl+O: expand or collapse every tool output at once.
+  // Like pi's Ctrl+O (here Ctrl+" by default): expand or collapse every tool output at once.
   const [expanded, setExpanded] = useState(false)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -117,7 +117,7 @@ function toolArg(t: ToolCall): string {
 function ToolRow({ tool, expanded }: { tool: ToolCall; expanded: boolean }) {
   const d = tool.detail
   const expandKey = useShortcut('expandTools')
-  // A click overrides the Ctrl+O state for this row until Ctrl+O is pressed again.
+  // A click overrides the shortcut's state for this row until the shortcut is pressed again.
   const [open, setOpen] = useState(expanded)
   const [all, setAll] = useState(expanded)
   if (all !== expanded) {
