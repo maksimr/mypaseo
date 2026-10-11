@@ -4,7 +4,7 @@ Action labels use Title Case. Write "Import Session", not "Import session".
 
 ## What counts as an action label
 
-- Button text, including segmented toggles ("Branch vs Base")
+- Button text, including segmented toggles ("Unstaged")
 - Menu items ("Import Session", "Archive")
 - `title` and `aria-label` on icon buttons ("New Workspace", "Remove Image 2")
 - Dialog titles and `aria-label`s named after the action that opened them ("Import Session into mypaseo")

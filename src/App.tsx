@@ -6,7 +6,7 @@ import { FileTree, FileView } from './components/Files'
 import { ImportSession } from './components/ImportSession'
 import { Settings, type Section } from './components/Settings'
 import { Sidebar, type Selection } from './components/Sidebar'
-import type { Agent, DiffMode, Workspace } from './daemon'
+import type { Agent, Workspace } from './daemon'
 import { formatCombo, isShortcut, useShortcut } from './keymap'
 import { useAttentionNotifications } from './notifications'
 import { OpenFileContext } from './openFile'
@@ -112,7 +112,6 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('chat')
   const [files, setFiles] = useState<string[]>([])
   const [panel, setPanel] = useState<'files' | 'changes' | null>(() => JSON.parse(localStorage.mypaseoPanel ?? 'null'))
-  const [diffMode, setDiffMode] = useState<DiffMode>('uncommitted')
   const [focus, setFocus] = useState<{ path: string; n: number } | null>(null)
   const [settings, setSettings] = useState<{ hostId: string; section?: Section } | null>(null)
   const [chatText, setChatText] = useState('') // handed to the composer when the chat tab mounts
@@ -185,9 +184,9 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }) // reads most of the render's state, so it re-binds every render
   const [importTarget, setImportTarget] = useState<Target | null>(null)
-  const diff = useCheckoutDiff(hostId, isGit ? cwd : undefined, diffMode)
+  const diff = useCheckoutDiff(hostId, isGit ? cwd : undefined)
   const t = totals(diff.files)
-  // Loading keeps it open so a mode switch doesn't close it; an empty diff (all committed) does.
+  // Loading keeps it open while the diff arrives; an empty diff (all committed) closes it.
   const changesTab = isGit && (diff.files.length > 0 || (diff.loading && tab === 'changes'))
   if (tab === 'changes' && !changesTab) setTab('chat')
 
@@ -303,7 +302,7 @@ export default function App() {
               )}
             </div>
           ) : tab === 'changes' && cwd ? (
-            <ChangesView cwd={cwd} diff={diff} mode={diffMode} onModeChange={setDiffMode} focus={focus} onOpenFile={openFile} />
+            <ChangesView cwd={cwd} diff={diff} focus={focus} onOpenFile={openFile} />
           ) : tab.startsWith('file:') && cwd ? (
             <FileView key={tab} cwd={cwd} path={tab.slice(5)} />
           ) : (

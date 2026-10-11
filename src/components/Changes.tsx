@@ -15,7 +15,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { clickable, useEscape } from '../a11y'
 import { chunkKey, chunkPatch, chunks, restoreChunk, stagedKeys, stagedState, type Chunk } from '../chunks'
-import { errorText, type DiffFile, type DiffMode } from '../daemon'
+import { errorText, type DiffFile } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { useDaemon } from '../store'
 import { totals, type DiffState } from '../useCheckoutDiff'
@@ -41,6 +41,8 @@ function goToChunk(root: HTMLElement, dir: number) {
   const el = dir > 0 ? els.find((e) => topOf(e) > y + 1) : els.findLast((e) => topOf(e) < y - 1)
   el?.scrollIntoView({ block: 'start' })
 }
+
+type Filter = 'all' | 'staged' | 'unstaged'
 
 const fileStatus = (f: DiffFile) => (f.isNew ? 'A' : f.isDeleted ? 'D' : f.oldPath ? 'R' : 'M')
 
@@ -76,15 +78,11 @@ const Stat = ({ add, del }: { add: number; del: number }) => (
 export function ChangesView({
   cwd,
   diff,
-  mode,
-  onModeChange,
   focus,
   onOpenFile,
 }: {
   cwd: string
   diff: DiffState
-  mode: DiffMode
-  onModeChange: (m: DiffMode) => void
   focus: { path: string; n: number } | null
   onOpenFile: (path: string) => void
 }) {
@@ -97,7 +95,13 @@ export function ChangesView({
   // Staged chunk keys per path; stays null when the plugin isn't installed, which hides Stage.
   const [index, setIndex] = useState<{ cwd: string; keys: Map<string, Set<string>> } | null>(null)
   const [indexTick, setIndexTick] = useState(0)
-  const keys = mode === 'uncommitted' && index?.cwd === cwd ? index.keys : undefined
+  const keys = index?.cwd === cwd ? index.keys : undefined
+  const [filterPick, setFilter] = useState<Filter>('all')
+  // Without the plugin there's no index state to filter by.
+  const filter = keys ? filterPick : 'all'
+  // Renames can't be staged here (see canStage below), so they count as unstaged.
+  const fileState = (f: DiffFile) => (keys && !f.oldPath ? stagedState(f.hunks, keys.get(f.path)) : 'none')
+  const shown = filter === 'all' ? diff.files : diff.files.filter((f) => fileState(f) !== (filter === 'staged' ? 'none' : 'all'))
   // Staged state of the chunk at the top of the view; null when there is none.
   const [current, setCurrent] = useState<boolean | null>(null)
   const [committing, setCommitting] = useState(false)
@@ -143,7 +147,6 @@ export function ChangesView({
 
   // Re-read on every diff push: the daemon diff is HEAD→worktree, so it doesn't carry index state itself.
   useEffect(() => {
-    if (mode !== 'uncommitted') return
     let live = true
     daemon.invokePluginRpc('mypaseo-git', 'index.diff', { cwd }).then(
       (r) => live && setIndex({ cwd, keys: stagedKeys((r as { files: Record<string, string> }).files) }),
@@ -152,7 +155,7 @@ export function ChangesView({
     return () => {
       live = false
     }
-  }, [daemon, cwd, mode, diff.files, indexTick])
+  }, [daemon, cwd, diff.files, indexTick])
 
   useEffect(() => {
     if (!focus) return
@@ -274,14 +277,15 @@ export function ChangesView({
         >
           {allCollapsed ? <ChevronsUpDown size={14} /> : <ChevronsDownUp size={14} />}
         </button>
-        <div className="segmented">
-          <button className={mode === 'uncommitted' ? 'on' : ''} onClick={() => onModeChange('uncommitted')}>
-            Uncommitted
-          </button>
-          <button className={mode === 'base' ? 'on' : ''} onClick={() => onModeChange('base')}>
-            Branch vs Base
-          </button>
-        </div>
+        {keys && (
+          <div className="segmented">
+            {(['all', 'staged', 'unstaged'] as const).map((f) => (
+              <button key={f} className={filter === f ? 'on' : ''} onClick={() => setFilter(f)}>
+                {f[0].toUpperCase() + f.slice(1)}
+              </button>
+            ))}
+          </div>
+        )}
         <span className="grow" />
         <Stat add={t.add} del={t.del} />
         <span className="sep" />
@@ -355,14 +359,16 @@ export function ChangesView({
       {diff.loading && <div className="empty">Loading diff…</div>}
       {diff.error && <div className="empty err">{diff.error}</div>}
       {diff.tooLarge && <div className="empty">Diff is too large to display</div>}
-      {!diff.loading && !diff.error && diff.files.length === 0 && <div className="empty">No changes</div>}
-      {diff.files.map((f) => {
+      {!diff.loading && !diff.error && shown.length === 0 && (
+        <div className="empty">{filter === 'all' ? 'No changes' : `No ${filter} changes`}</div>
+      )}
+      {shown.map((f) => {
         const [name, dir] = split(f.path)
         const open = !collapsed.has(f.path)
         // shortcut: renames don't line up with the plugin's --no-renames index diff, so they can't be staged here.
         const canStage = !!keys && !f.oldPath
         const fileKeys = keys?.get(f.path)
-        const staged = stagedState(f.hunks, fileKeys)
+        const staged = fileState(f)
         return (
           <section key={f.path} className="excerpt" data-path={f.path}>
             <header className="excerpt-head" aria-expanded={open} {...clickable(() => toggle(f.path))}>
@@ -400,25 +406,24 @@ export function ChangesView({
                   <FileCode size={14} />
                 </button>
               )}
-              {mode === 'uncommitted' && (
-                <button
-                  className="icon-btn"
-                  title="Discard Changes"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    void discard(f)
-                  }}
-                >
-                  <Undo2 size={14} />
-                </button>
-              )}
+              <button
+                className="icon-btn"
+                title="Discard Changes"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void discard(f)
+                }}
+              >
+                <Undo2 size={14} />
+              </button>
             </header>
             {open && (
               <FileHunks
                 file={f}
                 staged={canStage ? (fileKeys ?? new Set()) : undefined}
+                filter={filter}
                 onStage={(cs, i, stage) => void runIndex(setStaged(f, cs, i, stage))}
-                onRestore={mode === 'uncommitted' ? (cs, i, staged) => void restore(f, cs, i, staged) : undefined}
+                onRestore={(cs, i, staged) => void restore(f, cs, i, staged)}
               />
             )}
           </section>
@@ -542,25 +547,32 @@ type ChunkAction = (cs: Chunk[], i: number, flag: boolean) => void
 function FileHunks({
   file,
   staged,
+  filter,
   onStage,
   onRestore,
 }: {
   file: DiffFile
   staged?: Set<string>
+  filter: Filter
   onStage: ChunkAction
-  onRestore?: ChunkAction
+  onRestore: ChunkAction
 }) {
   if (file.status === 'binary') return <div className="empty">Binary file</div>
   if (file.status === 'too_large') return <div className="empty">File diff is too large to display</div>
+  const isStagedChunk = (c: Chunk) => c.change && !!staged?.has(chunkKey(c))
+  // Context always shows; a hunk shows when one of its changes does.
+  const shows = (c: Chunk) => !c.change || filter === 'all' || isStagedChunk(c) === (filter === 'staged')
   return (
     <div className="hunks">
-      {file.hunks.map((h, i) => {
-        const cs = chunks(h)
-        return (
+      {file.hunks
+        .map((h, i) => [i, chunks(h)] as const)
+        .filter(([, cs]) => cs.some((c) => c.change && shows(c)))
+        .map(([i, cs], n) => (
           <div key={i}>
-            {i > 0 && <div className="hunk-sep" />}
+            {n > 0 && <div className="hunk-sep" />}
             {cs.map((c, j) => {
-              const isStaged = c.change && !!staged?.has(chunkKey(c))
+              if (!shows(c)) return null
+              const isStaged = isStagedChunk(c)
               return (
                 <div
                   key={j}
@@ -568,7 +580,7 @@ function FileHunks({
                   data-hunk={i}
                   data-chunk={j}
                 >
-                  {c.change && onRestore && (
+                  {c.change && (
                     <div className="chunk-actions">
                       {staged && (
                         <button className="text-btn" onClick={() => onStage(cs, j, !isStaged)}>
@@ -591,8 +603,7 @@ function FileHunks({
               )
             })}
           </div>
-        )
-      })}
+        ))}
     </div>
   )
 }
