@@ -6,6 +6,13 @@ import { DaemonClient } from '@getpaseo/client/internal/daemon-client'
 export const DAEMON_URL =
   import.meta.env.VITE_PASEO_URL ?? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`
 
+// crypto.randomUUID only exists in secure contexts (https/localhost), so LAN http access needs this.
+// DaemonClient calls it per request (not at import), so defining it here, before any use, is enough.
+crypto.randomUUID ??= () =>
+  '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (c) =>
+    (+c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (+c / 4)))).toString(16),
+  ) as ReturnType<Crypto['randomUUID']>
+
 // A stable client id lets the daemon resume this browser's session after reloads.
 const clientId = (localStorage.mypaseoClientId ??= crypto.randomUUID())
 
