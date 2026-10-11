@@ -363,7 +363,9 @@ function WorkspaceRow({
             {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
           </button>
         ) : (
-          <span className="chevron" />
+          <span className="chevron">
+            <span className="dot" />
+          </span>
         )}
         <span className="grow truncate">{name}</span>
         <button className="icon-btn hover-swap" title="Workspace Actions" popoverTarget={menuId} onClick={placeMenu(menuId)}>
