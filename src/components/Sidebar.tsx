@@ -119,7 +119,7 @@ export function Sidebar({
                   <span className="chevron hover-only">{open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
                   <span className="grow" />
                   <button
-                    className="icon-btn hover-only"
+                    className="icon-btn hover-swap"
                     title="Project Actions"
                     popoverTarget={menuId}
                     onClick={placeMenu(menuId)}
@@ -127,7 +127,7 @@ export function Sidebar({
                     <Ellipsis size={13} />
                   </button>
                   <button
-                    className="icon-btn hover-only"
+                    className="icon-btn hover-swap"
                     title={`New Workspace (${formatCombo(newWorkspaceKey)})`}
                     onClick={(e) => {
                       e.stopPropagation()
@@ -136,6 +136,7 @@ export function Sidebar({
                   >
                     <Plus size={13} />
                   </button>
+                  <StatusMark agents={agents.filter((a) => projectWorkspaces.some((w) => w.id === a.workspaceId))} />
                 </div>
                 <div id={menuId} popover="auto" className="menu">
                   <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => onImport(p.projectId)}>
