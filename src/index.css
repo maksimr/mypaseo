@@ -539,6 +539,10 @@ code.inline {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 16px 16px;
 }
 .chat-scroll {
   flex: 1;
@@ -589,14 +593,15 @@ code.inline {
 .tool {
   margin: 6px 0;
   border-radius: 6px;
-  background: var(--bg-elev);
+  /* translucent so the chat grid shows through; tuned to match the old solid colors over --bg */
+  background: rgba(45, 47, 54, 0.7);
 }
 .tool.completed {
-  background: #2c3e33;
+  background: rgba(48, 73, 54, 0.7);
 }
 .tool.failed,
 .tool.canceled {
-  background: #542a2c;
+  background: rgba(105, 44, 44, 0.7);
 }
 .tool-head {
   display: block;
