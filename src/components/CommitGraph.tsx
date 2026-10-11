@@ -19,7 +19,13 @@ const COLORS = ['#74ade8', '#e5894a', '#a1c181', '#c678dd', '#dec184', '#56b6c2'
 const color = (lane: number) => COLORS[lane % COLORS.length]
 const x = (lane: number) => 12 + lane * LANE
 const y = (row: number) => row * ROW + ROW / 2
-const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+// en-US for "Sep", not en-GB's "Sept"; parts reordered since neither locale has this layout.
+const dateParts = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+/** "11 Oct 2026 23:55" in local time. */
+const formatDate = (iso: string) => {
+  const p = Object.fromEntries(dateParts.formatToParts(new Date(iso)).map((x) => [x.type, x.value]))
+  return `${p.day} ${p.month} ${p.year} ${p.hour}:${p.minute}`
+}
 
 /** Leaves a commit sideways into the line's own lane, runs down it, then turns sideways into the next commit. */
 function linePath(l: GraphLine, row: number) {
@@ -27,6 +33,41 @@ function linePath(l: GraphLine, row: number) {
   let d = `M${x1} ${y1}`
   if (x1 !== xl) d += `H${xl - Math.sign(xl - x1) * R}Q${xl} ${y1} ${xl} ${y1 + R}`
   return x2 === xl ? `${d}V${y2}` : `${d}V${y2 - R}Q${xl} ${y2} ${xl + Math.sign(x2 - xl) * R} ${y2}H${x2}`
+}
+
+type Cols = { graph?: number; date: number; author: number; sha: number }
+const [MIN_COL, MAX_COL] = [40, 600]
+
+/** Drag handle in the header gap before grid column `col`; `dir` is +1 when it sizes the column on its left, -1 the one on its right. */
+function ColResizer({ col, dir, label, width, onResize }: { col: number; dir: 1 | -1; label: string; width: number; onResize: (w: number) => void }) {
+  const start = useRef({ x: 0, w: 0 })
+  return (
+    <div
+      className="resizer graph-resizer"
+      style={{ gridColumn: col }}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={label}
+      aria-valuenow={width}
+      aria-valuemin={MIN_COL}
+      aria-valuemax={MAX_COL}
+      tabIndex={0}
+      onPointerDown={(e) => {
+        e.preventDefault() // no text selection while dragging
+        e.currentTarget.setPointerCapture(e.pointerId)
+        start.current = { x: e.clientX, w: width }
+      }}
+      onPointerMove={(e) => {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) onResize(start.current.w + dir * (e.clientX - start.current.x))
+      }}
+      onKeyDown={(e) => {
+        const d = e.key === 'ArrowLeft' ? -10 : e.key === 'ArrowRight' ? 10 : 0
+        if (!d) return
+        e.preventDefault()
+        onResize(width + dir * d)
+      }}
+    />
+  )
 }
 
 function Ref({ name }: { name: string }) {
@@ -75,17 +116,24 @@ export function CommitGraph({
 
   const commits = useMemo(() => (log?.cwd === cwd ? log.commits : []), [log, cwd])
   const { rows, width } = useMemo(() => layout(commits), [commits])
-  const graphW = Math.max(64, x(width) + 4)
+  const [cols, setCols] = useState<Cols>(() => ({ date: 170, author: 150, sha: 72, ...JSON.parse(localStorage.mypaseoGraphColumns ?? '{}') }))
+  const resize = (k: keyof Cols) => (w: number) => {
+    const next = { ...cols, [k]: Math.round(Math.min(Math.max(w, MIN_COL), MAX_COL)) }
+    setCols(next)
+    localStorage.mypaseoGraphColumns = JSON.stringify(next)
+  }
+  // Until dragged, the graph column fits the lanes; narrower clips them (the svg's css width is --graph-w).
+  const graphW = cols.graph ?? Math.max(64, x(width) + 4)
   const lines = useMemo(
     () => (
-      <svg className="graph-lines" width={graphW} height={rows.length * ROW} aria-hidden>
+      <svg className="graph-lines" height={rows.length * ROW} aria-hidden>
         {rows.flatMap((r, i) => r.lines.map((l, j) => <path key={`${i}.${j}`} d={linePath(l, i)} stroke={color(l.lane)} />))}
         {rows.map((r, i) => (
           <circle key={i} cx={x(r.lane)} cy={y(i)} r={3.5} fill={color(r.lane)} />
         ))}
       </svg>
     ),
-    [rows, graphW],
+    [rows],
   )
 
   const [query, setQuery] = useState('')
@@ -104,7 +152,10 @@ export function CommitGraph({
   }, [current])
 
   return (
-    <div className="graph" style={{ '--graph-w': `${graphW}px` } as CSSProperties}>
+    <div
+      className="graph"
+      style={{ '--graph-w': `${graphW}px`, '--date-w': `${cols.date}px`, '--author-w': `${cols.author}px`, '--sha-w': `${cols.sha}px` } as CSSProperties}
+    >
       <div className="graph-toolbar">
         <input
           className="input grow"
@@ -140,11 +191,15 @@ export function CommitGraph({
       {commits.length > 0 && (
         <>
           <div className="graph-row graph-head">
-            <span>Graph</span>
-            <span>Description</span>
-            <span>Date</span>
-            <span>Author</span>
-            <span>Commit</span>
+            <span className="truncate">Graph</span>
+            <span className="truncate">Description</span>
+            <span className="truncate">Date</span>
+            <span className="truncate">Author</span>
+            <span className="truncate">Commit</span>
+            <ColResizer col={2} dir={1} label="Resize Graph Column" width={graphW} onResize={resize('graph')} />
+            <ColResizer col={3} dir={-1} label="Resize Date Column" width={cols.date} onResize={resize('date')} />
+            <ColResizer col={4} dir={-1} label="Resize Author Column" width={cols.author} onResize={resize('author')} />
+            <ColResizer col={5} dir={-1} label="Resize Commit Column" width={cols.sha} onResize={resize('sha')} />
           </div>
           <div className="graph-body" ref={body}>
             {lines}
@@ -164,11 +219,11 @@ export function CommitGraph({
                     {c.subject}
                   </span>
                 </span>
-                <span className="truncate muted">{dateFormat.format(new Date(c.date))}</span>
+                <span className="truncate muted">{formatDate(c.date)}</span>
                 <span className="truncate muted" title={c.author}>
                   {c.author}
                 </span>
-                <span className="mono muted" title={c.sha}>
+                <span className="truncate mono muted" title={c.sha}>
                   {c.sha.slice(0, 7)}
                 </span>
               </div>
@@ -212,7 +267,7 @@ export function CommitDetails({
     <div className="changes-list">
       <div className="commit-author">
         <div className="commit-author-name">{details.author}</div>
-        <div>{dateFormat.format(new Date(details.date))}</div>
+        <div>{formatDate(details.date)}</div>
       </div>
       <div className="commit-meta">
         <div title="Email">

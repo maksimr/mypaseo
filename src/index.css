@@ -1750,7 +1750,7 @@ kbd {
 }
 .graph-row {
   display: grid;
-  grid-template-columns: var(--graph-w) minmax(0, 1fr) 170px 150px 72px;
+  grid-template-columns: var(--graph-w) minmax(0, 1fr) var(--date-w) var(--author-w) var(--sha-w);
   align-items: center;
   column-gap: 12px;
   height: 28px; /* ROW in CommitGraph.tsx */
@@ -1763,10 +1763,14 @@ kbd {
   top: 38px;
   z-index: 2;
   padding-left: 12px;
-  grid-template-columns: calc(var(--graph-w) - 12px) minmax(0, 1fr) 170px 150px 72px;
+  grid-template-columns: calc(var(--graph-w) - 12px) minmax(0, 1fr) var(--date-w) var(--author-w) var(--sha-w);
   border-bottom: 1px solid var(--border);
   background: var(--bg);
   color: var(--text-muted);
+}
+/* Absolute in the sticky header, placed by grid-column at the start of its column: the middle of the 12px gap. */
+.graph-resizer {
+  left: -9px;
 }
 .graph-body {
   position: relative;
@@ -1785,6 +1789,7 @@ kbd {
   position: absolute;
   top: 0;
   left: 0;
+  width: var(--graph-w);
   pointer-events: none;
 }
 .graph-lines path {
@@ -1796,6 +1801,7 @@ kbd {
   align-items: center;
   gap: 5px;
   min-width: 0;
+  overflow: hidden; /* long refs stop at the column edge */
 }
 .graph-ref {
   display: inline-flex;
