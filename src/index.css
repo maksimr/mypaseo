@@ -422,6 +422,32 @@ code.inline {
 .row.workspace {
   padding-left: 14px;
 }
+.row.workspace:has(.workspace-branch) {
+  height: auto;
+  padding-block: 4px;
+  align-items: flex-start;
+}
+/* Chevron, actions and status mark center on the title line, not the whole two-line row. */
+.row.workspace:has(.workspace-branch) > :not(.workspace-label) {
+  position: relative;
+  top: 0.5lh;
+  translate: 0 -50%;
+}
+.workspace-label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.workspace-branch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+.workspace-branch svg {
+  flex: none;
+}
 .row.agent {
   padding-left: 40px;
   color: var(--text-muted);

@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Ellipsis,
   Folder,
+  GitBranch,
   Import,
   ListFilter,
   Loader2,
@@ -375,6 +376,8 @@ function WorkspaceRow({
   const active = selection.workspaceId === w.id && (!selection.agentId || collapsed)
   const select = (agentId?: string) => onSelect({ projectId: w.projectId, workspaceId: w.id, agentId })
   const name = w.title || w.name
+  // An untitled workspace is already named after its branch.
+  const branch = w.gitRuntime?.currentBranch !== name ? w.gitRuntime?.currentBranch : undefined
   const menuId = `workspace-menu-${w.id}`
   const archive = (deleteAgents: boolean) => onArchive(w, deleteAgents)
   const [syncing, setSyncing] = useState<'pull' | 'push'>()
@@ -408,7 +411,15 @@ function WorkspaceRow({
         ) : (
           <span className="chevron" />
         )}
-        <span className="grow truncate">{name}</span>
+        <span className="workspace-label">
+          <span className="truncate">{name}</span>
+          {branch && (
+            <span className="workspace-branch muted">
+              <GitBranch size={11} aria-label="Branch" />
+              <span className="truncate">{branch}</span>
+            </span>
+          )}
+        </span>
         <button className="icon-btn hover-swap" title="Workspace Actions" popoverTarget={menuId} onClick={placeMenu(menuId)}>
           <Ellipsis size={13} />
         </button>
