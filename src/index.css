@@ -254,13 +254,6 @@ code.inline {
 }
 .panel {
   border-left: 1px solid var(--border);
-  container-type: inline-size;
-}
-/* A narrow panel has no room for the totals after the Git Graph tab; the center Changes tab shows them too. */
-@container (width < 360px) {
-  .panel-tabs .stat {
-    display: none;
-  }
 }
 .sidebar-head,
 .panel-tabs,

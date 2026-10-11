@@ -480,12 +480,6 @@ export default function App() {
                   <GitGraphIcon size={14} /> Git Graph
                 </button>
               )}
-              <span className="grow" />
-              {panelView === 'changes' && (
-                <span className="stat">
-                  <span className="add">+{t.add}</span> <span className="del">−{t.del}</span>
-                </span>
-              )}
             </div>
             {panelView === 'files' ? (
               <FileTree key={cwd} cwd={cwd} rootName={workspace.projectDisplayName} onOpen={openFile} activePath={tab.startsWith('file:') ? tab.slice(5) : undefined} />
