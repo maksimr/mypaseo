@@ -91,6 +91,15 @@ export function projectWorkspaces(projectId: string, workspaces: Workspace[], ag
   return workspaces.filter((w) => w.projectId === projectId).sort((a, b) => oldestAgentAt(a.id).localeCompare(oldestAgentAt(b.id)))
 }
 
+/** Running, or unread / waiting on a permission. */
+const isActive = (a: Agent) => a.status === 'running' || a.pendingPermissions.length > 0 || a.requiresAttention
+
+/** The workspaces the sidebar lists, in order. activeOnly keeps the selected one so opening it (which clears unread) doesn't hide it. */
+export const sidebarWorkspaces = (projects: Project[], workspaces: Workspace[], agents: Agent[], activeOnly: boolean, selectedId?: string) =>
+  projects
+    .flatMap((p) => projectWorkspaces(p.projectId, workspaces, agents))
+    .filter((w) => !activeOnly || w.id === selectedId || agents.some((a) => a.workspaceId === w.id && isActive(a)))
+
 /** The daemon has no workspace delete: removing permanently deletes the agents, then archives the workspace. */
 export async function archiveWorkspace(workspaceId: string, deleteAgents: boolean) {
   try {

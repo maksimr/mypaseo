@@ -1,4 +1,4 @@
-import { ArrowUp, Bot, Brain, ChevronDown, Import, Loader2, Plus, Shield, ShieldQuestion, Sparkles, Square, X } from 'lucide-react'
+import { ArrowUp, Bot, Brain, ChevronDown, Folder, Import, Loader2, Plus, Shield, ShieldQuestion, Sparkles, Square, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { daemon, errorText, type Agent, type Permission, type Workspace } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
@@ -16,6 +16,7 @@ export function Chat({
   onImport,
   initialText,
   onInitialTextUsed,
+  onProjectChange,
 }: {
   agent: Agent | undefined
   target: Target
@@ -23,6 +24,7 @@ export function Chat({
   onImport: () => void
   initialText?: string
   onInitialTextUsed?: () => void
+  onProjectChange: (projectId: string, text: string) => void
 }) {
   const tl = useTimeline(agent?.id ?? null)
   const running = agent?.status === 'running'
@@ -71,7 +73,14 @@ export function Chat({
         )}
       </div>
       {agent?.pendingPermissions.map((p) => <PermissionCard key={p.id} agentId={agent.id} request={p} />)}
-      <Composer agent={agent} target={target} onCreated={onCreated} initialText={initialText} onInitialTextUsed={onInitialTextUsed} />
+      <Composer
+        agent={agent}
+        target={target}
+        onCreated={onCreated}
+        initialText={initialText}
+        onInitialTextUsed={onInitialTextUsed}
+        onProjectChange={onProjectChange}
+      />
     </div>
   )
 }
@@ -142,14 +151,16 @@ function Composer({
   onCreated,
   initialText,
   onInitialTextUsed,
+  onProjectChange,
 }: {
   agent?: Agent
   target: Target
   onCreated: (a: Agent) => void
   initialText?: string
   onInitialTextUsed?: () => void
+  onProjectChange: (projectId: string, text: string) => void
 }) {
-  const { providers } = useStore()
+  const { providers, projects } = useStore()
   const [text, setText] = useState(initialText ?? '')
   useEffect(() => {
     if (initialText) onInitialTextUsed?.()
@@ -160,6 +171,14 @@ function Composer({
   const sendKey = useShortcut('send')
   const input = useRef<HTMLTextAreaElement>(null)
   const modelSelect = useRef<HTMLSelectElement>(null)
+  const projectSelect = useRef<HTMLSelectElement>(null)
+  const openPicker = (el: HTMLSelectElement) => {
+    el.focus()
+    // showPicker is missing in older Safari; focus alone still lets Space/arrows open it.
+    try {
+      el.showPicker()
+    } catch {}
+  }
   // Mount only: a new chat takes focus, and so does the remount after a send creates its agent (focus fell to <body>).
   useEffect(() => {
     const el = input.current
@@ -297,11 +316,10 @@ function Composer({
             change('thinking', thinkingOptions[(i + 1) % thinkingOptions.length].id)
           } else if (isShortcut(e, 'pickModel') && modelSelect.current) {
             e.preventDefault()
-            modelSelect.current.focus()
-            // showPicker is missing in older Safari; focus alone still lets Space/arrows open it.
-            try {
-              modelSelect.current.showPicker()
-            } catch {}
+            openPicker(modelSelect.current)
+          } else if (isShortcut(e, 'pickProject') && projectSelect.current) {
+            e.preventDefault()
+            openPicker(projectSelect.current)
           }
         }}
       />
@@ -320,6 +338,17 @@ function Composer({
             e.target.value = ''
           }}
         />
+        {!agent && (
+          <Pick
+            ref={projectSelect}
+            icon={<Folder size={14} />}
+            value={target.projectId}
+            // The chat remounts for the new project: hand it the typed text.
+            onChange={(id) => onProjectChange(id, text)}
+            options={projects.map((p) => [p.projectId, p.projectCustomName || p.projectDisplayName])}
+            title="Project"
+          />
+        )}
         {!agent && (
           <Pick
             icon={<Bot size={14} />}

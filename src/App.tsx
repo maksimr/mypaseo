@@ -12,7 +12,7 @@ import { useAttentionNotifications } from './notifications'
 import { OpenFileContext } from './openFile'
 import { selectionRef } from './selection'
 import { SelectionAction } from './components/SelectionAction'
-import { archiveWorkspace, byRecent, projectWorkspaces, startSync, useStore } from './store'
+import { archiveWorkspace, byRecent, sidebarWorkspaces, startSync, useStore } from './store'
 import { totals, useCheckoutDiff } from './useCheckoutDiff'
 
 type Tab = 'chat' | 'changes' | `file:${string}`
@@ -71,9 +71,11 @@ export default function App() {
   }
   const openWorkspace = (w: Workspace) =>
     select({ projectId: w.projectId, workspaceId: w.id, agentId: agents.filter((a) => a.workspaceId === w.id).sort(byRecent)[0]?.id })
+  const [activeOnly, setActiveOnly] = useState(() => localStorage.mypaseoActiveOnly === 'true')
+  const listed = () => sidebarWorkspaces(projects, workspaces, agents, activeOnly, sel.workspaceId)
   /** Archives or removes a workspace; if it was selected, selects the one above it in the sidebar. */
   const archive = async (w: Workspace, deleteAgents: boolean) => {
-    const list = projects.flatMap((p) => projectWorkspaces(p.projectId, workspaces, agents))
+    const list = listed()
     const i = list.findIndex((x) => x.id === w.id)
     const near = list[i - 1] ?? list[i + 1] // the first one has none above: take the one below
     if (!(await archiveWorkspace(w.id, deleteAgents)) || sel.workspaceId !== w.id) return
@@ -107,7 +109,8 @@ export default function App() {
   useEffect(() => {
     localStorage.mypaseoSidebar = sidebar
     localStorage.mypaseoPanel = JSON.stringify(panel)
-  }, [sidebar, panel])
+    localStorage.mypaseoActiveOnly = activeOnly
+  }, [sidebar, panel, activeOnly])
   const [sidebarW, setSidebarW] = useWidth('mypaseoSidebarWidth', 270)
   const [panelW, setPanelW] = useWidth('mypaseoPanelWidth', 280)
   const sidebarKey = useShortcut('toggleSidebar')
@@ -118,6 +121,10 @@ export default function App() {
       if (isShortcut(e, 'toggleSidebar')) {
         e.preventDefault()
         setSidebar((s) => !s)
+      }
+      if (isShortcut(e, 'toggleActiveOnly')) {
+        e.preventDefault()
+        setActiveOnly((a) => !a)
       }
       if (cwd && isShortcut(e, 'togglePanel')) {
         e.preventDefault()
@@ -152,7 +159,7 @@ export default function App() {
       }
       const step = isShortcut(e, 'nextWorkspace') ? 1 : isShortcut(e, 'prevWorkspace') ? -1 : 0
       if (step) {
-        const list = projects.flatMap((p) => projectWorkspaces(p.projectId, workspaces, agents))
+        const list = listed()
         const i = list.findIndex((w) => w.id === sel.workspaceId)
         // Wraps around; with no workspace selected, next lands on the first and previous on the last.
         const w = list[((i < 0 && step < 0 ? 0 : i) + step + list.length) % list.length]
@@ -206,6 +213,8 @@ export default function App() {
           selection={sel}
           onSelect={select}
           onArchive={archive}
+          activeOnly={activeOnly}
+          onToggleActiveOnly={() => setActiveOnly(!activeOnly)}
           onOpenSettings={() => setSettingsOpen(true)}
           onImport={(projectId) => {
             const p = projects.find((x) => x.projectId === projectId)
@@ -280,6 +289,10 @@ export default function App() {
               onImport={() => setImportTarget(target)}
               initialText={chatText}
               onInitialTextUsed={() => setChatText('')}
+              onProjectChange={(projectId, text) => {
+                setChatText(text)
+                select({ projectId })
+              }}
             />
           )}
         </main>

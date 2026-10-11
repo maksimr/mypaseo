@@ -5,6 +5,7 @@ import {
   Ellipsis,
   Folder,
   Import,
+  ListFilter,
   Loader2,
   MessageCirclePlus,
   Plus,
@@ -16,7 +17,7 @@ import { useEffect, useId, useState, type FormEvent, type MouseEvent } from 'rea
 import { daemon, errorText, type Agent, type Workspace } from '../daemon'
 import { clickable, useEscape } from '../a11y'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
-import { byRecent, projectWorkspaces as sortedWorkspaces, useStore } from '../store'
+import { byRecent, projectWorkspaces as sortedWorkspaces, sidebarWorkspaces, useStore } from '../store'
 
 export type Selection = { projectId?: string; workspaceId?: string; agentId?: string }
 
@@ -51,17 +52,22 @@ export function Sidebar({
   onArchive,
   onOpenSettings,
   onImport,
+  activeOnly,
+  onToggleActiveOnly,
 }: {
   selection: Selection
   onSelect: (s: Selection) => void
   onArchive: (w: Workspace, deleteAgents: boolean) => void
   onOpenSettings: () => void
   onImport: (projectId: string) => void
+  activeOnly: boolean
+  onToggleActiveOnly: () => void
 }) {
   const { projects, workspaces, agents, status, error } = useStore()
   const settingsKey = useShortcut('openSettings')
   const newWorkspaceKey = useShortcut('newWorkspace')
   const addProjectKey = useShortcut('addProject')
+  const activeOnlyKey = useShortcut('toggleActiveOnly')
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(JSON.parse(localStorage.mypaseoCollapsed ?? '[]')))
   const toggle = (id: string) =>
     setCollapsed((c) => {
@@ -99,12 +105,22 @@ export function Sidebar({
           <button className="icon-btn hover-only" title={`Add Project (${formatCombo(addProjectKey)})`} onClick={() => setAdding(true)}>
             <FolderAdd />
           </button>
+          <button
+            className={`icon-btn ${activeOnly ? 'on' : 'hover-only'}`}
+            title={`Show Only Active Workspaces (${formatCombo(activeOnlyKey)})`}
+            aria-pressed={activeOnly}
+            onClick={onToggleActiveOnly}
+          >
+            <ListFilter size={15} />
+          </button>
         </div>
         <nav className="tree">
           {projects.length === 0 && <div className="empty">{status === 'connected' ? 'No projects yet' : 'Connecting…'}</div>}
           {projects.map((p) => {
             const open = !collapsed.has(p.projectId)
             const projectWorkspaces = sortedWorkspaces(p.projectId, workspaces, agents)
+            const shownWorkspaces = sidebarWorkspaces([p], workspaces, agents, activeOnly, selection.workspaceId)
+            if (activeOnly && shownWorkspaces.length === 0) return null
             const name = p.projectCustomName || p.projectDisplayName
             const menuId = `project-menu-${p.projectId}`
             return (
@@ -152,7 +168,7 @@ export function Sidebar({
                   </button>
                 </div>
                 {open &&
-                  projectWorkspaces.map((w) => (
+                  shownWorkspaces.map((w) => (
                     <WorkspaceRow
                       key={w.id}
                       workspace={w}

@@ -27,9 +27,12 @@ export const SHORTCUTS = {
   amend: { label: 'Amend Commit', description: 'Amend the last commit from the commit dialog. An empty message keeps its message.', default: isMac ? 'Shift+Meta+Enter' : 'Ctrl+Shift+Enter' },
   cycleThinking: { label: 'Cycle Thinking Level', description: 'Switch to the next thinking level from the chat composer.', default: 'Shift+Tab' },
   pickModel: { label: 'Choose Model', description: 'Open the model picker from the chat composer.', default: isMac ? 'Alt+Meta+Slash' : 'Ctrl+Alt+Slash' },
+  // Ctrl on Mac too, as asked: ⌘P is the browser's Print.
+  pickProject: { label: 'Choose Project', description: 'Open the project picker from the new agent composer.', default: 'Ctrl+KeyP' },
   // Ctrl+" (Shift+Quote on US layout), Ctrl on Mac too.
   expandTools: { label: 'Expand Tool Output', description: 'Expand or collapse the output of every tool call in the chat.', default: 'Ctrl+Shift+Quote' },
   addProject: { label: 'Add Project', description: 'Add a project directory to the sidebar.', default: 'Ctrl+KeyO' },
+  toggleActiveOnly: { label: 'Show Only Active Workspaces', description: 'Filter the sidebar and workspace navigation to running and unread workspaces.', default: 'Ctrl+KeyU' },
   // Ctrl on Mac too: Safari keeps ⌘, and ⇧⌘, for itself and never passes them to the page.
   openSettings: { label: 'Open Settings', description: 'Open this settings window.', default: 'Ctrl+Comma' },
 }
