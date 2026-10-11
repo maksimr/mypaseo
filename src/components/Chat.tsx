@@ -5,6 +5,7 @@ import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { hostLabel, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../store'
 import { useAutocomplete } from '../useAutocomplete'
 import { useTimeline } from '../useTimeline'
+import { ContextMeter } from './ContextMeter'
 import { ProviderIcon } from './ProviderIcon'
 import { Timeline, ToolDetailView } from './Timeline'
 
@@ -406,6 +407,7 @@ function Composer({
           <Pick icon={<Shield size={14} />} value={mode ?? undefined} onChange={(v) => change('mode', v)} options={modes.map((m) => [m.id, m.label])} title="Mode" />
         )}
         <span className="grow" />
+        {agent && <ContextMeter agent={agent} />}
         {agent?.status === 'running' && empty ? (
           <button className="send stop" title="Stop" onClick={() => void daemon.cancelAgent(agent.id)}>
             <Square size={12} fill="currentColor" />

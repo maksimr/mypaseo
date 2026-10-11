@@ -1051,6 +1051,126 @@ code.inline {
   background: var(--bg-active);
   color: var(--text);
 }
+.ctx-meter {
+  position: relative;
+  display: inline-flex;
+  margin-right: 4px;
+}
+.ctx-ring {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+.ctx-card {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 300px;
+  max-width: calc(100vw - 24px);
+  padding: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg-elev);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+}
+/* Bridges the gap to the ring so moving the pointer onto the card keeps it open. */
+.ctx-card::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 9px;
+}
+.ctx-card hr {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+.ctx-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.ctx-summary .muted {
+  font-size: 12px;
+}
+.usage-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.usage-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.usage-head .icon-btn {
+  margin: -4px -4px -4px 0;
+}
+.usage-head .badge {
+  background: var(--bg-active);
+}
+.usage-icon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: var(--text-muted);
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+.usage-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+}
+.usage-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.usage-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.usage-value {
+  flex: none;
+  font-weight: 500;
+}
+.usage-value span {
+  font-weight: 400;
+}
+.usage-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-active);
+  overflow: hidden;
+}
+.usage-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--text-muted);
+}
+.usage-fill.ok {
+  background: var(--green);
+}
+.usage-fill.warning {
+  background: var(--yellow);
+}
+.usage-fill.danger {
+  background: var(--red);
+}
 
 /* Files */
 .file-view {
