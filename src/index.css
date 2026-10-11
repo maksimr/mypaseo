@@ -896,6 +896,7 @@ code.inline {
   field-sizing: content;
   min-height: calc(2lh + 18px);
   max-height: 40vh;
+  overflow-x: hidden;
   padding: 14px 16px 4px;
   border: 0;
   outline: none;
