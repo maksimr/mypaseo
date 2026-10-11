@@ -1642,11 +1642,10 @@ kbd {
   display: flex;
   flex-direction: column;
   width: min(640px, 92vw);
-  border: 1px solid var(--border-strong);
   border-radius: 10px;
-  background: var(--bg-elev);
-  /* Zed's double frame: a panel-colored ring around the card. */
-  box-shadow: 0 0 0 7px var(--bg-panel), 0 0 0 8px var(--border), 0 20px 60px rgba(0, 0, 0, 0.5);
+  background: var(--bg-panel);
+  /* Zed's double frame: a lighter ring around the card. */
+  box-shadow: 0 0 0 7px var(--bg-elev), 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 .commit-message {
   padding: 14px 16px;
