@@ -1,11 +1,11 @@
 import { supportsUsageReports } from '@getpaseo/client/internal/daemon-client'
 import { Gauge, Loader2, RotateCw } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { errorText, type Agent, type UsageReport } from '../daemon'
 import { useDaemon } from '../store'
-import { balanceAmount, formatCost, formatTokens, resetLabel, upsertReport, usedPct, windowTone, windowTrailing, type Tone } from '../usage'
+import { balanceAmount, formatCost, formatTokens, resetLabel, updatedLabel, upsertReport, usedPct, windowTone, windowTrailing, type Tone } from '../usage'
 
-/** Composer ring for how full the agent's context window is; hover or focus opens the details and the account's usage. */
+/** Composer ring for how full the agent's context window is; hovering or clicking it opens the details and the account's usage. */
 export function ContextMeter({ agent }: { agent: Agent }) {
   const [open, setOpen] = useState(false)
   const { contextWindowMaxTokens: max, contextWindowUsedTokens: used, totalCostUsd: cost } = agent.lastUsage ?? {}
@@ -18,7 +18,6 @@ export function ContextMeter({ agent }: { agent: Agent }) {
       className="ctx-meter"
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
-      onFocus={() => setOpen(true)}
       onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setOpen(false)}
       onKeyDown={(e) => {
         if (e.key !== 'Escape' || !open) return
@@ -26,7 +25,7 @@ export function ContextMeter({ agent }: { agent: Agent }) {
         setOpen(false)
       }}
     >
-      <button className="icon-btn ctx-ring" aria-label={label} aria-expanded={open} onClick={() => setOpen(true)}>
+      <button className="icon-btn ctx-ring" aria-label={label} aria-expanded={open} onClick={() => setOpen(!open)}>
         <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
           <circle cx="8" cy="8" r={r} fill="none" stroke="var(--border-strong)" strokeWidth="2" />
           {pct != null && (
@@ -138,9 +137,7 @@ function UsageCard({ entry, refreshing, onRefresh }: { entry: UsageReport; refre
             {r.status === 'error' ? 'Error' : 'Unavailable'}
           </span>
         )}
-        <button className="icon-btn" title={`Refresh ${entry.sourceLabel}`} disabled={refreshing} onClick={onRefresh}>
-          {refreshing ? <Loader2 size={14} className="spin" /> : <RotateCw size={14} />}
-        </button>
+        <RefreshButton entry={entry} refreshing={refreshing} onRefresh={onRefresh} />
       </div>
       {messages.length > 0 && <div className="err pre-wrap">{messages.join('\n')}</div>}
       {r.status === 'available' && (
@@ -166,6 +163,29 @@ function UsageCard({ entry, refreshing, onRefresh }: { entry: UsageReport; refre
       )}
       {entry.account.label && <div className="muted truncate">{entry.account.label}</div>}
     </div>
+  )
+}
+
+/** Its tooltip says when the report on screen was fetched, as of when the pointer or focus arrived. */
+function RefreshButton({ entry, refreshing, onRefresh }: { entry: UsageReport; refreshing: boolean; onRefresh: () => void }) {
+  const [now, setNow] = useState(Date.now)
+  const tipId = useId()
+  const tick = () => setNow(Date.now())
+  return (
+    <button
+      className="icon-btn usage-refresh"
+      aria-label={`Refresh ${entry.sourceLabel}`}
+      aria-describedby={tipId}
+      disabled={refreshing}
+      onClick={onRefresh}
+      onMouseEnter={tick}
+      onFocus={tick}
+    >
+      {refreshing ? <Loader2 size={14} className="spin" /> : <RotateCw size={14} />}
+      <span id={tipId} role="tooltip" className="usage-tip">
+        {updatedLabel(entry.fetchedAt, now)}
+      </span>
+    </button>
   )
 }
 

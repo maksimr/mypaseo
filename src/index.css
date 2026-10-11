@@ -1079,6 +1079,17 @@ code.inline {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   font-size: 12px;
 }
+@media (prefers-reduced-motion: no-preference) {
+  .ctx-card {
+    animation: ctx-card-in 0.18s ease-out;
+  }
+}
+@keyframes ctx-card-in {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
 /* Bridges the gap to the ring so moving the pointer onto the card keeps it open. */
 .ctx-card::after {
   content: '';
@@ -1116,6 +1127,28 @@ code.inline {
 }
 .usage-head .icon-btn {
   margin: -4px -4px -4px 0;
+}
+.usage-refresh {
+  position: relative;
+}
+.usage-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  translate: -50%;
+  display: none;
+  padding: 4px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--bg-active);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.usage-refresh:is(:hover, :focus-visible) .usage-tip {
+  display: block;
 }
 .usage-head .badge {
   background: var(--bg-active);

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { UsageReport } from './daemon.ts'
-import { balanceAmount, formatCost, formatTokens, resetLabel, upsertReport, windowTone, windowTrailing } from './usage.ts'
+import { balanceAmount, formatCost, formatTokens, resetLabel, updatedLabel, upsertReport, windowTone, windowTrailing } from './usage.ts'
 
 const now = Date.parse('2026-01-01T00:00:00Z')
 const at = (min: number) => new Date(now + min * 60_000).toISOString()
@@ -19,6 +19,13 @@ test('reset label counts down in the largest whole unit', () => {
   assert.equal(resetLabel(at(3 * 24 * 60 + 5), now), 'resets 3d')
   assert.equal(resetLabel(at(-1), now), 'resetting now')
   assert.equal(resetLabel(null, now), null)
+})
+
+test('updated label counts up in the largest whole unit', () => {
+  assert.equal(updatedLabel(at(-0.5), now), 'Updated just now')
+  assert.equal(updatedLabel(at(-1), now), 'Updated 1m ago')
+  assert.equal(updatedLabel(at(-125), now), 'Updated 2h ago')
+  assert.equal(updatedLabel(at(-3 * 24 * 60), now), 'Updated 3d ago')
 })
 
 test('window tone and trailing text', () => {

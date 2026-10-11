@@ -24,6 +24,14 @@ function until(iso: string, now: number) {
   return d > 0 ? `${d}d` : h > 0 ? `${h}h` : `${m}m`
 }
 
+/** "Updated just now" / "Updated 3m ago" / "Updated 2h ago" / "Updated 4d ago". */
+export function updatedLabel(iso: string, now = Date.now()) {
+  const m = Math.floor((now - Date.parse(iso)) / 60_000)
+  const h = Math.floor(m / 60)
+  const d = Math.floor(h / 24)
+  return `Updated ${!(m >= 1) ? 'just now' : d > 0 ? `${d}d ago` : h > 0 ? `${h}h ago` : `${m}m ago`}`
+}
+
 export function resetLabel(iso: string | null | undefined, now = Date.now()) {
   const rel = iso ? until(iso, now) : null
   return rel && (rel === 'now' ? 'resetting now' : `resets ${rel}`)
