@@ -324,7 +324,7 @@ function AddProjectDialog({ onClose }: { onClose: () => void }) {
 function WorkspaceRow({
   workspace: w,
   agents,
-  collapsed,
+  collapsed: userCollapsed,
   onToggle,
   selection,
   onSelect,
@@ -338,6 +338,8 @@ function WorkspaceRow({
   onSelect: (s: Selection) => void
   onArchive: (w: Workspace, deleteAgents: boolean) => void
 }) {
+  // A lone agent folds into its workspace row: the row already opens it.
+  const collapsed = userCollapsed || agents.length < 2
   // A collapsed workspace hides its agents, so it shows their selection itself.
   const active = selection.workspaceId === w.id && (!selection.agentId || collapsed)
   const select = (agentId?: string) => onSelect({ projectId: w.projectId, workspaceId: w.id, agentId })
@@ -348,7 +350,7 @@ function WorkspaceRow({
   return (
     <>
       <div className={`row workspace ${active ? 'active' : ''}`} {...clickable(() => select(agents[0]?.id))}>
-        {agents.length > 0 ? (
+        {agents.length > 1 ? (
           <button
             className="chevron"
             aria-label={collapsed ? 'Expand' : 'Collapse'}
