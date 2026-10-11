@@ -13,9 +13,9 @@ npm run dev      # Vite on :5173, proxies /ws -> 127.0.0.1:6767
 npm test         # node:test unit tests (src/*.test.ts)
 ```
 
-Staging diff chunks needs the `mypaseo-git` daemon plugin in [paseo-plugin/](paseo-plugin/), since the daemon has no git
-index API. One-time setup per machine; the daemon then loads it from this directory on every start (Stage stays hidden
-without it):
+Staging diff chunks and the Git Graph tab (top-right button of a git workspace) need the `mypaseo-git` daemon plugin in
+[paseo-plugin/](paseo-plugin/), since the daemon has no git index or log API. One-time setup per machine; the daemon then
+loads it from this directory on every start (Stage stays hidden without it):
 
 ```bash
 npx paseo daemon config set pluginsEnabled true && npx paseo daemon reload

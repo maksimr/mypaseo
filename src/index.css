@@ -199,7 +199,7 @@ code.inline {
 /* Layout */
 .app {
   --sidebar-w: 270px;
-  --panel-w: 280px;
+  --panel-w: 320px;
   position: relative;
   display: grid;
   grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
@@ -254,6 +254,13 @@ code.inline {
 }
 .panel {
   border-left: 1px solid var(--border);
+  container-type: inline-size;
+}
+/* A narrow panel has no room for the totals after the Git Graph tab; the center Changes tab shows them too. */
+@container (width < 360px) {
+  .panel-tabs .stat {
+    display: none;
+  }
 }
 .sidebar-head,
 .panel-tabs,
@@ -297,6 +304,7 @@ code.inline {
   padding: 0 8px;
   border-radius: 6px;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 .panel-tab:hover {
   color: var(--text);
@@ -1716,4 +1724,143 @@ kbd {
   background: var(--accent);
   color: var(--bg);
   cursor: pointer;
+}
+
+/* Git graph: one svg draws every lane under the rows' empty first column. */
+.graph {
+  flex: 1;
+  overflow: auto;
+}
+.graph-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 38px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.graph-toolbar .input {
+  padding: 2px 8px;
+}
+.graph-count {
+  min-width: 48px;
+  font-size: 12px;
+  text-align: right;
+}
+.graph-row {
+  display: grid;
+  grid-template-columns: var(--graph-w) minmax(0, 1fr) 170px 150px 72px;
+  align-items: center;
+  column-gap: 12px;
+  height: 28px; /* ROW in CommitGraph.tsx */
+  padding-right: 12px;
+  white-space: nowrap;
+  scroll-margin-top: 66px; /* under the sticky toolbar and header */
+}
+.graph-head {
+  position: sticky;
+  top: 38px;
+  z-index: 2;
+  padding-left: 12px;
+  grid-template-columns: calc(var(--graph-w) - 12px) minmax(0, 1fr) 170px 150px 72px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+}
+.graph-body {
+  position: relative;
+}
+.graph-body .graph-row:hover {
+  background: var(--bg-hover);
+}
+.graph-row.match {
+  background: rgba(222, 193, 132, 0.1);
+}
+.graph-row.current,
+.graph-body .graph-row.current:hover {
+  background: rgba(222, 193, 132, 0.22);
+}
+.graph-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+.graph-lines path {
+  fill: none;
+  stroke-width: 2;
+}
+.graph-desc {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.graph-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  padding: 0 5px;
+  border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  font: 12px/18px var(--mono);
+}
+.graph-body .graph-row {
+  cursor: pointer;
+}
+.graph-row.selected,
+.graph-body .graph-row.selected:hover {
+  background: var(--bg-active);
+}
+
+/* Commit picked in the git graph, in the panel. */
+.commit-author {
+  padding: 14px 12px 10px;
+  color: var(--text-faint);
+  font-size: 12px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.commit-author-name {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.commit-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 12px 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.commit-meta > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.commit-meta svg {
+  flex: none;
+  color: var(--text-faint);
+}
+.commit-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  margin-bottom: 4px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.commit-text .muted {
+  color: var(--text-faint);
 }

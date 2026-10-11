@@ -1,6 +1,6 @@
 {
   "id": "mypaseo-git",
   "name": "mypaseo git",
-  "description": "Git index access for mypaseo: stage and unstage diff chunks, commit with amend/signoff/skip hooks.",
+  "description": "Git index access for mypaseo: stage and unstage diff chunks, commit with amend/signoff/skip hooks, commit log and details for the git graph.",
   "requirements": { "paseo": ">=0.11.2" }
 }

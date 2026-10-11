@@ -18,14 +18,8 @@ import { chunkKey, chunkPatch, chunks, restoreChunk, stagedKeys, stagedState, ty
 import { errorText, type DiffFile } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { useDaemon } from '../store'
-import { totals, type DiffState } from '../useCheckoutDiff'
+import { split, totals, type DiffState } from '../useCheckoutDiff'
 import { Tokens } from './Code'
-
-const split = (path: string) => {
-  const i = path.lastIndexOf('/')
-  return [path.slice(i + 1), i > 0 ? path.slice(0, i) : ''] as const
-}
-
 
 // Toolbar 38px + .excerpt-head 34px (index.css): a chunk right under them is at the top of the view.
 const HEADERS = 72
@@ -67,24 +61,26 @@ export function ChangesList({ diff, onPick }: { diff: DiffState; onPick: (path: 
   )
 }
 
-const Stat = ({ add, del }: { add: number; del: number }) => (
+export const Stat = ({ add, del }: { add: number; del: number }) => (
   <span className="stat">
     {add > 0 && <span className="add">+{add}</span>}
     {del > 0 && <span className="del">−{del}</span>}
   </span>
 )
 
-/** Zed-style multibuffer: every changed file stacked in one scrollable view. */
+/** Zed-style multibuffer: every changed file stacked in one scrollable view. readOnly: a commit's diff, with no index, discard or restore. */
 export function ChangesView({
   cwd,
   diff,
   focus,
   onOpenFile,
+  readOnly,
 }: {
   cwd: string
   diff: DiffState
   focus: { path: string; n: number } | null
   onOpenFile: (path: string) => void
+  readOnly?: boolean
 }) {
   const daemon = useDaemon()
   // RPCs of the mypaseo-git daemon plugin, see paseo-plugin/index.server.ts.
@@ -147,6 +143,7 @@ export function ChangesView({
 
   // Re-read on every diff push: the daemon diff is HEAD→worktree, so it doesn't carry index state itself.
   useEffect(() => {
+    if (readOnly) return
     let live = true
     daemon.invokePluginRpc('mypaseo-git', 'index.diff', { cwd }).then(
       (r) => live && setIndex({ cwd, keys: stagedKeys((r as { files: Record<string, string> }).files) }),
@@ -155,14 +152,19 @@ export function ChangesView({
     return () => {
       live = false
     }
-  }, [daemon, cwd, diff.files, indexTick])
+  }, [daemon, cwd, diff.files, indexTick, readOnly])
 
+  // Scrolls once the focused file is there: a commit's diff can still be loading when a file is picked.
+  const scrolledTo = useRef<typeof focus>(null)
   useEffect(() => {
-    if (!focus) return
-    requestAnimationFrame(() =>
-      root.current?.querySelector(`[data-path="${CSS.escape(focus.path)}"]`)?.scrollIntoView({ block: 'start' }),
-    )
-  }, [focus])
+    if (!focus || scrolledTo.current === focus) return
+    requestAnimationFrame(() => {
+      const el = root.current?.querySelector(`[data-path="${CSS.escape(focus.path)}"]`)
+      if (!el) return
+      scrolledTo.current = focus
+      el.scrollIntoView({ block: 'start' })
+    })
+  }, [focus, diff.files])
 
   const toggle = (path: string) =>
     setCollapsed((c) => {
@@ -406,16 +408,18 @@ export function ChangesView({
                   <FileCode size={14} />
                 </button>
               )}
-              <button
-                className="icon-btn"
-                title="Discard Changes"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  void discard(f)
-                }}
-              >
-                <Undo2 size={14} />
-              </button>
+              {!readOnly && (
+                <button
+                  className="icon-btn"
+                  title="Discard Changes"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    void discard(f)
+                  }}
+                >
+                  <Undo2 size={14} />
+                </button>
+              )}
             </header>
             {open && (
               <FileHunks
@@ -423,7 +427,7 @@ export function ChangesView({
                 staged={canStage ? (fileKeys ?? new Set()) : undefined}
                 filter={filter}
                 onStage={(cs, i, stage) => void runIndex(setStaged(f, cs, i, stage))}
-                onRestore={(cs, i, staged) => void restore(f, cs, i, staged)}
+                onRestore={readOnly ? undefined : (cs, i, staged) => void restore(f, cs, i, staged)}
               />
             )}
           </section>
@@ -544,6 +548,7 @@ function CommitDialog({
 
 type ChunkAction = (cs: Chunk[], i: number, flag: boolean) => void
 
+/** A file's hunks; without onRestore they are read-only. */
 function FileHunks({
   file,
   staged,
@@ -555,7 +560,7 @@ function FileHunks({
   staged?: Set<string>
   filter: Filter
   onStage: ChunkAction
-  onRestore: ChunkAction
+  onRestore?: ChunkAction
 }) {
   if (file.status === 'binary') return <div className="empty">Binary file</div>
   if (file.status === 'too_large') return <div className="empty">File diff is too large to display</div>
@@ -580,7 +585,7 @@ function FileHunks({
                   data-hunk={i}
                   data-chunk={j}
                 >
-                  {c.change && (
+                  {c.change && onRestore && (
                     <div className="chunk-actions">
                       {staged && (
                         <button className="text-btn" onClick={() => onStage(cs, j, !isStaged)}>

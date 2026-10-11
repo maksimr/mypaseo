@@ -1,7 +1,8 @@
-import { FileCode, FileDiff, Files, Loader2, PanelLeft, PanelRight, X } from 'lucide-react'
+import { FileCode, FileDiff, Files, GitCommitHorizontal, Loader2, PanelLeft, PanelRight, X } from 'lucide-react'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { ChangesList, ChangesView } from './components/Changes'
 import { Chat, type Target } from './components/Chat'
+import { CommitDetails, CommitGraph } from './components/CommitGraph'
 import { FileTree, FileView } from './components/Files'
 import { ImportSession } from './components/ImportSession'
 import { ProviderIcon } from './components/ProviderIcon'
@@ -16,9 +17,19 @@ import { SelectionAction } from './components/SelectionAction'
 import { clickable } from './a11y'
 import { archiveAgent, archiveWorkspace, byRecent, HostContext, sidebarWorkspaces, startSync, useStore } from './store'
 import { useTabStatus } from './tabStatus'
-import { totals, useCheckoutDiff } from './useCheckoutDiff'
+import { totals, useCheckoutDiff, useCommitDiff } from './useCheckoutDiff'
 
-type Tab = 'chat' | 'changes' | `file:${string}`
+type Tab = 'chat' | 'changes' | 'graph' | 'commit' | `file:${string}`
+
+/** Zed's git graph glyph (lucide has none): a commit with a branch off to the right. Sized and stroked like lucide icons. */
+const GitGraphIcon = ({ size }: { size: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
+    <circle cx="6" cy="6" r="3" />
+    <path d="M6 9v12" />
+    <circle cx="18" cy="15" r="3" />
+    <path d="M18 18v3M15 15h-4a5 5 0 0 1-5-5" />
+  </svg>
+)
 
 const MIN_W = 180
 const MAX_W = 600
@@ -121,7 +132,12 @@ export default function App() {
 
   const [tab, setTab] = useState<Tab>('chat')
   const [files, setFiles] = useState<string[]>([])
-  const [panel, setPanel] = useState<'files' | 'changes' | null>(() => JSON.parse(localStorage.mypaseoPanel ?? 'null'))
+  const [graphTab, setGraphTab] = useState(false)
+  const [commit, setCommit] = useState<string>() // picked in the git graph, shown in the panel
+  const [commitTab, setCommitTab] = useState<string>() // the commit whose diff the 'commit' tab shows
+  const [commitFocus, setCommitFocus] = useState<{ path: string; n: number } | null>(null)
+  const [panel, setPanel] = useState<'files' | 'changes' | 'graph' | null>(() => JSON.parse(localStorage.mypaseoPanel ?? 'null'))
+  const panelView = !isGit ? 'files' : panel
   const [focus, setFocus] = useState<{ path: string; n: number } | null>(null)
   const [settings, setSettings] = useState<{ hostId: string; section?: Section } | null>(null)
   const [chatText, setChatText] = useState('') // handed to the composer when the chat tab mounts
@@ -132,7 +148,7 @@ export default function App() {
     localStorage.mypaseoActiveOnly = activeOnly
   }, [sidebar, panel, activeOnly])
   const [sidebarW, setSidebarW] = useWidth('mypaseoSidebarWidth', 270)
-  const [panelW, setPanelW] = useWidth('mypaseoPanelWidth', 280)
+  const [panelW, setPanelW] = useWidth('mypaseoPanelWidth', 320) // room for the Changes, Files and Git Graph tabs
   const sidebarKey = useShortcut('toggleSidebar')
   const panelKey = useShortcut('togglePanel')
   const addKey = useShortcut('addToChat')
@@ -154,7 +170,13 @@ export default function App() {
       const tabStep = isShortcut(e, 'nextTab') ? 1 : isShortcut(e, 'prevTab') ? -1 : 0
       if (target && tabStep) {
         e.preventDefault()
-        const tabs: (Tab | Agent | undefined)[] = [...chatTabs, ...(changesTab ? ['changes' as const] : []), ...files.map((p) => `file:${p}` as const)]
+        const tabs: (Tab | Agent | undefined)[] = [
+          ...chatTabs,
+          ...(changesTab ? ['changes' as const] : []),
+          ...(graphTab ? ['graph' as const] : []),
+          ...(commitTab ? ['commit' as const] : []),
+          ...files.map((p) => `file:${p}` as const),
+        ]
         const next = tabs[(tabs.indexOf(tab === 'chat' ? agent : tab) + tabStep + tabs.length) % tabs.length]
         if (typeof next === 'string') setTab(next)
         else openChat(next)
@@ -202,6 +224,7 @@ export default function App() {
   // Provider the "New agent" composer will use, for its tab icon.
   const [draftProvider, setDraftProvider] = useState<string>()
   const diff = useCheckoutDiff(hostId, isGit ? cwd : undefined)
+  const commitDiff = useCommitDiff(hostId, isGit ? cwd : undefined, commitTab)
   const t = totals(diff.files)
   // Loading keeps it open while the diff arrives; an empty diff (all committed) closes it.
   const changesTab = isGit && (diff.files.length > 0 || (diff.loading && tab === 'changes'))
@@ -212,12 +235,21 @@ export default function App() {
   if (tabsCwd !== cwd) {
     setTabsCwd(cwd)
     setFiles([])
+    setGraphTab(false)
+    setCommit(undefined)
+    setCommitTab(undefined)
     setTab('chat')
   }
 
   const openFile = (path: string) => {
     setFiles((f) => (f.includes(path) ? f : [...f, path]))
     setTab(`file:${path}`)
+  }
+  // The Git Graph panel section shows the picked commit; the graph itself takes a center tab.
+  const openGraph = () => {
+    setPanel('graph')
+    setGraphTab(true)
+    setTab('graph')
   }
   const closeFile = (path: string) => {
     setFiles((f) => f.filter((p) => p !== path))
@@ -298,6 +330,42 @@ export default function App() {
                 </span>
               </button>
             )}
+            {graphTab && (
+              <div className={`tab ${tab === 'graph' ? 'on' : ''}`} {...clickable(() => setTab('graph'))}>
+                <GitGraphIcon size={13} />
+                <span>Git Graph</span>
+                <button
+                  className="tab-close"
+                  title="Close"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setGraphTab(false)
+                    if (tab === 'graph') setTab('chat')
+                  }}
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+            {commitTab && (
+              <div className={`tab ${tab === 'commit' ? 'on' : ''}`} {...clickable(() => setTab('commit'))}>
+                <GitCommitHorizontal size={13} />
+                <span>
+                  Commit <span className="faint mono">{commitTab.slice(0, 7)}</span>
+                </span>
+                <button
+                  className="tab-close"
+                  title="Close"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setCommitTab(undefined)
+                    if (tab === 'commit') setTab(graphTab ? 'graph' : 'chat')
+                  }}
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            )}
             {files.map((path) => (
               <div key={path} className={`tab ${tab === `file:${path}` ? 'on' : ''}`} onClick={() => setTab(`file:${path}`)} title={path}>
                 <FileCode size={13} />
@@ -333,6 +401,18 @@ export default function App() {
             </div>
           ) : tab === 'changes' && cwd ? (
             <ChangesView cwd={cwd} diff={diff} focus={focus} onOpenFile={openFile} />
+          ) : tab === 'graph' && workspace ? (
+            <CommitGraph
+              workspace={workspace}
+              files={diff.files}
+              selected={commit}
+              onSelect={(sha) => {
+                setCommit(sha)
+                setPanel('graph')
+              }}
+            />
+          ) : tab === 'commit' && commitTab && cwd ? (
+            <ChangesView key={commitTab} cwd={cwd} diff={commitDiff} focus={commitFocus} onOpenFile={openFile} readOnly />
           ) : tab.startsWith('file:') && cwd ? (
             <FileView key={tab} cwd={cwd} path={tab.slice(5)} />
           ) : (
@@ -355,22 +435,40 @@ export default function App() {
           <aside className="panel">
             <div className="panel-tabs">
               {isGit && (
-                <button className={`panel-tab ${panel === 'changes' ? 'on' : ''}`} onClick={() => setPanel('changes')}>
+                <button className={`panel-tab ${panelView === 'changes' ? 'on' : ''}`} onClick={() => setPanel('changes')}>
                   <FileDiff size={14} /> Changes
                 </button>
               )}
-              <button className={`panel-tab ${panel === 'files' || !isGit ? 'on' : ''}`} onClick={() => setPanel('files')}>
+              <button className={`panel-tab ${panelView === 'files' ? 'on' : ''}`} onClick={() => setPanel('files')}>
                 <Files size={14} /> Files
               </button>
+              {isGit && (
+                <button className={`panel-tab ${panelView === 'graph' ? 'on' : ''}`} onClick={openGraph}>
+                  <GitGraphIcon size={14} /> Git Graph
+                </button>
+              )}
               <span className="grow" />
-              {panel === 'changes' && isGit && (
+              {panelView === 'changes' && (
                 <span className="stat">
                   <span className="add">+{t.add}</span> <span className="del">−{t.del}</span>
                 </span>
               )}
             </div>
-            {panel === 'files' || !isGit ? (
+            {panelView === 'files' ? (
               <FileTree key={cwd} cwd={cwd} rootName={workspace.projectDisplayName} onOpen={openFile} activePath={tab.startsWith('file:') ? tab.slice(5) : undefined} />
+            ) : panelView === 'graph' && !commit ? (
+              <div className="empty">Pick a commit in the graph to see its changes.</div>
+            ) : panelView === 'graph' && commit ? (
+              <CommitDetails
+                key={commit}
+                cwd={cwd}
+                sha={commit}
+                onPick={(path) => {
+                  setCommitTab(commit)
+                  setCommitFocus((f) => ({ path, n: (f?.n ?? 0) + 1 }))
+                  setTab('commit')
+                }}
+              />
             ) : (
               <ChangesList diff={diff} onPick={showChange} />
             )}

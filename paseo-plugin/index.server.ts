@@ -1,4 +1,5 @@
-// Git index RPCs for mypaseo's diff view; the daemon's own API can't stage. Called from src/components/Changes.tsx.
+// Git index RPCs for mypaseo's diff view and the log for its git graph; the daemon's own API can't stage or list every
+// branch. Called from src/components/Changes.tsx and src/components/CommitGraph.tsx.
 import { defineRpc } from '@getpaseo/plugin'
 import type { PluginServerContext } from '@getpaseo/plugin/server'
 import { execFile } from 'node:child_process'
@@ -41,6 +42,35 @@ const commit = defineRpc({
   output: done,
 })
 const reset = defineRpc({ name: 'index.reset', input: paths, output: done })
+/** Newest `limit` commits of every branch, remote and tag, children before parents, for the git graph. */
+const log = defineRpc({
+  name: 'log',
+  input: z.object({ cwd: z.string(), limit: z.number().int().positive() }),
+  output: z.object({
+    commits: z.array(
+      z.object({
+        sha: z.string(),
+        parents: z.array(z.string()),
+        refs: z.array(z.string()), // %D entries: "HEAD -> main", "origin/main", "tag: v1"
+        author: z.string(),
+        date: z.string(), // ISO 8601
+        subject: z.string(),
+      }),
+    ),
+  }),
+})
+/** A commit's author, message and changed files, diffed like the daemon's getCommitFileDiff: merges against their first parent. */
+const show = defineRpc({
+  name: 'show',
+  input: z.object({ cwd: z.string(), sha: z.string().regex(/^[0-9a-f]{4,64}$/i) }), // never an option like --output
+  output: z.object({
+    author: z.string(),
+    email: z.string(),
+    date: z.string(), // ISO 8601
+    message: z.string(),
+    files: z.array(z.object({ path: z.string(), status: z.string(), additions: z.number(), deletions: z.number() })),
+  }),
+})
 
 export default function contribute(server: PluginServerContext) {
   server.handle(diff, async ({ cwd }) => {
@@ -72,6 +102,36 @@ export default function contribute(server: PluginServerContext) {
     // Unborn HEAD has nothing to reset to, so drop the paths from the index instead.
     await git(cwd, hasHead ? ['reset', '-q', '--', ...paths] : ['rm', '--cached', '-r', '-q', '--ignore-unmatch', '--', ...paths])
     return {}
+  })
+  server.handle(log, async ({ cwd, limit }) => {
+    // \x1e starts a commit, \x1f separates fields; neither shows up in names or subjects.
+    const out = await git(cwd, ['log', '--exclude=refs/stash', '--all', '--date-order', `-n${limit}`, '--format=%x1e%H%x1f%P%x1f%D%x1f%an%x1f%aI%x1f%s'])
+    const commits = out.split('\x1e').slice(1).map((rec) => {
+      const [sha, parents, refs, author, date, subject] = rec.replace(/\n$/, '').split('\x1f')
+      return { sha, parents: parents.split(' ').filter(Boolean), refs: refs ? refs.split(', ') : [], author, date, subject }
+    })
+    return { commits }
+  })
+  server.handle(show, async ({ cwd, sha }) => {
+    const [meta, diff] = await Promise.all([
+      git(cwd, ['show', '-s', '--format=%an%x1f%ae%x1f%aI%x1f%B', sha]),
+      // No renames: the daemon diffs one path at a time, so a renamed file shows as deleted plus added.
+      git(cwd, ['show', '--format=', '--no-renames', '--diff-merges=first-parent', '--raw', '--numstat', '-z', sha]),
+    ])
+    const [author, email, date, message] = meta.split('\x1f')
+    // -z: every raw entry (":old new old new STATUS", path) comes first, then a numstat entry per file in the same order.
+    const files: { path: string; status: string; additions: number; deletions: number }[] = []
+    const tokens = diff.split('\0')
+    let n = 0
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i].startsWith(':')) files.push({ status: tokens[i].slice(-1), path: tokens[++i], additions: 0, deletions: 0 })
+      else if (tokens[i] && files[n]) {
+        const [add, del] = tokens[i].split('\t')
+        // Binary files count "-".
+        Object.assign(files[n++], { additions: Number(add) || 0, deletions: Number(del) || 0 })
+      }
+    }
+    return { author, email, date, message: message.trim(), files }
   })
   return () => {}
 }
