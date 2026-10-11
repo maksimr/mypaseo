@@ -43,6 +43,36 @@ npx @getpaseo/cli daemon config set daemon.cors.allowedOrigins '["https://app.pa
 
 The page shows this command when it can't reach a daemon.
 
+### Remote daemon (Caddy or Cloudflare Tunnel)
+
+The page is HTTPS, so the browser reaches a daemon on another machine only over `wss://` (plain `ws://` works just for
+`127.0.0.1`/`localhost`). Keep the daemon on `127.0.0.1:6767` and put Caddy or a Cloudflare Tunnel in front of it. On
+the daemon machine, besides allowing the origin above:
+
+```bash
+npx @getpaseo/cli daemon set-password   # the daemon is now public and agents run shell commands; restart it after
+npx @getpaseo/cli daemon config set daemon.hostnames '["paseo.example.com"]'   # else the proxied Host gets 403
+```
+
+Then in the page: Add Host → `https://paseo.example.com` plus the password.
+
+Caddy needs a DNS name pointing at the machine with ports 80/443 reachable; it gets the certificate itself and proxies
+WebSockets as is:
+
+```bash
+caddy reverse-proxy --from paseo.example.com --to 127.0.0.1:6767
+```
+
+Cloudflare Tunnel needs no open ports or public IP. A quick tunnel needs no account, but its hostname changes on every
+run, so allow the whole domain (`daemon.hostnames '[".trycloudflare.com"]'`):
+
+```bash
+cloudflared tunnel --url http://127.0.0.1:6767   # prints https://<random>.trycloudflare.com
+```
+
+For a fixed hostname on your own Cloudflare domain, create a tunnel in Cloudflare Zero Trust, route `paseo.example.com`
+to `http://127.0.0.1:6767`, and run the `cloudflared tunnel run --token …` command it shows.
+
 Env:
 - `PASEO_DAEMON` (vite.config.ts) — daemon HTTP address for the dev proxy. Default `http://127.0.0.1:6767`.
 - `VITE_PASEO_URL` — the default host connects directly instead of via the proxy (add your origin to

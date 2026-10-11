@@ -1,5 +1,7 @@
 import {
   Archive,
+  ArrowDownToLine,
+  ArrowUpFromLine,
   ChevronDown,
   ChevronRight,
   Ellipsis,
@@ -375,6 +377,18 @@ function WorkspaceRow({
   const name = w.title || w.name
   const menuId = `workspace-menu-${w.id}`
   const archive = (deleteAgents: boolean) => onArchive(w, deleteAgents)
+  const [syncing, setSyncing] = useState<'pull' | 'push'>()
+  const sync = async (op: 'pull' | 'push') => {
+    setSyncing(op)
+    try {
+      const daemon = client(w.hostId)
+      const r = await (op === 'pull' ? daemon.checkoutPull(w.workspaceDirectory) : daemon.checkoutPush(w.workspaceDirectory))
+      if (r.error) throw new Error(r.error.message)
+    } catch (e) {
+      alert(`Could not ${op}: ${errorText(e)}`)
+    }
+    setSyncing(undefined)
+  }
 
   return (
     <>
@@ -408,9 +422,23 @@ function WorkspaceRow({
         >
           <Plus size={13} />
         </button>
-        <StatusMark agents={agents} />
+        {syncing ? (
+          <Loader2 size={13} className="spin muted status-mark" aria-label={syncing === 'pull' ? 'Pulling…' : 'Pushing…'} />
+        ) : (
+          <StatusMark agents={agents} />
+        )}
       </div>
       <div id={menuId} popover="auto" className="menu">
+        {w.projectKind === 'git' && (
+          <>
+            <button popoverTarget={menuId} popoverTargetAction="hide" disabled={!!syncing} onClick={() => void sync('pull')}>
+              <ArrowDownToLine size={14} /> Pull
+            </button>
+            <button popoverTarget={menuId} popoverTargetAction="hide" disabled={!!syncing} onClick={() => void sync('push')}>
+              <ArrowUpFromLine size={14} /> Push
+            </button>
+          </>
+        )}
         <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => archive(false)}>
           <Archive size={14} /> Archive
         </button>
