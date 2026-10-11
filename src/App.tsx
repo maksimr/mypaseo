@@ -98,7 +98,7 @@ export default function App() {
 
   const [tab, setTab] = useState<Tab>('chat')
   const [files, setFiles] = useState<string[]>([])
-  const [panel, setPanel] = useState<'files' | 'changes' | null>(() => JSON.parse(localStorage.mypaseoPanel ?? '"files"'))
+  const [panel, setPanel] = useState<'files' | 'changes' | null>(() => JSON.parse(localStorage.mypaseoPanel ?? 'null'))
   const [diffMode, setDiffMode] = useState<DiffMode>('uncommitted')
   const [focus, setFocus] = useState<{ path: string; n: number } | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
