@@ -1,10 +1,11 @@
-import { ArrowUp, Bot, Brain, ChevronDown, Folder, Import, Loader2, Plus, Shield, ShieldQuestion, Sparkles, Square, X } from 'lucide-react'
+import { ArrowUp, Brain, ChevronDown, Folder, Import, Loader2, Plus, Shield, ShieldQuestion, Sparkles, Square, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { errorText, type Agent, type Permission, type Workspace } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { hostLabel, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../store'
 import { useAutocomplete } from '../useAutocomplete'
 import { useTimeline } from '../useTimeline'
+import { ProviderIcon } from './ProviderIcon'
 import { Timeline, ToolDetailView } from './Timeline'
 
 export type Target = { projectId: string; name: string; rootPath: string; workspace?: Workspace }
@@ -360,7 +361,7 @@ function Composer({
         )}
         {!agent && (
           <Pick
-            icon={<Bot size={14} />}
+            icon={<ProviderIcon provider={provider} />}
             value={provider}
             onChange={(v) => change('provider', v)}
             options={usable.map((p) => [p.provider, p.label ?? p.provider])}

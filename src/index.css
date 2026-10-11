@@ -1369,9 +1369,9 @@ code.inline {
   padding: 14px 0;
   border-bottom: 1px solid var(--border);
 }
-.setting-row.clickable {
+.provider .setting-row {
   gap: 10px;
-  cursor: pointer;
+  border-bottom: none;
 }
 .setting-title {
   font-size: 14px;
@@ -1453,20 +1453,13 @@ code.inline {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 12px 0 18px 24px;
+  padding: 0 0 18px 28px;
   border-bottom: 1px solid var(--border);
 }
 .field-label {
   margin-bottom: 6px;
   color: var(--text-muted);
   font-size: 12px;
-}
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  max-height: 120px;
-  overflow: auto;
 }
 .chip {
   padding: 1px 8px;

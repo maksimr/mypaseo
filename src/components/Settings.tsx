@@ -6,6 +6,7 @@ import { toWsUrl } from '../hostUrl'
 import { SHORTCUTS, SHORTCUT_IDS, binding, comboOf, formatCombo, setShortcut, useShortcut, type ShortcutId } from '../keymap'
 import { notificationsOn, notificationsSupported } from '../notifications'
 import { hostEndpoint, hostLabel, removeHost, updateHost, useDaemon, useHost, useHostId, useStore } from '../store'
+import { ProviderIcon } from './ProviderIcon'
 
 const SECTIONS = ['Host', 'General', 'Providers', 'Keymap'] as const
 export type Section = (typeof SECTIONS)[number]
@@ -28,7 +29,6 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
   const { providers } = useHost()
   const [section, setSection] = useState<Section>(initialSection)
   const [expanded, setExpanded] = useState<Set<Section>>(new Set([initialSection]))
-  const [openProviders, setOpenProviders] = useState<Set<string>>(new Set())
   const [query, setQuery] = useState('')
   const body = useRef<HTMLDivElement>(null)
   const [config, setConfig] = useState<DaemonConfig | null>(null)
@@ -48,18 +48,17 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
     }
   }
 
-  // Sidebar sub-items: [label, anchor id, provider to expand].
-  const children: Record<Section, [string, string, string?][]> = {
+  // Sidebar sub-items: [label, anchor id].
+  const children: Record<Section, [string, string][]> = {
     Host: [],
     General: GENERAL_GROUPS.map((g) => [g, anchor('general', g)]),
-    'Providers': providers.map((p) => [p.label ?? p.provider, anchor('provider', p.provider), p.provider]),
+    'Providers': providers.map((p) => [p.label ?? p.provider, anchor('provider', p.provider)]),
     'Keymap': [...SHORTCUT_IDS.map((id) => [SHORTCUTS[id].label, anchor('keymap', id)] as [string, string]), ['Close Dialog', anchor('keymap', 'close')]],
   }
-  const go = (s: Section, target?: string, providerId?: string) => {
+  const go = (s: Section, target?: string) => {
     setSection(s)
     setQuery('')
     setExpanded((e) => toggled(e, s, true))
-    if (providerId) setOpenProviders((o) => toggled(o, providerId, true))
     // Scroll after React commits the section/expansion change.
     requestAnimationFrame(() => (target ? document.getElementById(target)?.scrollIntoView({ block: 'start' }) : body.current?.scrollTo({ top: 0 })))
   }
@@ -89,8 +88,8 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
                 </div>
                 {open && children[s].length > 0 && (
                   <div className="nav-children">
-                    {children[s].map(([label, id, providerId]) => (
-                      <button key={id} className="nav-child" onClick={() => go(s, id, providerId)}>
+                    {children[s].map(([label, id]) => (
+                      <button key={id} className="nav-child" onClick={() => go(s, id)}>
                         {label}
                       </button>
                     ))}
@@ -120,14 +119,7 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
             ) : s === 'General' ? (
               <General key={s} config={config} patch={patch} q={q} />
             ) : (
-              <Providers
-                key={s}
-                config={config}
-                patch={patch}
-                q={q}
-                open={openProviders}
-                onToggle={(id) => setOpenProviders((o) => toggled(o, id))}
-              />
+              <Providers key={s} config={config} patch={patch} q={q} />
             ),
           )}
         </div>
@@ -359,7 +351,7 @@ function DefaultAgent() {
   )
 }
 
-function Providers({ config, patch, q, open, onToggle }: SectionProps & { open: Set<string>; onToggle: (id: string) => void }) {
+function Providers({ config, patch, q }: SectionProps) {
   const daemon = useDaemon()
   const { providers } = useHost()
   const list = providers.filter((p) => matches(q, p.label, p.provider, p.description, 'provider llm model'))
@@ -374,7 +366,7 @@ function Providers({ config, patch, q, open, onToggle }: SectionProps & { open: 
       </h2>
       <div className="group-label">Agent providers on this daemon</div>
       {list.map((p) => (
-        <ProviderRow key={p.provider} entry={p} config={config} patch={patch} open={open.has(p.provider)} onToggle={() => onToggle(p.provider)} />
+        <ProviderRow key={p.provider} entry={p} config={config} patch={patch} />
       ))}
     </section>
   )
@@ -384,17 +376,14 @@ function ProviderRow({
   entry: p,
   config,
   patch,
-  open,
-  onToggle,
 }: {
   entry: ProviderEntry
   config: DaemonConfig
   patch: SectionProps['patch']
-  open: boolean
-  onToggle: () => void
 }) {
   const daemon = useDaemon()
   const id = p.provider
+  const models = p.models?.length ?? 0
   const saved = (config.providers[id] ?? {}) as ProviderConfig
   const [command, setCommand] = useState((saved.command ?? []).join(' '))
   const [env, setEnv] = useState<[string, string][]>(Object.entries(saved.env ?? {}))
@@ -428,59 +417,54 @@ function ProviderRow({
 
   return (
     <div className="provider" id={anchor('provider', id)}>
-      <div className="setting-row clickable" onClick={onToggle}>
-        <ChevronRight size={14} className={`muted ${open ? 'rot90' : ''}`} />
+      <div className="setting-row">
+        <ProviderIcon provider={id} size={18} />
         <div className="grow min0">
           <div className="setting-title">
-            {p.label ?? id} <span className={`pill ${p.enabled ? p.status : 'off'}`}>{p.enabled ? p.status : 'disabled'}</span>
+            {p.label ?? id} <span className={`pill ${p.enabled ? p.status : 'off'}`}>{p.enabled ? p.status : 'disabled'}</span>{' '}
+            <span className="muted" title={p.models?.map((m) => m.label).join('\n')}>
+              {models} {models === 1 ? 'model' : 'models'}
+            </span>
           </div>
           <div className="setting-desc">{p.error ?? p.description}</div>
         </div>
-        <div className="setting-control" onClick={(e) => e.stopPropagation()}>
+        <div className="setting-control">
           <Toggle label={`Enable ${p.label ?? id}`} checked={p.enabled} onChange={(v) => void patch({ providers: { [id]: { enabled: v } } })} />
         </div>
       </div>
-      {open && (
-        <div className="provider-body">
-          <div className="field">
-            <div className="field-label">Models</div>
-            <div className="chips">
-              {p.models?.length ? p.models.map((m) => <span key={m.id} className="chip" title={m.id}>{m.label}</span>) : <span className="muted">None reported</span>}
-            </div>
-          </div>
-          <div className="field">
-            <div className="field-label">Command</div>
-            <input className="input mono" name={`${id}-command`} placeholder="Default binary on PATH" value={command} onChange={(e) => setCommand(e.target.value)} />
-          </div>
-          <div className="field">
-            <div className="field-label">Environment (API keys, endpoints)</div>
-            {env.map(([k, v], i) => (
-              <div key={i} className="env-row">
-                <input className="input mono" aria-label="Variable name" placeholder="NAME" value={k} onChange={(e) => setEnv(env.with(i, [e.target.value, v]))} />
-                <input className="input mono" aria-label="Variable value" type="password" placeholder="value" value={v} onChange={(e) => setEnv(env.with(i, [k, e.target.value]))} />
-                <button className="icon-btn" title="Remove" onClick={() => setEnv(env.filter((_, j) => j !== i))}>
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
-            <button className="btn ghost" onClick={() => setEnv([...env, ['', '']])}>
-              <Plus size={13} /> Add Variable
-            </button>
-          </div>
-          <div className="provider-actions">
-            <button className="btn primary" disabled={!dirty} onClick={() => void save()}>
-              Save
-            </button>
-            <button className="btn" onClick={() => void daemon.refreshProvidersSnapshot({ providers: [id] }).catch((e) => alert(errorText(e)))}>
-              <RefreshCw size={13} /> Refresh
-            </button>
-            <button className="btn" onClick={() => void diagnose()}>
-              <Stethoscope size={13} /> Diagnostics
-            </button>
-          </div>
-          {diagnostic && <pre className="term">{diagnostic}</pre>}
+      <div className="provider-body">
+        <div className="field">
+          <div className="field-label">Command</div>
+          <input className="input mono" name={`${id}-command`} placeholder="Default binary on PATH" value={command} onChange={(e) => setCommand(e.target.value)} />
         </div>
-      )}
+        <div className="field">
+          <div className="field-label">Environment (API keys, endpoints)</div>
+          {env.map(([k, v], i) => (
+            <div key={i} className="env-row">
+              <input className="input mono" aria-label="Variable name" placeholder="NAME" value={k} onChange={(e) => setEnv(env.with(i, [e.target.value, v]))} />
+              <input className="input mono" aria-label="Variable value" type="password" placeholder="value" value={v} onChange={(e) => setEnv(env.with(i, [k, e.target.value]))} />
+              <button className="icon-btn" title="Remove" onClick={() => setEnv(env.filter((_, j) => j !== i))}>
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+          <button className="btn ghost" onClick={() => setEnv([...env, ['', '']])}>
+            <Plus size={13} /> Add Variable
+          </button>
+        </div>
+        <div className="provider-actions">
+          <button className="btn primary" disabled={!dirty} onClick={() => void save()}>
+            Save
+          </button>
+          <button className="btn" onClick={() => void daemon.refreshProvidersSnapshot({ providers: [id] }).catch((e) => alert(errorText(e)))}>
+            <RefreshCw size={13} /> Refresh
+          </button>
+          <button className="btn" onClick={() => void diagnose()}>
+            <Stethoscope size={13} /> Diagnostics
+          </button>
+        </div>
+        {diagnostic && <pre className="term">{diagnostic}</pre>}
+      </div>
     </div>
   )
 }
