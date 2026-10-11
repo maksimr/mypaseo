@@ -23,6 +23,8 @@ export const SHORTCUTS = {
   // Browsers keep ⌘L / Ctrl+L (address bar) for themselves.
   addToChat: { label: 'Add Selection to Chat', description: 'Insert the selected lines of a file or diff into the chat composer as path:start-end.', default: isMac ? 'Ctrl+KeyL' : 'Alt+KeyL' },
   send: { label: 'Send', description: 'Send the message in the chat composer.', default: `${mod}+Enter` },
+  pull: { label: 'Pull', description: 'Pull the selected workspace from its remote.', default: isMac ? 'Ctrl+Meta+KeyP' : 'Alt+KeyP' },
+  push: { label: 'Push', description: 'Push the selected workspace to its remote.', default: isMac ? 'Ctrl+Meta+KeyK' : 'Alt+KeyK' },
   stageAll: { label: 'Stage All', description: 'Stage every change from the diff view.', default: isMac ? 'Ctrl+Meta+KeyY' : 'Alt+KeyY' },
   commit: { label: 'Commit', description: 'Open the commit dialog from the diff view, then commit the staged changes.', default: `${mod}+Enter` },
   // Zed's binding. Shift sorts before Meta in a combo.

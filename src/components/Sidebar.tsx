@@ -92,15 +92,35 @@ export function Sidebar({
     })
 
   const [adding, setAdding] = useState(false)
+  // Lives here, not in the row: the selected workspace's row is unmounted while its project is collapsed.
+  const [syncing, setSyncing] = useState<Record<string, 'pull' | 'push' | undefined>>({})
+  const sync = async (w: Workspace, op: 'pull' | 'push') => {
+    setSyncing((s) => ({ ...s, [w.id]: op }))
+    try {
+      const daemon = client(w.hostId)
+      const r = await (op === 'pull' ? daemon.checkoutPull(w.workspaceDirectory) : daemon.checkoutPush(w.workspaceDirectory))
+      if (r.error) throw new Error(r.error.message)
+    } catch (e) {
+      alert(`Could not ${op}: ${errorText(e)}`)
+    }
+    setSyncing((s) => ({ ...s, [w.id]: undefined }))
+  }
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!isShortcut(e, 'addProject')) return
-      e.preventDefault()
-      setAdding(true)
+      if (isShortcut(e, 'addProject')) {
+        e.preventDefault()
+        setAdding(true)
+      }
+      const op = isShortcut(e, 'pull') ? 'pull' : isShortcut(e, 'push') ? 'push' : undefined
+      const w = workspaces.find((x) => x.id === selection.workspaceId)
+      if (op && w?.projectKind === 'git') {
+        e.preventDefault()
+        if (!syncing[w.id]) void sync(w, op)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }) // reads the selection and sync state, so it re-binds every render
 
   const removeProject = async (p: Project, name: string) => {
     if (!confirm(`Remove project "${name}"? Its agents are archived; files on disk are kept.`)) return
@@ -194,6 +214,8 @@ export function Sidebar({
                       onSelect={onSelect}
                       onArchive={onArchive}
                       onCloseAgent={onCloseAgent}
+                      syncing={syncing[w.id]}
+                      onSync={(op) => void sync(w, op)}
                     />
                   ))}
               </div>
@@ -365,6 +387,8 @@ function WorkspaceRow({
   onSelect,
   onArchive,
   onCloseAgent,
+  syncing,
+  onSync,
 }: {
   workspace: Workspace
   agents: Agent[]
@@ -374,6 +398,8 @@ function WorkspaceRow({
   onSelect: (s: Selection) => void
   onArchive: (w: Workspace, deleteAgents: boolean) => void
   onCloseAgent: (a: Agent) => void
+  syncing?: 'pull' | 'push'
+  onSync: (op: 'pull' | 'push') => void
 }) {
   // A lone agent folds into its workspace row: the row already opens it.
   const collapsed = userCollapsed || agents.length < 2
@@ -386,18 +412,6 @@ function WorkspaceRow({
   const menuId = `workspace-menu-${w.id}`
   const archiveKey = useShortcut('archiveWorkspace')
   const archive = (deleteAgents: boolean) => onArchive(w, deleteAgents)
-  const [syncing, setSyncing] = useState<'pull' | 'push'>()
-  const sync = async (op: 'pull' | 'push') => {
-    setSyncing(op)
-    try {
-      const daemon = client(w.hostId)
-      const r = await (op === 'pull' ? daemon.checkoutPull(w.workspaceDirectory) : daemon.checkoutPush(w.workspaceDirectory))
-      if (r.error) throw new Error(r.error.message)
-    } catch (e) {
-      alert(`Could not ${op}: ${errorText(e)}`)
-    }
-    setSyncing(undefined)
-  }
 
   return (
     <>
@@ -451,10 +465,10 @@ function WorkspaceRow({
         </button>
         {w.projectKind === 'git' && (
           <>
-            <button popoverTarget={menuId} popoverTargetAction="hide" disabled={!!syncing} onClick={() => void sync('pull')}>
+            <button popoverTarget={menuId} popoverTargetAction="hide" disabled={!!syncing} onClick={() => onSync('pull')}>
               <ArrowDownToLine size={14} /> Pull
             </button>
-            <button popoverTarget={menuId} popoverTargetAction="hide" disabled={!!syncing} onClick={() => void sync('push')}>
+            <button popoverTarget={menuId} popoverTargetAction="hide" disabled={!!syncing} onClick={() => onSync('push')}>
               <ArrowUpFromLine size={14} /> Push
             </button>
           </>
