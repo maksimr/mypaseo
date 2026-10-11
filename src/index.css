@@ -594,6 +594,23 @@ code.inline {
   display: flex;
   flex-direction: column;
 }
+.jump-latest {
+  position: sticky;
+  bottom: 4px;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: var(--bg-panel);
+  opacity: 0.9;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.jump-latest:hover {
+  background: var(--bg-hover);
+}
 .timeline {
   width: 100%;
   max-width: 860px;

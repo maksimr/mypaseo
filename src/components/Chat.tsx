@@ -1,4 +1,4 @@
-import { ArrowUp, Brain, ChevronDown, Folder, Import, Loader2, Plus, Shield, ShieldQuestion, Sparkles, Square, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Brain, ChevronDown, Folder, Import, Loader2, Plus, Shield, ShieldQuestion, Sparkles, Square, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { errorText, type Agent, type Permission, type Workspace } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
@@ -35,6 +35,21 @@ export function Chat({
   const running = agent?.status === 'running'
   const scroller = useRef<HTMLDivElement>(null)
   const atBottom = useRef(true)
+  const [away, setAway] = useState(false)
+  const jumpKey = useShortcut('jumpToLatest')
+  const jumpToLatest = () => {
+    const el = scroller.current
+    if (el) el.scrollTop = el.scrollHeight
+  }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!isShortcut(e, 'jumpToLatest')) return
+      if (!(e.target instanceof HTMLTextAreaElement)) e.preventDefault() // Ctrl+End still moves the composer caret
+      jumpToLatest()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   // Stick to the bottom while streaming unless the user scrolled up.
   useLayoutEffect(() => {
@@ -54,6 +69,7 @@ export function Chat({
         onScroll={(e) => {
           const el = e.currentTarget
           atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40
+          setAway(!atBottom.current)
         }}
       >
         {agent ? (
@@ -62,6 +78,11 @@ export function Chat({
             {tl.error && <div className="empty err">{tl.error}</div>}
             <Timeline items={tl.items} running={running} />
             {agent.lastError && agent.status === 'error' && <div className="msg error pre-wrap">{agent.lastError}</div>}
+            {away && (
+              <button className="jump-latest" onClick={jumpToLatest}>
+                <ArrowDown size={13} /> Jump to Latest Message ({formatCombo(jumpKey)})
+              </button>
+            )}
           </>
         ) : (
           <div className="empty-chat">

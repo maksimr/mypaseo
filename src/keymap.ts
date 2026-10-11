@@ -36,6 +36,7 @@ export const SHORTCUTS = {
   pickProject: { label: 'Choose Project', description: 'Open the project picker from the new agent composer.', default: 'Ctrl+KeyP' },
   // Ctrl+" (Shift+Quote on US layout), Ctrl on Mac too.
   expandTools: { label: 'Expand Tool Output', description: 'Expand or collapse the output of every tool call in the chat.', default: 'Ctrl+Shift+Quote' },
+  jumpToLatest: { label: 'Jump to Latest Message', description: 'Scroll the chat to its newest message.', default: 'Ctrl+End' },
   addProject: { label: 'Add Project', description: 'Add a project directory to the sidebar.', default: 'Ctrl+KeyO' },
   toggleActiveOnly: { label: 'Show Only Active Workspaces', description: 'Filter the sidebar and workspace navigation to running and unread workspaces.', default: 'Ctrl+KeyU' },
   // Ctrl on Mac too: Safari keeps ⌘, and ⇧⌘, for itself and never passes them to the page.
