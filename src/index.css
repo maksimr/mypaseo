@@ -1086,8 +1086,6 @@ code.inline {
 .changes {
   flex: 1;
   overflow: auto;
-  /* Scroll past the end, so Go to Next Hunk can bring any chunk up under its file header. */
-  padding-bottom: calc(100vh - 72px);
 }
 .changes-toolbar {
   position: sticky;
