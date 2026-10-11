@@ -6,7 +6,7 @@ import { FileTree, FileView } from './components/Files'
 import { ImportSession } from './components/ImportSession'
 import { Settings } from './components/Settings'
 import { Sidebar, type Selection } from './components/Sidebar'
-import type { DiffMode, Workspace } from './daemon'
+import type { Agent, DiffMode, Workspace } from './daemon'
 import { formatCombo, isShortcut, useShortcut } from './keymap'
 import { useAttentionNotifications } from './notifications'
 import { OpenFileContext } from './openFile'
@@ -85,6 +85,13 @@ export default function App() {
   const workspace = workspaces.find((w) => w.id === sel.workspaceId)
   const project = projects.find((p) => p.projectId === (workspace?.projectId ?? sel.projectId))
   const agent = agents.find((a) => a.id === sel.agentId)
+  // One chat tab per workspace agent, in sidebar order; undefined is the "New agent" composer.
+  const wsAgents = workspace ? agents.filter((a) => a.workspaceId === workspace.id).sort(byRecent) : []
+  const chatTabs = wsAgents.some((a) => a.id === agent?.id) ? wsAgents : [agent, ...wsAgents]
+  const openChat = (a?: Agent) => {
+    if (target) select({ projectId: target.projectId, workspaceId: workspace?.id, agentId: a?.id })
+    setTab('chat')
+  }
   useAttentionNotifications(sel.agentId, (agentId) => {
     const w = workspaces.find((x) => x.id === agents.find((a) => a.id === agentId)?.workspaceId)
     if (w) select({ projectId: w.projectId, workspaceId: w.id, agentId })
@@ -133,8 +140,10 @@ export default function App() {
       const tabStep = isShortcut(e, 'nextTab') ? 1 : isShortcut(e, 'prevTab') ? -1 : 0
       if (target && tabStep) {
         e.preventDefault()
-        const tabs: Tab[] = ['chat', ...(changesTab ? ['changes' as const] : []), ...files.map((p) => `file:${p}` as const)]
-        setTab(tabs[(tabs.indexOf(tab) + tabStep + tabs.length) % tabs.length])
+        const tabs: (Tab | Agent | undefined)[] = [...chatTabs, ...(changesTab ? ['changes' as const] : []), ...files.map((p) => `file:${p}` as const)]
+        const next = tabs[(tabs.indexOf(tab === 'chat' ? agent : tab) + tabStep + tabs.length) % tabs.length]
+        if (typeof next === 'string') setTab(next)
+        else openChat(next)
       }
       if (projectId && isShortcut(e, 'newWorkspace')) {
         e.preventDefault()
@@ -233,13 +242,14 @@ export default function App() {
 
         <main className="center">
           <div className="tabbar">
-            {target && (
-              <button className={`tab agent-tab ${tab === 'chat' ? 'on' : ''}`} onClick={() => setTab('chat')}>
-                <MessageCirclePlus size={13} />
-                <span className="truncate">{agent ? agent.title || 'Agent' : 'New agent'}</span>
-                {agent?.status === 'running' && <Loader2 size={13} className="spin muted" aria-label="Working" />}
-              </button>
-            )}
+            {target &&
+              chatTabs.map((a) => (
+                <button key={a?.id ?? 'new'} className={`tab agent-tab ${tab === 'chat' && a === agent ? 'on' : ''}`} onClick={() => openChat(a)}>
+                  <MessageCirclePlus size={13} />
+                  <span className="truncate">{a ? a.title || 'Agent' : 'New agent'}</span>
+                  {a?.status === 'running' && <Loader2 size={13} className="spin muted" aria-label="Working" />}
+                </button>
+              ))}
             {changesTab && (
               <button className={`tab ${tab === 'changes' ? 'on' : ''}`} onClick={() => setTab('changes')}>
                 <FileDiff size={13} />
