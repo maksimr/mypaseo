@@ -43,6 +43,11 @@ export function ContextMeter({ agent }: { agent: Agent }) {
             />
           )}
         </svg>
+        {pct != null && (
+          <span className="ctx-text" aria-hidden>
+            {((used! / max!) * 100).toFixed(1)}%/{max! >= 1_000_000 ? `${(max! / 1_000_000).toFixed(1)}M` : `${Math.round(max! / 1_000)}K`}
+          </span>
+        )}
       </button>
       {open && (
         <div className="ctx-card" role="dialog" aria-label="Context window">

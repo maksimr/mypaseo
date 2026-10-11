@@ -1058,9 +1058,15 @@ code.inline {
   margin-right: 4px;
 }
 .ctx-ring {
-  width: 28px;
+  width: auto;
   height: 28px;
-  border-radius: 50%;
+  gap: 6px;
+  padding-inline: 6px;
+  border-radius: 14px;
+}
+.ctx-text {
+  font: 12px var(--mono);
+  font-variant-numeric: tabular-nums;
 }
 .ctx-card {
   position: absolute;
