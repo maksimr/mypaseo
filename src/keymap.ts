@@ -7,12 +7,12 @@ const mod = isMac ? 'Meta' : 'Ctrl'
 export const SHORTCUTS = {
   toggleSidebar: { label: 'Toggle Sidebar', description: 'Show or hide the project sidebar.', default: `${mod}+KeyB` },
   togglePanel: { label: 'Toggle File Panel', description: 'Show or hide the right panel with files and changes.', default: `${mod}+KeyE` },
-  nextTab: { label: 'Next Tab', description: 'Go to the next tab of the current workspace: chat, changes, open files.', default: 'Ctrl+BracketRight' },
-  prevTab: { label: 'Previous Tab', description: 'Go to the previous tab of the current workspace.', default: 'Ctrl+BracketLeft' },
+  nextTab: { label: 'Next Tab', description: 'Go to the next tab of the current workspace: chat, changes, open files.', default: 'Ctrl+Shift+BracketRight' },
+  prevTab: { label: 'Previous Tab', description: 'Go to the previous tab of the current workspace.', default: 'Ctrl+Shift+BracketLeft' },
   // Browsers keep ⌘N / Ctrl+N (new window) for themselves.
   newWorkspace: { label: 'New Workspace', description: 'Start a new workspace in the current project.', default: isMac ? 'Ctrl+KeyN' : 'Alt+KeyN' },
-  nextWorkspace: { label: 'Next Workspace', description: 'Go to the workspace below in the sidebar.', default: 'Ctrl+Shift+BracketRight' },
-  prevWorkspace: { label: 'Previous Workspace', description: 'Go to the workspace above in the sidebar.', default: 'Ctrl+Shift+BracketLeft' },
+  nextWorkspace: { label: 'Next Workspace', description: 'Go to the workspace below in the sidebar.', default: 'Ctrl+BracketRight' },
+  prevWorkspace: { label: 'Previous Workspace', description: 'Go to the workspace above in the sidebar.', default: 'Ctrl+BracketLeft' },
   prevHunk: { label: 'Go to Previous Hunk', description: 'Scroll the diff view to the previous change.', default: 'Alt+Shift+ArrowUp' },
   nextHunk: { label: 'Go to Next Hunk', description: 'Scroll the diff view to the next change.', default: 'Alt+Shift+ArrowDown' },
   // Mac: Mail's Archive. Elsewhere Alt, like New Workspace.
