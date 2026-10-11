@@ -132,6 +132,8 @@ export default function App() {
 
   const [tab, setTab] = useState<Tab>('chat')
   const [files, setFiles] = useState<string[]>([])
+  // undefined: shown while the workspace has changes; true/false: the user opened or closed it.
+  const [changesPick, setChangesPick] = useState<boolean>()
   const [graphTab, setGraphTab] = useState(false)
   const [commit, setCommit] = useState<string>() // picked in the git graph, shown in the panel
   const [commitTab, setCommitTab] = useState<string>() // the commit whose diff the 'commit' tab shows
@@ -227,7 +229,7 @@ export default function App() {
   const commitDiff = useCommitDiff(hostId, isGit ? cwd : undefined, commitTab)
   const t = totals(diff.files)
   // Loading keeps it open while the diff arrives; an empty diff (all committed) closes it.
-  const changesTab = isGit && (diff.files.length > 0 || (diff.loading && tab === 'changes'))
+  const changesTab = changesPick ?? (isGit && (diff.files.length > 0 || (diff.loading && tab === 'changes')))
   if (tab === 'changes' && !changesTab) setTab('chat')
 
   // Tabs belong to a workspace: reset them while rendering when the workspace changes.
@@ -235,6 +237,7 @@ export default function App() {
   if (tabsCwd !== cwd) {
     setTabsCwd(cwd)
     setFiles([])
+    setChangesPick(undefined)
     setGraphTab(false)
     setCommit(undefined)
     setCommitTab(undefined)
@@ -245,7 +248,12 @@ export default function App() {
     setFiles((f) => (f.includes(path) ? f : [...f, path]))
     setTab(`file:${path}`)
   }
-  // The Git Graph panel section shows the picked commit; the graph itself takes a center tab.
+  // A panel section also opens its center tab: the diff for Changes, the graph for Git Graph (whose section shows the picked commit).
+  const openChanges = () => {
+    setPanel('changes')
+    setChangesPick(true)
+    setTab('changes')
+  }
   const openGraph = () => {
     setPanel('graph')
     setGraphTab(true)
@@ -260,6 +268,7 @@ export default function App() {
     setTab('chat')
   }
   const showChange = (path: string) => {
+    setChangesPick(true)
     setTab('changes')
     setFocus((f) => ({ path, n: (f?.n ?? 0) + 1 }))
   }
@@ -318,7 +327,7 @@ export default function App() {
                 </div>
               ))}
             {changesTab && (
-              <button className={`tab ${tab === 'changes' ? 'on' : ''}`} onClick={() => setTab('changes')}>
+              <div className={`tab ${tab === 'changes' ? 'on' : ''}`} {...clickable(() => setTab('changes'))}>
                 <FileDiff size={13} />
                 {/* one inline run so the smaller counters sit on the label's baseline */}
                 <span>
@@ -328,7 +337,18 @@ export default function App() {
                     <span className="del">−{t.del}</span>
                   </span>
                 </span>
-              </button>
+                <button
+                  className="tab-close"
+                  title="Close"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setChangesPick(false)
+                    if (tab === 'changes') setTab('chat')
+                  }}
+                >
+                  <X size={12} />
+                </button>
+              </div>
             )}
             {graphTab && (
               <div className={`tab ${tab === 'graph' ? 'on' : ''}`} {...clickable(() => setTab('graph'))}>
@@ -435,7 +455,7 @@ export default function App() {
           <aside className="panel">
             <div className="panel-tabs">
               {isGit && (
-                <button className={`panel-tab ${panelView === 'changes' ? 'on' : ''}`} onClick={() => setPanel('changes')}>
+                <button className={`panel-tab ${panelView === 'changes' ? 'on' : ''}`} onClick={openChanges}>
                   <FileDiff size={14} /> Changes
                 </button>
               )}
