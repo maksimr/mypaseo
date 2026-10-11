@@ -624,14 +624,14 @@ code.inline {
   margin: 6px 0;
   border-radius: 6px;
   /* translucent so the chat grid shows through; tuned to match the old solid colors over --bg */
-  background: rgba(45, 47, 54, 0.7);
+  background: rgba(45, 47, 54, 0.5);
 }
 .tool.completed {
-  background: rgba(48, 73, 54, 0.7);
+  background: rgba(48, 73, 54, 0.5);
 }
 .tool.failed,
 .tool.canceled {
-  background: rgba(105, 44, 44, 0.7);
+  background: rgba(105, 44, 44, 0.5);
 }
 .tool-head {
   display: block;
