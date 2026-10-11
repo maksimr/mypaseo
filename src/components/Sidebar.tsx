@@ -379,6 +379,7 @@ function WorkspaceRow({
   // An untitled workspace is already named after its branch.
   const branch = w.gitRuntime?.currentBranch !== name ? w.gitRuntime?.currentBranch : undefined
   const menuId = `workspace-menu-${w.id}`
+  const archiveKey = useShortcut('archiveWorkspace')
   const archive = (deleteAgents: boolean) => onArchive(w, deleteAgents)
   const [syncing, setSyncing] = useState<'pull' | 'push'>()
   const sync = async (op: 'pull' | 'push') => {
@@ -425,13 +426,13 @@ function WorkspaceRow({
         </button>
         <button
           className="icon-btn hover-swap"
-          title="New Agent"
+          title={`Archive (${formatCombo(archiveKey)})`}
           onClick={(e) => {
             e.stopPropagation()
-            select()
+            archive(false)
           }}
         >
-          <Plus size={13} />
+          <Archive size={11} strokeWidth={1.75} />
         </button>
         {syncing ? (
           <Loader2 size={13} className="spin muted status-mark" aria-label={syncing === 'pull' ? 'Pulling…' : 'Pushing…'} />
@@ -440,6 +441,9 @@ function WorkspaceRow({
         )}
       </div>
       <div id={menuId} popover="auto" className="menu">
+        <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => select()}>
+          <Plus size={14} /> New Agent
+        </button>
         {w.projectKind === 'git' && (
           <>
             <button popoverTarget={menuId} popoverTargetAction="hide" disabled={!!syncing} onClick={() => void sync('pull')}>
@@ -450,9 +454,6 @@ function WorkspaceRow({
             </button>
           </>
         )}
-        <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => archive(false)}>
-          <Archive size={14} /> Archive
-        </button>
         <button className="danger" popoverTarget={menuId} popoverTargetAction="hide" onClick={() => archive(true)}>
           <Trash2 size={14} /> Remove
         </button>
