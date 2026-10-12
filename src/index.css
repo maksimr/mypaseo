@@ -2273,3 +2273,35 @@ kbd {
     transition: translate 0.2s ease-out; /* SETTLE_MS in swipe.ts */
   }
 }
+
+/* Installed app with the title bar hidden (Chrome/Edge window controls overlay): the top bars are the title bar,
+   clear of the window controls (macOS: traffic lights left, app menu right; Windows: all right). */
+@media (display-mode: window-controls-overlay) {
+  .app {
+    --wco-left: env(titlebar-area-x, 0px);
+    --wco-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw));
+  }
+  .sidebar-head,
+  .tabbar,
+  .panel-tabs {
+    -webkit-app-region: drag;
+  }
+  :is(.sidebar-head, .tabbar, .panel-tabs) :is(button, .tab),
+  .corner {
+    -webkit-app-region: no-drag;
+  }
+  .corner.left {
+    left: calc(8px + var(--wco-left));
+  }
+  .corner.right {
+    right: calc(8px + var(--wco-right));
+  }
+  .sidebar-head,
+  .app.no-sidebar .tabbar {
+    padding-left: calc(36px + var(--wco-left));
+  }
+  .panel-tabs,
+  .app:not(.with-panel) .tabbar {
+    padding-right: calc(36px + var(--wco-right));
+  }
+}
