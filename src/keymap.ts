@@ -8,7 +8,7 @@ export const SHORTCUTS = {
   commandPalette: { label: 'Command Palette', description: 'Search and run a command.', default: `${mod}+KeyK` },
   toggleSidebar: { label: 'Toggle Sidebar', description: 'Show or hide the project sidebar.', default: `${mod}+KeyB` },
   togglePanel: { label: 'Toggle File Panel', description: 'Show or hide the right panel with files and changes.', default: `${mod}+KeyE` },
-  nextTab: { label: 'Next Tab', description: 'Go to the next tab of the current workspace: agents, changes, git graph, open files.', default: 'Ctrl+Shift+BracketRight' },
+  nextTab: { label: 'Next Tab', description: 'Go to the next tab of the current workspace: agents, terminals, changes, git graph, open files.', default: 'Ctrl+Shift+BracketRight' },
   prevTab: { label: 'Previous Tab', description: 'Go to the previous tab of the current workspace.', default: 'Ctrl+Shift+BracketLeft' },
   // VS Code's Source Control binding; H for history.
   openChanges: { label: 'Open Changes', description: 'Open the uncommitted changes of the current workspace.', default: 'Ctrl+Shift+KeyG' },
@@ -20,6 +20,8 @@ export const SHORTCUTS = {
   newWorkspace: { label: 'New Workspace', description: 'Start a new workspace in the current project.', default: isMac ? 'Ctrl+KeyN' : 'Alt+KeyN' },
   // Ctrl on Mac too, as asked. Off Mac, Chrome keeps Ctrl+Shift+N (incognito) outside an installed app window.
   newAgent: { label: 'New Agent', description: 'Open the new agent composer in the selected workspace.', default: 'Ctrl+Shift+KeyN' },
+  // Paseo desktop's binding, Ctrl on Mac too: browsers keep ⌘⇧T (reopen tab). Off Mac, Chrome keeps Ctrl+Shift+T outside an installed app window.
+  newTerminal: { label: 'New Terminal', description: 'Open a terminal in the selected workspace.', default: 'Ctrl+Shift+KeyT' },
   nextWorkspace: { label: 'Next Workspace', description: 'Go to the workspace below in the sidebar.', default: 'Ctrl+BracketRight' },
   prevWorkspace: { label: 'Previous Workspace', description: 'Go to the workspace above in the sidebar.', default: 'Ctrl+BracketLeft' },
   prevHunk: { label: 'Go to Previous Hunk', description: 'Scroll the diff view to the previous change.', default: 'Alt+Shift+ArrowUp' },

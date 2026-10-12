@@ -61,6 +61,8 @@ export type SessionEntry = Awaited<ReturnType<DC['fetchRecentProviderSessions']>
 export type DaemonConfig = Awaited<ReturnType<DC['getDaemonConfig']>>['config']
 export type SlashCommand = Awaited<ReturnType<DC['listCommands']>>['commands'][number]
 export type DraftConfig = Parameters<DC['listProviderFeatures']>[0]
+/** As terminals_changed lists them, without cwd. */
+export type TerminalInfo = Omit<NonNullable<Awaited<ReturnType<DC['createTerminal']>>['terminal']>, 'cwd'>
 export type UsageReport = Awaited<ReturnType<DC['listUsageReports']>>['reports'][number]
 
 export const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e))

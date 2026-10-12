@@ -1,4 +1,4 @@
-import { FileCode, FileDiff, Files, GitCommitHorizontal, Loader2, PanelLeft, PanelRight, X } from 'lucide-react'
+import { FileCode, FileDiff, Files, GitCommitHorizontal, Loader2, PanelLeft, PanelRight, SquareTerminal, X } from 'lucide-react'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { ChangesList, ChangesView } from './components/Changes'
 import { Chat, type Target } from './components/Chat'
@@ -9,7 +9,8 @@ import { ImportSession } from './components/ImportSession'
 import { ProviderIcon } from './components/ProviderIcon'
 import { Settings, type Section } from './components/Settings'
 import { Sidebar, type Selection } from './components/Sidebar'
-import type { Agent, Workspace } from './daemon'
+import { TerminalList, TerminalView } from './components/Terminal'
+import { errorText, type Agent, type Workspace } from './daemon'
 import { formatCombo, isShortcut, useShortcut } from './keymap'
 import { useAttentionNotifications } from './notifications'
 import { OpenFileContext } from './openFile'
@@ -19,8 +20,9 @@ import { clickable } from './a11y'
 import { archiveAgent, archiveWorkspace, byRecent, HostContext, sidebarWorkspaces, startSync, useStore } from './store'
 import { useTabStatus } from './tabStatus'
 import { totals, useCheckoutDiff, useCommitDiff } from './useCheckoutDiff'
+import { useTerminals } from './useTerminals'
 
-type Tab = 'chat' | 'changes' | 'graph' | 'commit' | `file:${string}`
+type Tab = 'chat' | 'changes' | 'graph' | 'commit' | `file:${string}` | `term:${string}`
 
 /** Zed's git graph glyph (lucide has none): a commit with a branch off to the right. Sized and stroked like lucide icons. */
 const GitGraphIcon = ({ size }: { size: number }) => (
@@ -142,8 +144,8 @@ export default function App() {
   const [commit, setCommit] = useState<string>() // picked in the git graph, shown in the panel
   const [commitTab, setCommitTab] = useState<string>() // the commit whose diff the 'commit' tab shows
   const [commitFocus, setCommitFocus] = useState<{ path: string; n: number } | null>(null)
-  const [panel, setPanel] = useState<'files' | 'changes' | 'graph' | null>(() => JSON.parse(localStorage.mypaseoPanel ?? 'null'))
-  const panelView = !isGit ? 'files' : panel
+  const [panel, setPanel] = useState<'files' | 'changes' | 'graph' | 'terminals' | null>(() => JSON.parse(localStorage.mypaseoPanel ?? 'null'))
+  const panelView = isGit || panel === 'terminals' ? panel : 'files'
   const [focus, setFocus] = useState<{ path: string; n: number } | null>(null)
   const [settings, setSettings] = useState<{ hostId: string; section?: Section } | null>(null)
   const [palette, setPalette] = useState(false)
@@ -191,6 +193,7 @@ export default function App() {
         e.preventDefault()
         const tabs: (Tab | Agent | undefined)[] = [
           ...chatTabs,
+          ...terms.terminals.map((t) => `term:${t.id}` as const),
           ...(changesTab ? ['changes' as const] : []),
           ...(graphTab ? ['graph' as const] : []),
           ...(commitTab ? ['commit' as const] : []),
@@ -208,7 +211,12 @@ export default function App() {
         else if (tab === 'changes') closeChanges()
         else if (tab === 'graph') closeGraph()
         else if (tab === 'commit') closeCommit()
+        else if (tab.startsWith('term:')) closeTerminal(tab.slice('term:'.length))
         else closeFile(tab.slice('file:'.length))
+      }
+      if (workspace && isShortcut(e, 'newTerminal')) {
+        e.preventDefault()
+        void newTerminal()
       }
       if (projectId && isShortcut(e, 'newWorkspace')) {
         e.preventDefault()
@@ -258,6 +266,9 @@ export default function App() {
   // Loading keeps it open while the diff arrives; an empty diff (all committed) closes it.
   const changesTab = changesPick ?? (isGit && (diff.files.length > 0 || (diff.loading && tab === 'changes')))
   if (tab === 'changes' && !changesTab) setTab('chat')
+  const terms = useTerminals(hostId, workspace)
+  // A terminal whose shell exited leaves the list.
+  if (tab.startsWith('term:') && terms.loaded && !terms.terminals.some((x) => `term:${x.id}` === tab)) setTab('chat')
 
   // Tabs belong to a workspace: reset them while rendering when the workspace changes.
   const [tabsCwd, setTabsCwd] = useState(cwd)
@@ -301,6 +312,25 @@ export default function App() {
   const closeFile = (path: string) => {
     setFiles((f) => f.filter((p) => p !== path))
     if (tab === `file:${path}`) setTab('chat')
+  }
+  const newTerminal = async () => {
+    try {
+      setTab(`term:${(await terms.create()).id}`)
+    } catch (e) {
+      alert(`Could not open terminal: ${errorText(e)}`)
+    }
+  }
+  /** Like openGraph: shows the Terminals section and a terminal tab, starting a terminal when the workspace has none. */
+  const openTerminals = () => {
+    setPanel('terminals')
+    if (!terms.loaded || tab.startsWith('term:')) return
+    if (terms.terminals[0]) setTab(`term:${terms.terminals[0].id}`)
+    else void newTerminal()
+  }
+  /** Closing a terminal tab stops its shell, like in Paseo desktop. */
+  const closeTerminal = (id: string) => {
+    terms.kill(id).catch((e) => alert(`Could not close terminal: ${errorText(e)}`))
+    if (tab === `term:${id}`) setTab('chat')
   }
   const addToChat = (ref: string) => {
     setChatText((t) => `${t}${t ? ' ' : ''}${ref} `)
@@ -365,6 +395,23 @@ export default function App() {
                   {a?.status === 'running' && <Loader2 size={13} className="spin muted status-mark" aria-label="Working" />}
                 </div>
               ))}
+            {terms.terminals.map((x) => (
+              <div key={x.id} className={`tab ${tab === `term:${x.id}` ? 'on' : ''}`} {...clickable(() => setTab(`term:${x.id}`))}>
+                <SquareTerminal size={13} />
+                <span className="truncate">{x.title || x.name}</span>
+                <button
+                  className="tab-close hover-swap"
+                  title={`Close (${formatCombo(closeAgentKey)})`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    closeTerminal(x.id)
+                  }}
+                >
+                  <X size={12} />
+                </button>
+                {x.activity?.state === 'working' && <Loader2 size={13} className="spin muted status-mark" aria-label="Working" />}
+              </div>
+            ))}
             {changesTab && (
               <div className={`tab ${tab === 'changes' ? 'on' : ''}`} {...clickable(() => setTab('changes'))}>
                 <FileDiff size={13} />
@@ -469,6 +516,8 @@ export default function App() {
             />
           ) : tab === 'commit' && commitTab && cwd ? (
             <ChangesView key={commitTab} cwd={cwd} diff={commitDiff} focus={commitFocus} onOpenFile={openFile} readOnly />
+          ) : tab.startsWith('term:') ? (
+            <TerminalView key={tab} terminalId={tab.slice('term:'.length)} />
           ) : tab.startsWith('file:') && cwd ? (
             <FileView key={tab} cwd={cwd} path={tab.slice(5)} />
           ) : (
@@ -491,20 +540,30 @@ export default function App() {
           <aside className="panel">
             <div className="panel-tabs">
               {isGit && (
-                <button className={`panel-tab ${panelView === 'changes' ? 'on' : ''}`} onClick={openChanges}>
+                <button className={`panel-tab ${panelView === 'changes' ? 'on' : ''}`} title="Changes" onClick={openChanges}>
                   <FileDiff size={14} /> <span className="truncate">Changes</span>
                 </button>
               )}
-              <button className={`panel-tab ${panelView === 'files' ? 'on' : ''}`} onClick={() => setPanel('files')}>
+              <button className={`panel-tab ${panelView === 'files' ? 'on' : ''}`} title="Files" onClick={() => setPanel('files')}>
                 <Files size={14} /> <span className="truncate">Files</span>
               </button>
               {isGit && (
-                <button className={`panel-tab ${panelView === 'graph' ? 'on' : ''}`} onClick={openGraph}>
+                <button className={`panel-tab ${panelView === 'graph' ? 'on' : ''}`} title="Git Graph" onClick={openGraph}>
                   <GitGraphIcon size={14} /> <span className="truncate">Git Graph</span>
                 </button>
               )}
+              <button className={`panel-tab ${panelView === 'terminals' ? 'on' : ''}`} title="Terminals" onClick={openTerminals}>
+                <SquareTerminal size={14} /> <span className="truncate">Terminals</span>
+              </button>
             </div>
-            {panelView === 'files' ? (
+            {panelView === 'terminals' ? (
+              <TerminalList
+                terminals={terms.terminals}
+                activeId={tab.startsWith('term:') ? tab.slice('term:'.length) : undefined}
+                onOpen={(id) => setTab(`term:${id}`)}
+                onNew={() => void newTerminal()}
+              />
+            ) : panelView === 'files' ? (
               <FileTree key={cwd} cwd={cwd} rootName={workspace.projectDisplayName} onOpen={openFile} activePath={tab.startsWith('file:') ? tab.slice(5) : undefined} />
             ) : panelView === 'graph' && !commit ? (
               <div className="empty">Pick a commit in the graph to see its changes.</div>
