@@ -69,7 +69,7 @@ export function Chat({
     const el = scroller.current
     if (el && atBottom.current) el.scrollTop = el.scrollHeight
   }, [tl.items, agent?.pendingPermissions.length])
-  // And while the chat resizes, as when the composer slides in or grows.
+  // And while the chat or its timeline resizes, as when the composer slides in or grows, or markdown near the bottom gets parsed.
   useEffect(() => {
     const el = scroller.current
     if (!el) return
@@ -77,6 +77,8 @@ export function Chat({
       if (atBottom.current) el.scrollTop = el.scrollHeight
     })
     ro.observe(el)
+    const content = el.querySelector('.timeline')
+    if (content) ro.observe(content)
     return () => ro.disconnect()
   }, [])
   // Viewing an agent acknowledges its "finished" / "error" attention flag, except a Mark Unread made while it's open.

@@ -1,4 +1,4 @@
-import { memo, useContext } from 'react'
+import { memo, useContext, useEffect, useRef, useState } from 'react'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { OpenFileContext } from '../openFile'
@@ -40,12 +40,29 @@ const components: Components = {
   },
 }
 
+// Parsing every message froze long threads on open, so text shows raw until it nears the chat's viewport, then stays parsed.
 export const Markdown = memo(function Markdown({ text }: { text: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [near, setNear] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (near || !el) return
+    const io = new IntersectionObserver(([e]) => e.isIntersecting && setNear(true), {
+      root: el.closest('.chat-scroll'), // rootMargin only grows the root, not the scroller clipping it; none (viewport) outside chat
+      rootMargin: '1000px 0px',
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [near])
   return (
-    <div className="md">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-        {text}
-      </ReactMarkdown>
+    <div ref={ref} className={near ? 'md' : 'md pre-wrap'}>
+      {near ? (
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+          {text}
+        </ReactMarkdown>
+      ) : (
+        text
+      )}
     </div>
   )
 })
