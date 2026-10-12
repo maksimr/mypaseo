@@ -1,7 +1,6 @@
-import { Search } from 'lucide-react'
-import { useEffect, useId, useState } from 'react'
+import { useId, useLayoutEffect, useRef, useState } from 'react'
 import { useEscape } from '../a11y'
-import { SHORTCUTS, SHORTCUT_IDS, binding, formatCombo, keysOf, pauseShortcuts, type ShortcutId } from '../keymap'
+import { SHORTCUTS, SHORTCUT_IDS, binding, comboOf, formatCombo, keysOf, pauseShortcuts, type ShortcutId } from '../keymap'
 
 // Only the composer or commit dialog handles these, and Add to Chat needs the selection the palette's input takes.
 const HIDDEN: ShortcutId[] = ['commandPalette', 'send', 'cycleThinking', 'pickModel', 'pickProject', 'amend', 'addToChat']
@@ -9,9 +8,17 @@ const HIDDEN: ShortcutId[] = ['commandPalette', 'send', 'cycleThinking', 'pickMo
 /** Lists the shortcut commands. Running one replays its key combo on window, so whichever component owns it handles it. */
 export function CommandPalette({ onClose }: { onClose: () => void }) {
   useEscape(onClose)
-  useEffect(() => {
+  const input = useRef<HTMLInputElement>(null)
+  // Focus moves here and back by hand, not autoFocus, so StrictMode's remount lands in the input again.
+  // A layout cleanup runs before a dialog the command opens autofocuses, so that dialog keeps the focus.
+  useLayoutEffect(() => {
+    const prev = document.activeElement as HTMLElement | null
+    input.current?.focus()
     pauseShortcuts(true)
-    return () => pauseShortcuts(false)
+    return () => {
+      pauseShortcuts(false)
+      prev?.focus()
+    }
   }, [])
   const listId = useId()
   const [query, setQuery] = useState('')
@@ -28,33 +35,34 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   return (
     <div className="modal-backdrop palette-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="dialog palette" role="dialog" aria-label="Command Palette">
-        <label className="search">
-          <Search size={14} />
-          <input
-            autoFocus
-            role="combobox"
-            aria-label="Command"
-            aria-autocomplete="list"
-            aria-expanded
-            aria-controls={listId}
-            aria-activedescendant={ids.length ? `${listId}-${selected}` : undefined}
-            placeholder="Run a command…"
-            autoComplete="off"
-            spellCheck={false}
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value)
-              setSel(0)
-            }}
-            onKeyDown={(e) => {
-              if (e.nativeEvent.isComposing || !ids.length) return
-              if (e.key === 'ArrowDown' || e.key === 'ArrowUp') setSel((selected + (e.key === 'ArrowDown' ? 1 : ids.length - 1)) % ids.length)
-              else if (e.key === 'Enter') run(ids[selected])
-              else return
-              e.preventDefault()
-            }}
-          />
-        </label>
+        <input
+          ref={input}
+          className="palette-input"
+          role="combobox"
+          aria-label="Command"
+          aria-autocomplete="list"
+          aria-expanded
+          aria-controls={listId}
+          aria-activedescendant={ids.length ? `${listId}-${selected}` : undefined}
+          placeholder="Execute a command…"
+          autoComplete="off"
+          spellCheck={false}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setSel(0)
+          }}
+          onKeyDown={(e) => {
+            if (e.nativeEvent.isComposing || !ids.length) return
+            // Ctrl+N/P like Emacs and Zed; physical keys, like the keymap.
+            const keys = comboOf(e)
+            const step = keys === 'ArrowDown' || keys === 'Ctrl+KeyN' ? 1 : keys === 'ArrowUp' || keys === 'Ctrl+KeyP' ? -1 : 0
+            if (step) setSel((selected + step + ids.length) % ids.length)
+            else if (e.key === 'Enter') run(ids[selected])
+            else return
+            e.preventDefault()
+          }}
+        />
         <div className="palette-list" id={listId} role="listbox" aria-label="Commands">
           {ids.length === 0 && <div className="autocomplete-status">No matching commands</div>}
           {ids.map((id, i) => (
