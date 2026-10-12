@@ -266,22 +266,34 @@ export function Sidebar({
   )
 }
 
-/** Sets the workspace's title; an empty one goes back to the branch or folder name. */
+/** Sets the workspace's title and renames its branch; an empty title goes back to the branch or folder name. */
 function RenameWorkspaceDialog({ workspace: w, onClose }: { workspace: Workspace; onClose: () => void }) {
   const current = w.title || w.name
+  const currentBranch = w.gitRuntime?.currentBranch // none when detached or not git: nothing to rename
   const [title, setTitle] = useState(current)
+  const [branch, setBranch] = useState(currentBranch ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   useEscape(onClose)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (title.trim() === current) return onClose()
+    const newBranch = branch.trim()
+    const renameBranch = !!currentBranch && newBranch !== currentBranch
+    // The daemon keeps naming an untitled workspace after the branch it was created on, so a name that showed the branch follows its rename.
+    const newTitle = renameBranch && title.trim() === current && current === currentBranch ? newBranch : title
+    if (!renameBranch && newTitle.trim() === current) return onClose()
     setBusy(true)
     setError(null)
     try {
+      const daemon = client(w.hostId)
+      if (renameBranch) {
+        // The daemon validates the name and reports a bad one here.
+        const { error } = await daemon.renameBranch({ cwd: w.workspaceDirectory, branch: newBranch })
+        if (error) throw new Error(error.message)
+      }
       // The daemon trims it, and an empty title clears the override.
-      await client(w.hostId).setWorkspaceTitle(w.id, title)
+      if (newTitle.trim() !== current) await daemon.setWorkspaceTitle(w.id, newTitle)
       onClose()
     } catch (err) {
       setError(errorText(err))
@@ -299,10 +311,10 @@ function RenameWorkspaceDialog({ workspace: w, onClose }: { workspace: Workspace
           </button>
         </header>
         <p className="dialog-note muted">Leave empty to use the branch or folder name.</p>
-        <div className="dialog-toolbar">
+        <div className="dialog-toolbar stack">
           <input
             autoFocus
-            className="input grow"
+            className="input"
             name="title"
             aria-label="Workspace name"
             placeholder="Branch or folder name"
@@ -312,6 +324,20 @@ function RenameWorkspaceDialog({ workspace: w, onClose }: { workspace: Workspace
             onChange={(e) => setTitle(e.target.value)}
             onFocus={(e) => e.target.select()}
           />
+          {currentBranch && (
+            <label className="search">
+              <GitBranch size={14} aria-hidden />
+              <input
+                className="mono"
+                name="branch"
+                aria-label="Branch name"
+                autoComplete="off"
+                spellCheck={false}
+                value={branch}
+                onChange={(e) => setBranch(e.target.value)}
+              />
+            </label>
+          )}
         </div>
         {error && <div className="banner err">{error}</div>}
         <footer className="dialog-actions">

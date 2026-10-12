@@ -1772,6 +1772,10 @@ kbd {
 .dialog-toolbar .search {
   margin: 0;
 }
+/* Fields one above the other, full width. */
+.dialog-toolbar.stack {
+  flex-direction: column;
+}
 .select {
   width: auto;
   height: 32px;
