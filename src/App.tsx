@@ -178,6 +178,14 @@ export default function App() {
         e.preventDefault()
         setPanel((p) => (p ? null : 'changes'))
       }
+      if (isGit && isShortcut(e, 'openChanges')) {
+        e.preventDefault()
+        openChanges()
+      }
+      if (isGit && isShortcut(e, 'openGraph')) {
+        e.preventDefault()
+        openGraph()
+      }
       const tabStep = isShortcut(e, 'nextTab') ? 1 : isShortcut(e, 'prevTab') ? -1 : 0
       if (target && tabStep) {
         e.preventDefault()

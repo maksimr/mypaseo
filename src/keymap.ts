@@ -10,6 +10,9 @@ export const SHORTCUTS = {
   togglePanel: { label: 'Toggle File Panel', description: 'Show or hide the right panel with files and changes.', default: `${mod}+KeyE` },
   nextTab: { label: 'Next Tab', description: 'Go to the next tab of the current workspace: agents, changes, git graph, open files.', default: 'Ctrl+Shift+BracketRight' },
   prevTab: { label: 'Previous Tab', description: 'Go to the previous tab of the current workspace.', default: 'Ctrl+Shift+BracketLeft' },
+  // VS Code's Source Control binding; H for history.
+  openChanges: { label: 'Open Changes', description: 'Open the uncommitted changes of the current workspace.', default: 'Ctrl+Shift+KeyG' },
+  openGraph: { label: 'Open Git Graph', description: 'Open the commit graph of the current workspace.', default: 'Ctrl+Shift+KeyH' },
   // Ctrl on Mac too: ⌘W closes the browser tab. Off Mac, Chrome keeps Ctrl+W for itself outside an installed app window.
   // Id kept as closeAgent so saved rebindings still apply.
   closeAgent: { label: 'Close Tab', description: 'Close the open tab. On a chat tab, archive its agent.', default: 'Ctrl+KeyW' },
