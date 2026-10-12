@@ -17,9 +17,14 @@ export const tabBadge = (agents: Agent[]) =>
 export function useTabStatus(name: string | undefined, agents: Agent[]) {
   const title = tabTitle(name, agents)
   const badge = tabBadge(agents)
+  const unread = agents.some(needsAttention)
   useEffect(() => {
     document.title = title
   }, [title])
+  // Dot on the installed app's Dock/taskbar icon; rejects without notification permission (Safari) or outside an app.
+  useEffect(() => {
+    if ('setAppBadge' in navigator) void (unread ? navigator.setAppBadge() : navigator.clearAppBadge()).catch(() => {})
+  }, [unread])
   useEffect(() => {
     if (!badge) return
     const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')!
