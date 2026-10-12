@@ -1,8 +1,8 @@
-import { ArrowDown, ArrowUp, Brain, ChevronDown, Folder, Import, Loader2, Plus, Shield, ShieldQuestion, Sparkles, Square, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Brain, ChevronDown, Folder, GitBranch, Import, Loader2, Plus, Shield, ShieldQuestion, Sparkles, Square, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { errorText, type Agent, type Permission, type Workspace } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
-import { hostLabel, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../store'
+import { hostLabel, keptUnread, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../store'
 import { useAutocomplete } from '../useAutocomplete'
 import { useTimeline } from '../useTimeline'
 import { ContextMeter } from './ContextMeter'
@@ -56,10 +56,15 @@ export function Chat({
     const el = scroller.current
     if (el && atBottom.current) el.scrollTop = el.scrollHeight
   }, [tl.items, agent?.pendingPermissions.length])
-  // Viewing an agent acknowledges its "finished" / "error" attention flag.
+  // Viewing an agent acknowledges its "finished" / "error" attention flag, except a Mark Unread made while it's open.
+  const agentId = agent?.id
   useEffect(() => {
-    if (agent?.requiresAttention && !agent.pendingPermissions.length) void daemon.clearAgentAttention(agent.id).catch(() => {})
-  }, [daemon, agent?.id, agent?.requiresAttention, agent?.pendingPermissions.length])
+    if (agentId) keptUnread.delete(agentId) // opening it reads it
+  }, [agentId])
+  useEffect(() => {
+    if (agentId && !agent?.requiresAttention) keptUnread.delete(agentId) // so finishing again while open reads it
+    else if (agent?.requiresAttention && !agent.pendingPermissions.length && !keptUnread.has(agentId!)) void daemon.clearAgentAttention(agentId!).catch(() => {})
+  }, [daemon, agentId, agent?.requiresAttention, agent?.pendingPermissions.length])
 
   return (
     <div className="chat">
@@ -221,6 +226,8 @@ function Composer({
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [images, setImages] = useState<PastedImage[]>([])
   const [busy, setBusy] = useState(false)
+  const isGit = projects.find((p) => p.projectId === target.projectId)?.projectKind === 'git'
+  const [worktree, setWorktree] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
   const sendKey = useShortcut('send')
   const input = useRef<HTMLTextAreaElement>(null)
@@ -303,7 +310,10 @@ function Composer({
           onCreated(rememberAgent(hostId, created))
         } else {
           const res = await daemon.createWorkspace({
-            source: { kind: 'directory', path: target.rootPath, projectId: target.projectId },
+            source:
+              worktree && isGit
+                ? { kind: 'worktree', cwd: target.rootPath, projectId: target.projectId } // daemon branches off the default branch with a generated name
+                : { kind: 'directory', path: target.rootPath, projectId: target.projectId },
             agent: { ...config, cwd: target.rootPath },
           })
           if (res.error || !res.agent) throw new Error(res.error ?? 'Workspace was created without an agent')
@@ -401,6 +411,18 @@ function Composer({
             onChange={onProjectChange}
             options={projects.map((p) => [p.projectId, `${p.projectCustomName || p.projectDisplayName}${hosts.length > 1 ? ` · ${hostLabel(p.hostId)}` : ''}`])}
             title="Project"
+          />
+        )}
+        {!agent && !target.workspace && isGit && (
+          <Pick
+            icon={<GitBranch size={14} />}
+            value={worktree ? 'worktree' : 'local'}
+            onChange={(v) => setWorktree(v === 'worktree')}
+            options={[
+              ['local', 'Local'],
+              ['worktree', 'Worktree'],
+            ]}
+            title="Workspace"
           />
         )}
         {!agent && (

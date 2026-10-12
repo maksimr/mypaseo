@@ -10,6 +10,8 @@ import {
   Import,
   ListFilter,
   Loader2,
+  Mail,
+  MailOpen,
   Plus,
   Server,
   Settings,
@@ -20,7 +22,8 @@ import { useEffect, useId, useState, type FormEvent, type MouseEvent } from 'rea
 import { errorText, type Agent, type Project, type Workspace } from '../daemon'
 import { clickable, useEscape } from '../a11y'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
-import { byRecent, client, hostLabel, projectWorkspaces as sortedWorkspaces, sidebarWorkspaces, useHostId, useStore } from '../store'
+import { byRecent, client, hostLabel, markRead, markUnread, projectWorkspaces as sortedWorkspaces, sidebarWorkspaces, useHostId, useStore } from '../store'
+import { unreadPick } from '../unread'
 import { AddHostDialog, HostMenu } from './Hosts'
 import { ProviderIcon } from './ProviderIcon'
 
@@ -116,6 +119,14 @@ export function Sidebar({
       if (op && w?.projectKind === 'git') {
         e.preventDefault()
         if (!syncing[w.id]) void sync(w, op)
+      }
+      if (w && isShortcut(e, 'toggleRead')) {
+        e.preventDefault()
+        // Like the open agent's row button, or with no agent open, the workspace menu.
+        const a = agents.find((x) => x.id === selection.agentId)
+        const pick = unreadPick(agents, w.id)
+        if (a ? a.requiresAttention : agents.some((x) => x.workspaceId === w.id && x.requiresAttention)) void markRead(w, a)
+        else if (pick && (!a || a === pick)) void markUnread(w, pick)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -411,7 +422,10 @@ function WorkspaceRow({
   const branch = w.gitRuntime?.currentBranch !== name ? w.gitRuntime?.currentBranch : undefined
   const menuId = `workspace-menu-${w.id}`
   const archiveKey = useShortcut('archiveWorkspace')
+  const readKey = useShortcut('toggleRead')
   const archive = (deleteAgents: boolean) => onArchive(w, deleteAgents)
+  const unread = agents.some((a) => a.requiresAttention)
+  const pick = unreadPick(agents, w.id)
 
   return (
     <>
@@ -463,6 +477,17 @@ function WorkspaceRow({
         <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => select()}>
           <Plus size={14} /> New Agent
         </button>
+        {unread ? (
+          <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => void markRead(w)}>
+            <MailOpen size={14} /> Mark Read
+          </button>
+        ) : (
+          pick && (
+            <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => void markUnread(w, pick)}>
+              <Mail size={14} /> Mark Unread
+            </button>
+          )
+        )}
         {w.projectKind === 'git' && (
           <>
             <button popoverTarget={menuId} popoverTargetAction="hide" disabled={!!syncing} onClick={() => onSync('pull')}>
@@ -486,6 +511,18 @@ function WorkspaceRow({
           >
             <ProviderIcon provider={a.provider} size={9} />
             <span className="grow truncate">{a.title || 'New agent'}</span>
+            {(a.requiresAttention || a === pick) && (
+              <button
+                className="icon-btn hover-swap"
+                title={`${a.requiresAttention ? 'Mark Read' : 'Mark Unread'} (${formatCombo(readKey)})`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void (a.requiresAttention ? markRead(w, a) : markUnread(w, a))
+                }}
+              >
+                {a.requiresAttention ? <MailOpen size={11} strokeWidth={1.75} /> : <Mail size={11} strokeWidth={1.75} />}
+              </button>
+            )}
             <button
               className="icon-btn hover-swap"
               title="Close"

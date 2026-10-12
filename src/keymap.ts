@@ -21,6 +21,8 @@ export const SHORTCUTS = {
   // Mac: Mail's Archive. Elsewhere Alt, like New Workspace.
   archiveWorkspace: { label: 'Archive Workspace', description: 'Archive the selected workspace.', default: isMac ? 'Ctrl+Meta+KeyA' : 'Alt+KeyA' },
   removeWorkspace: { label: 'Remove Workspace', description: 'Delete the agents of the selected workspace, then archive it.', default: isMac ? 'Ctrl+Meta+Backspace' : 'Alt+Delete' },
+  // Mac: Mail's Mark as Read/Unread. Elsewhere Alt, like Archive Workspace.
+  toggleRead: { label: 'Mark Read or Unread', description: 'Mark the open agent read, or unread when it is read. With no agent open, the selected workspace.', default: isMac ? 'Shift+Meta+KeyU' : 'Alt+KeyU' },
   // Browsers keep ⌘L / Ctrl+L (address bar) for themselves.
   addToChat: { label: 'Add Selection to Chat', description: 'Insert the selected lines of a file or diff into the chat composer as path:start-end.', default: isMac ? 'Ctrl+KeyL' : 'Alt+KeyL' },
   send: { label: 'Send', description: 'Send the message in the chat composer.', default: `${mod}+Enter` },
@@ -31,7 +33,7 @@ export const SHORTCUTS = {
   // Zed's binding. Shift sorts before Meta in a combo.
   amend: { label: 'Amend Commit', description: 'Amend the last commit from the commit dialog. An empty message keeps its message.', default: isMac ? 'Shift+Meta+Enter' : 'Ctrl+Shift+Enter' },
   cycleThinking: { label: 'Cycle Thinking Level', description: 'Switch to the next thinking level from the chat composer.', default: 'Shift+Tab' },
-  pickModel: { label: 'Choose Model', description: 'Open the model picker from the chat composer.', default: isMac ? 'Alt+Meta+Slash' : 'Ctrl+Alt+Slash' },
+  pickModel: { label: 'Choose Model', description: 'Open the model picker from the chat composer.', default: 'Alt+KeyP' },
   // Ctrl on Mac too, as asked: ⌘P is the browser's Print.
   pickProject: { label: 'Choose Project', description: 'Open the project picker from the new agent composer.', default: 'Ctrl+KeyP' },
   // Ctrl+" (Shift+Quote on US layout), Ctrl on Mac too.

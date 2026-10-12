@@ -243,6 +243,29 @@ export async function archiveAgent(a: Agent) {
   }
 }
 
+/** Agents marked unread while open: Chat leaves them unread until they're opened or finish again. */
+export const keptUnread = new Set<string>()
+
+/** Unread is the daemon's attention flag. The daemon only marks a whole workspace unread, which flags its unreadPick: pass that agent. */
+export async function markUnread(w: Workspace, pick: Agent) {
+  keptUnread.add(pick.id)
+  try {
+    await client(w.hostId).markWorkspaceUnread(w.id)
+  } catch (e) {
+    alert(`Could not mark unread: ${errorText(e)}`)
+  }
+}
+
+/** Clears the attention flag of one agent, or of every agent in the workspace. */
+export async function markRead(w: Workspace, a?: Agent) {
+  try {
+    const daemon = client(w.hostId)
+    await (a ? daemon.clearAgentAttention(a.id) : daemon.clearWorkspaceAttention(w.id))
+  } catch (e) {
+    alert(`Could not mark read: ${errorText(e)}`)
+  }
+}
+
 /** Apply an agent snapshot returned by an RPC before its agent_update arrives. */
 export function rememberAgent(hostId: string, raw: RawAgent) {
   const agent = { ...raw, hostId }
