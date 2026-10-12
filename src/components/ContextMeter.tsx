@@ -16,8 +16,9 @@ export function ContextMeter({ agent }: { agent: Agent }) {
   return (
     <span
       className="ctx-meter"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      // Mouse only: a tap's emulated hover would open the card right before the click toggles it shut.
+      onPointerEnter={(e) => e.pointerType === 'mouse' && setOpen(true)}
+      onPointerLeave={(e) => e.pointerType === 'mouse' && setOpen(false)}
       onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setOpen(false)}
       onKeyDown={(e) => {
         if (e.key !== 'Escape' || !open) return

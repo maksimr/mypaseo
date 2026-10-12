@@ -374,13 +374,16 @@ code.inline {
 .row .hover-swap {
   display: none;
 }
-.row:is(:hover, :focus-within) .hover-swap,
-.row:has(+ .menu:popover-open) .hover-swap {
-  display: inline-flex;
-}
-.row:is(:hover, :focus-within) .hover-swap ~ .status-mark,
-.row:has(+ .menu:popover-open) .hover-swap ~ .status-mark {
-  display: none;
+/* Hover devices only: on iOS a tap that reveals buttons through :hover counts as a hover, not a click. Touch: see the end. */
+@media (hover: hover) {
+  .row:is(:hover, :focus-within) .hover-swap,
+  .row:has(+ .menu:popover-open) .hover-swap {
+    display: inline-flex;
+  }
+  .row:is(:hover, :focus-within) .hover-swap ~ .status-mark,
+  .row:has(+ .menu:popover-open) .hover-swap ~ .status-mark {
+    display: none;
+  }
 }
 .menu {
   inset: auto;
@@ -561,10 +564,12 @@ code.inline {
   border-radius: 3px;
   color: var(--text-faint);
 }
-/* Agent tabs: a running spinner holds the close button's slot until hover (like .row .hover-swap). */
-.tab:has(.status-mark):not(:hover, :focus-within) .hover-swap,
-.tab:is(:hover, :focus-within) .hover-swap ~ .status-mark {
-  display: none;
+/* Agent tabs: a running spinner holds the close button's slot until hover (like .row .hover-swap). Touch shows both. */
+@media (hover: hover) {
+  .tab:has(.status-mark):not(:hover, :focus-within) .hover-swap,
+  .tab:is(:hover, :focus-within) .hover-swap ~ .status-mark {
+    display: none;
+  }
 }
 .tab-close:hover {
   color: var(--text);
@@ -609,6 +614,7 @@ code.inline {
 
 /* Chat */
 .chat {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -639,6 +645,30 @@ code.inline {
   font-size: 12px;
 }
 .jump-latest:hover {
+  background: var(--bg-hover);
+}
+/* With the composer hidden, the pill clears the bottom by the composer's 16px margin. */
+.chat:has(.show-composer) .jump-latest {
+  bottom: 16px;
+}
+/* Brings back the composer that scrolling up hid. Sized like its .send button and in its column: the composer's
+   side margin (24px, or more past its 812px max width) + 1px border + 10px bar padding. Vertically centered on
+   .jump-latest, shown with it: its 16px offset - (28px - its 26px height) / 2, + 2px since the drop shadow makes it
+   look lower. */
+.show-composer {
+  position: absolute;
+  right: calc(max(24px, (100% - 812px) / 2) + 11px);
+  bottom: 17px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--bg-elev);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.show-composer:hover {
   background: var(--bg-hover);
 }
 .timeline {
@@ -2109,4 +2139,121 @@ kbd {
 }
 .commit-text .muted {
   color: var(--text-faint);
+}
+
+/* Tablet */
+.scrim {
+  display: none;
+}
+/* Narrow windows (tablet portrait): the side panes slide over the center like drawers; the scrim closes them.
+   Wider keeps three columns. NARROW in App.tsx. */
+@media (width < 900px) {
+  .app {
+    display: flex;
+  }
+  .center {
+    flex: 1;
+  }
+  .sidebar,
+  .panel {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 4;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.5);
+  }
+  .sidebar {
+    left: 0;
+    width: var(--sidebar-w);
+  }
+  .panel {
+    right: 0;
+    width: var(--panel-w);
+  }
+  .scrim {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    background: rgba(0, 0, 0, 0.3);
+  }
+}
+/* No hover: hover-revealed controls stay visible; the selected row and expanded projects show their actions beside the mark. */
+@media (hover: none) {
+  .row .hover-only,
+  .sidebar-head .hover-only {
+    visibility: visible;
+  }
+  .row:is(.active, .project[aria-expanded='true']) .hover-swap {
+    display: inline-flex;
+  }
+  .chunk-actions {
+    opacity: 1;
+  }
+}
+/* Fingers: bigger hit areas on the same visual grid (negative margins keep the 13px slots). */
+@media (pointer: coarse) {
+  .row {
+    height: 34px;
+  }
+  .row .icon-btn {
+    width: 26px;
+    height: 26px;
+    margin-inline: -6.5px;
+  }
+  .row .icon-btn + .icon-btn {
+    margin-left: -0.5px; /* centers 26px apart */
+  }
+  .workspace-branch .icon-btn {
+    margin-block: -7.5px;
+  }
+  .tab-close {
+    width: 24px;
+    height: 24px;
+    margin: -5.5px;
+  }
+  .resizer.left,
+  .resizer.right {
+    width: 12px;
+  }
+  .resizer.left {
+    left: calc(var(--sidebar-w) - 6px);
+  }
+  .resizer.right {
+    right: calc(var(--panel-w) - 6px);
+  }
+}
+/* Edge swipe (swipe.ts): the pane follows the finger over the center (--swipe-dx), then settles open or closed. */
+.app.swipe-left .sidebar,
+.app.swipe-right .panel {
+  display: flex;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 4;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.5);
+}
+.app.swipe-left .sidebar {
+  left: 0;
+  width: var(--sidebar-w);
+  translate: min(0px, calc(var(--swipe-dx) - 100%));
+}
+.app.swipe-right .panel {
+  right: 0;
+  width: var(--panel-w);
+  translate: max(0px, calc(var(--swipe-dx) + 100%));
+}
+.app.swipe-open :is(.sidebar, .panel) {
+  translate: 0;
+}
+.app.swipe-left.swipe-closed .sidebar {
+  translate: -100%;
+}
+.app.swipe-right.swipe-closed .panel {
+  translate: 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .app:is(.swipe-open, .swipe-closed) :is(.sidebar, .panel) {
+    transition: translate 0.2s ease-out; /* SETTLE_MS in swipe.ts */
+  }
 }

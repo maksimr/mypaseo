@@ -1,5 +1,6 @@
-import { ArrowDown, ArrowUp, Brain, ChevronDown, Folder, GitBranch, Import, Loader2, Plus, Shield, ShieldQuestion, Sparkles, Square, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Brain, ChevronDown, Folder, GitBranch, Import, Loader2, Plus, Shield, ShieldQuestion, Sparkles, Square, SquarePen, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
+import { flushSync } from 'react-dom'
 import { errorText, type Agent, type Permission, type Workspace } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { hostLabel, keptUnread, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../store'
@@ -10,6 +11,12 @@ import { ProviderIcon } from './ProviderIcon'
 import { Timeline, ToolDetailView } from './Timeline'
 
 export type Target = { projectId: string; name: string; rootPath: string; workspace?: Workspace }
+
+/** Whether the user is writing in the composer: it has focus and unsent text. */
+const typing = (composer: HTMLElement | null) => {
+  const a = document.activeElement
+  return a instanceof HTMLTextAreaElement && !!composer?.contains(a) && a.value !== ''
+}
 
 export function Chat({
   agent,
@@ -36,6 +43,12 @@ export function Chat({
   const scroller = useRef<HTMLDivElement>(null)
   const atBottom = useRef(true)
   const [away, setAway] = useState(false)
+  // Scrolling up to read hides the composer; reaching the bottom or Write Message brings it back.
+  // Pending permissions keep it, so the floating button never covers their cards.
+  const foot = useRef<HTMLDivElement>(null)
+  const lastTop = useRef(0)
+  const [hide, setHide] = useState(false)
+  const composerHidden = hide && !agent?.pendingPermissions.length
   const jumpKey = useShortcut('jumpToLatest')
   const jumpToLatest = () => {
     const el = scroller.current
@@ -56,6 +69,16 @@ export function Chat({
     const el = scroller.current
     if (el && atBottom.current) el.scrollTop = el.scrollHeight
   }, [tl.items, agent?.pendingPermissions.length])
+  // And while the chat resizes, as when the composer slides in or grows.
+  useEffect(() => {
+    const el = scroller.current
+    if (!el) return
+    const ro = new ResizeObserver(() => {
+      if (atBottom.current) el.scrollTop = el.scrollHeight
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
   // Viewing an agent acknowledges its "finished" / "error" attention flag, except a Mark Unread made while it's open.
   const agentId = agent?.id
   useEffect(() => {
@@ -73,8 +96,17 @@ export function Chat({
         ref={scroller}
         onScroll={(e) => {
           const el = e.currentTarget
-          atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40
+          const fromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+          const up = el.scrollTop < lastTop.current
+          lastTop.current = el.scrollTop
+          atBottom.current = fromBottom < 40
           setAway(!atBottom.current)
+          if (atBottom.current) setHide(false)
+          // Only this far up does the space it frees stay short of the bottom; else it would show again at once.
+          else if (up && fromBottom > (foot.current?.offsetHeight ?? 0) + 40 && !typing(foot.current)) {
+            setHide(true)
+            foot.current?.querySelector('textarea')?.blur() // closes a touch keyboard
+          }
         }}
       >
         {agent ? (
@@ -104,15 +136,31 @@ export function Chat({
         )}
       </div>
       {agent?.pendingPermissions.map((p) => <PermissionCard key={p.id} agentId={agent.id} request={p} />)}
-      <Composer
-        agent={agent}
-        target={target}
-        onCreated={onCreated}
-        initialText={initialText}
-        onInitialTextUsed={onInitialTextUsed}
-        onProjectChange={onProjectChange}
-        onDraftProvider={onDraftProvider}
-      />
+      {/* Hidden, not unmounted: the draft and pasted images stay. */}
+      <div ref={foot} hidden={composerHidden}>
+        <Composer
+          agent={agent}
+          target={target}
+          onCreated={onCreated}
+          initialText={initialText}
+          onInitialTextUsed={onInitialTextUsed}
+          onProjectChange={onProjectChange}
+          onDraftProvider={onDraftProvider}
+        />
+      </div>
+      {composerHidden && (
+        <button
+          className="show-composer"
+          title="Write Message"
+          aria-label="Write Message"
+          onClick={() => {
+            flushSync(() => setHide(false))
+            foot.current?.querySelector('textarea')?.focus({ preventScroll: true }) // within the tap, so touch keyboards open
+          }}
+        >
+          <SquarePen size={14} />
+        </button>
+      )}
     </div>
   )
 }

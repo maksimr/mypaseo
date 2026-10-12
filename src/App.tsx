@@ -1,5 +1,5 @@
 import { FileCode, FileDiff, Files, GitCommitHorizontal, Loader2, PanelLeft, PanelRight, SquareTerminal, X } from 'lucide-react'
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ChangesList, ChangesView } from './components/Changes'
 import { Chat, type Target } from './components/Chat'
 import { CommandPalette } from './components/CommandPalette'
@@ -18,6 +18,7 @@ import { selectionRef } from './selection'
 import { SelectionAction } from './components/SelectionAction'
 import { clickable } from './a11y'
 import { archiveAgent, archiveWorkspace, byRecent, HostContext, sidebarWorkspaces, startSync, useStore } from './store'
+import { useEdgeSwipe } from './swipe'
 import { useTabStatus } from './tabStatus'
 import { totals, useCheckoutDiff, useCommitDiff } from './useCheckoutDiff'
 import { useTerminals } from './useTerminals'
@@ -36,6 +37,8 @@ const GitGraphIcon = ({ size }: { size: number }) => (
 
 const MIN_W = 180
 const MAX_W = 600
+/** Below this (tablet portrait) the side panes overlay the center; wider keeps three columns. Same query as index.css. */
+const NARROW = '(width < 900px)'
 
 /** Pane width in px, persisted to localStorage[key]. */
 function useWidth(key: string, initial: number) {
@@ -145,7 +148,7 @@ export default function App() {
   const [commitTab, setCommitTab] = useState<string>() // the commit whose diff the 'commit' tab shows
   const [commitFocus, setCommitFocus] = useState<{ path: string; n: number } | null>(null)
   const [panel, setPanel] = useState<'files' | 'changes' | 'graph' | 'terminals' | null>(() => JSON.parse(localStorage.mypaseoPanel ?? 'null'))
-  const panelView = isGit || panel === 'terminals' ? panel : 'files'
+  const panelView = isGit || panel === 'terminals' ? (panel ?? 'changes') : 'files' // closed: what a swipe slides in
   const [focus, setFocus] = useState<{ path: string; n: number } | null>(null)
   const [settings, setSettings] = useState<{ hostId: string; section?: Section } | null>(null)
   const [palette, setPalette] = useState(false)
@@ -156,6 +159,19 @@ export default function App() {
     localStorage.mypaseoPanel = JSON.stringify(panel)
     localStorage.mypaseoActiveOnly = activeOnly
   }, [sidebar, panel, activeOnly])
+  /** On narrow windows, picking something in an overlaid pane closes the panes, like a drawer. */
+  const dismiss = () => {
+    if (!matchMedia(NARROW).matches) return
+    setSidebar(false)
+    setPanel(null)
+  }
+  // Touch: dragging in from the left edge slides out the sidebar, from the right edge the file panel.
+  const appRef = useRef<HTMLDivElement>(null)
+  const swipe = useEdgeSwipe(
+    appRef,
+    (side) => (side === 'left' ? !sidebar : !!cwd && !panel),
+    (side) => (side === 'left' ? setSidebar(true) : setPanel((p) => p ?? 'changes')),
+  )
   const [sidebarW, setSidebarW] = useWidth('mypaseoSidebarWidth', 270)
   const [panelW, setPanelW] = useWidth('mypaseoPanelWidth', 320) // room for the Changes, Files and Git Graph tabs
   const sidebarKey = useShortcut('toggleSidebar')
@@ -285,6 +301,7 @@ export default function App() {
   const openFile = (path: string) => {
     setFiles((f) => (f.includes(path) ? f : [...f, path]))
     setTab(`file:${path}`)
+    dismiss()
   }
   // A panel section also opens its center tab: the diff for Changes, the graph for Git Graph (whose section shows the picked commit).
   const openChanges = () => {
@@ -340,18 +357,23 @@ export default function App() {
     setChangesPick(true)
     setTab('changes')
     setFocus((f) => ({ path, n: (f?.n ?? 0) + 1 }))
+    dismiss()
   }
 
   return (
     <HostContext value={hostId}>
     <OpenFileContext value={openFile}>
       <div
-        className={`app ${panel && cwd ? 'with-panel' : ''} ${sidebar ? '' : 'no-sidebar'}`}
+        ref={appRef}
+        className={`app ${panel && cwd ? 'with-panel' : ''} ${sidebar ? '' : 'no-sidebar'} ${swipe ? `swipe-${swipe.side} swipe-${swipe.settle ?? 'drag'}` : ''}`}
         style={{ '--sidebar-w': `${sidebarW}px`, '--panel-w': `${panelW}px` } as CSSProperties}
       >
         <Sidebar
           selection={sel}
-          onSelect={select}
+          onSelect={(s) => {
+            select(s)
+            dismiss()
+          }}
           onArchive={archive}
           onCloseAgent={closeAgent}
           activeOnly={activeOnly}
@@ -534,9 +556,10 @@ export default function App() {
             />
           )}
         </main>
+        {(sidebar || (panel && cwd)) && <div className="scrim" onClick={dismiss} />}
 
         {panel && cwd && <Resizer side="right" label="Resize File Panel" width={panelW} onResize={setPanelW} />}
-        {panel && cwd && workspace && (
+        {(panel || swipe?.side === 'right') && cwd && workspace && (
           <aside className="panel">
             <div className="panel-tabs">
               {isGit && (
@@ -560,8 +583,14 @@ export default function App() {
               <TerminalList
                 terminals={terms.terminals}
                 activeId={tab.startsWith('term:') ? tab.slice('term:'.length) : undefined}
-                onOpen={(id) => setTab(`term:${id}`)}
-                onNew={() => void newTerminal()}
+                onOpen={(id) => {
+                  setTab(`term:${id}`)
+                  dismiss()
+                }}
+                onNew={() => {
+                  void newTerminal()
+                  dismiss()
+                }}
               />
             ) : panelView === 'files' ? (
               <FileTree key={cwd} cwd={cwd} rootName={workspace.projectDisplayName} onOpen={openFile} activePath={tab.startsWith('file:') ? tab.slice(5) : undefined} />
@@ -576,6 +605,7 @@ export default function App() {
                   setCommitTab(commit)
                   setCommitFocus((f) => ({ path, n: (f?.n ?? 0) + 1 }))
                   setTab('commit')
+                  dismiss()
                 }}
               />
             ) : (
