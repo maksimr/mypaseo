@@ -19,6 +19,7 @@ import { errorText, type DiffFile } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { useDaemon } from '../store'
 import { split, totals, type DiffState } from '../useCheckoutDiff'
+import { Pick } from './Chat'
 import { Tokens } from './Code'
 
 // Toolbar 38px + .excerpt-head 34px (index.css): a chunk right under them is at the top of the view.
@@ -173,14 +174,29 @@ export function ChangesView({
       return next
     })
 
-  const discard = async (f: DiffFile) => {
-    if (!confirm(`Discard all changes to ${f.path}?${f.isNew ? ' The file will be deleted.' : ''}`)) return
+  const discardPaths = async (question: string, paths: string[]) => {
+    if (!confirm(question)) return
     try {
-      const r = await daemon.checkoutDiscardChanges(cwd, { paths: f.oldPath ? [f.path, f.oldPath] : [f.path] })
+      const r = await daemon.checkoutDiscardChanges(cwd, { paths })
       if (r.error) alert(r.error.message)
     } catch (e) {
       alert(errorText(e))
     }
+  }
+
+  const discard = (f: DiffFile) =>
+    discardPaths(
+      `Discard all changes to ${f.path}?${f.isNew ? ' The file will be deleted.' : ''}`,
+      f.oldPath ? [f.path, f.oldPath] : [f.path],
+    )
+
+  const discardAll = () => {
+    const added = diff.files.filter((f) => f.isNew).length
+    const n = diff.files.length
+    return discardPaths(
+      `Discard all changes to ${n} file${n === 1 ? '' : 's'}?${added ? ` ${added} new file${added === 1 ? '' : 's'} will be deleted.` : ''}`,
+      allPaths(),
+    )
   }
 
   const setFileStaged = (f: DiffFile, stage: boolean) =>
@@ -280,13 +296,16 @@ export function ChangesView({
           {allCollapsed ? <ChevronsUpDown size={14} /> : <ChevronsDownUp size={14} />}
         </button>
         {keys && (
-          <div className="segmented">
-            {(['all', 'staged', 'unstaged'] as const).map((f) => (
-              <button key={f} className={filter === f ? 'on' : ''} onClick={() => setFilter(f)}>
-                {f[0].toUpperCase() + f.slice(1)}
-              </button>
-            ))}
-          </div>
+          <Pick
+            title="Filter Changes"
+            value={filter}
+            onChange={(v) => setFilter(v as Filter)}
+            options={[
+              ['all', 'All'],
+              ['staged', 'Staged'],
+              ['unstaged', 'Unstaged'],
+            ]}
+          />
         )}
         <span className="grow" />
         <Stat add={t.add} del={t.del} />
@@ -305,6 +324,14 @@ export function ChangesView({
         >
           <ArrowDown size={14} />
         </button>
+        {!readOnly && (
+          <>
+            <span className="sep" />
+            <button className="text-btn" disabled={diff.files.length === 0} onClick={() => void discardAll()}>
+              Discard All
+            </button>
+          </>
+        )}
         {keys && (
           <>
             <span className="sep" />

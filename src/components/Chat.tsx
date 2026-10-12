@@ -478,7 +478,7 @@ function Composer({
   )
 }
 
-function Pick({
+export function Pick({
   ref,
   icon,
   value,
@@ -487,7 +487,7 @@ function Pick({
   title,
 }: {
   ref?: Ref<HTMLSelectElement>
-  icon: ReactNode
+  icon?: ReactNode
   value: string | undefined
   onChange: (v: string) => void
   options: [string, string][]

@@ -1077,6 +1077,10 @@ code.inline {
   cursor: pointer;
   text-overflow: ellipsis;
 }
+/* No icon before it. */
+.pick select:first-child {
+  padding-left: 8px;
+}
 .pick:hover select {
   background: var(--bg-hover);
 }
@@ -1337,7 +1341,7 @@ code.inline {
   scrollbar-width: none;
   white-space: nowrap;
 }
-.changes-toolbar .segmented {
+.changes-toolbar .pick {
   margin-left: 8px;
 }
 .changes-toolbar .sep {
@@ -1356,22 +1360,6 @@ code.inline {
 }
 .text-btn:hover:not(:disabled) {
   background: var(--bg-hover);
-}
-.segmented {
-  display: inline-flex;
-  padding: 2px;
-  border-radius: 6px;
-  background: var(--bg-panel);
-}
-.segmented button {
-  padding: 2px 10px;
-  border-radius: 4px;
-  color: var(--text-muted);
-  font-size: 12px;
-}
-.segmented button.on {
-  background: var(--bg-active);
-  color: var(--text);
 }
 .excerpt {
   border-bottom: 1px solid var(--border);
