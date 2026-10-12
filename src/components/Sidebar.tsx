@@ -583,8 +583,6 @@ function WorkspaceRow({
           )}
           {branch && (
             <span className="workspace-branch muted">
-              <GitBranch size={11} aria-label="Branch" />
-              <span className="truncate">{branch}</span>
               <button
                 className="icon-btn hover-swap"
                 title="Copy Path"
@@ -593,8 +591,10 @@ function WorkspaceRow({
                   navigator.clipboard.writeText(w.workspaceDirectory).catch((err) => alert(`Could not copy: ${errorText(err)}`))
                 }}
               >
-                <Copy size={9} />
+                <Copy size={11} />
               </button>
+              <GitBranch size={11} className="status-mark" aria-label="Branch" />
+              <span className="truncate">{branch}</span>
             </span>
           )}
         </span>

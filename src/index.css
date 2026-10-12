@@ -474,9 +474,9 @@ code.inline {
 .workspace-branch svg {
   flex: none;
 }
-/* Keeps the 18px button from growing the 11px branch line on hover. */
+/* Keeps the 18px button in the 11px branch icon's slot, so the swap doesn't grow the line or shift the name. */
 .workspace-branch .icon-btn {
-  margin-block: -4px;
+  margin: -4px -3.5px;
 }
 .row.agent {
   padding-left: 40px;
@@ -2242,7 +2242,7 @@ kbd {
     margin-left: -0.5px; /* centers 26px apart */
   }
   .workspace-branch .icon-btn {
-    margin-block: -7.5px;
+    margin: -7.5px;
   }
   .tab-close {
     width: 24px;
