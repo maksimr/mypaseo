@@ -40,7 +40,9 @@ export function TerminalView({ terminalId }: { terminalId: string }) {
     const css = getComputedStyle(el)
     const term = new Terminal({
       fontFamily: css.getPropertyValue('--mono'),
-      fontSize: 13,
+      fontSize: 18,
+      lineHeight: 1.125,
+      fontWeightBold: 'normal', // thin like the tool output, which has no bold
       cursorBlink: true,
       macOptionIsMeta: true, // Option+B/F move by word, as in Paseo desktop
       scrollback: 10000,
@@ -49,6 +51,23 @@ export function TerminalView({ terminalId }: { terminalId: string }) {
         foreground: css.getPropertyValue('--text'),
         cursor: css.getPropertyValue('--accent'),
         selectionBackground: 'rgba(116, 173, 232, 0.3)',
+        // Soft pastel ANSI colors instead of xterm's saturated defaults. Bold text uses the bright ones.
+        black: '#3a3a3a',
+        red: '#c86464',
+        green: '#8cbf7f',
+        yellow: '#d6d27a',
+        blue: '#6b70e0',
+        magenta: '#c27fd1',
+        cyan: '#6fc0d4',
+        white: '#d4d4d4',
+        brightBlack: '#6e6e6e',
+        brightRed: '#e06c6c',
+        brightGreen: '#93c88a',
+        brightYellow: '#e6e47a',
+        brightBlue: '#7b7ef0',
+        brightMagenta: '#d495e3',
+        brightCyan: '#80d0e4',
+        brightWhite: '#f0f0f0',
       },
     })
     const fit = new FitAddon()
