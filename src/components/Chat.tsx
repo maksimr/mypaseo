@@ -228,6 +228,7 @@ function Composer({
   const [busy, setBusy] = useState(false)
   const isGit = projects.find((p) => p.projectId === target.projectId)?.projectKind === 'git'
   const [worktree, setWorktree] = useState(false)
+  const [worktreeName, setWorktreeName] = useState('')
   const fileInput = useRef<HTMLInputElement>(null)
   const sendKey = useShortcut('send')
   const input = useRef<HTMLTextAreaElement>(null)
@@ -312,7 +313,8 @@ function Composer({
           const res = await daemon.createWorkspace({
             source:
               worktree && isGit
-                ? { kind: 'worktree', cwd: target.rootPath, projectId: target.projectId } // daemon branches off the default branch with a generated name
+                ? // daemon branches off the default branch; an empty name gets a generated one
+                  { kind: 'worktree', cwd: target.rootPath, projectId: target.projectId, worktreeSlug: worktreeName.trim() || undefined }
                 : { kind: 'directory', path: target.rootPath, projectId: target.projectId },
             agent: { ...config, cwd: target.rootPath },
           })
@@ -423,6 +425,17 @@ function Composer({
               ['worktree', 'Worktree'],
             ]}
             title="Workspace"
+          />
+        )}
+        {!agent && !target.workspace && isGit && worktree && (
+          <input
+            className="worktree-name"
+            name="worktreeName"
+            aria-label="Worktree Name"
+            placeholder="Worktree name"
+            title="Worktree name (empty: generated)"
+            value={worktreeName}
+            onChange={(e) => setWorktreeName(e.target.value)}
           />
         )}
         {!agent && (
