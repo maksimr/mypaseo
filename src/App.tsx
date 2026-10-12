@@ -76,17 +76,20 @@ function Resizer({ side, label, width, onResize }: { side: 'left' | 'right'; lab
 
 export default function App() {
   useEffect(() => startSync(), [])
-  const { hosts, byHost, projects, workspaces, agents } = useStore()
+  const { hosts, byHost, projects, workspaces, agents, pinned } = useStore()
 
   const [sel, setSel] = useState<Selection>(() => JSON.parse(localStorage.mypaseoSelection ?? '{}'))
+  // The agent selection a "New agent" composer was opened from, so Ctrl+W on the composer returns there.
+  const [back, setBack] = useState<Selection>()
   const select = (s: Selection) => {
     setSel(s)
+    setBack(s.agentId ? undefined : sel.agentId ? sel : back)
     localStorage.mypaseoSelection = JSON.stringify(s)
   }
   const openWorkspace = (w: Workspace) =>
     select({ projectId: w.projectId, workspaceId: w.id, agentId: agents.filter((a) => a.workspaceId === w.id).sort(byRecent)[0]?.id })
   const [activeOnly, setActiveOnly] = useState(() => localStorage.mypaseoActiveOnly === 'true')
-  const listed = () => sidebarWorkspaces(projects, workspaces, agents, activeOnly, sel.workspaceId)
+  const listed = () => sidebarWorkspaces(projects, workspaces, agents, pinned, activeOnly, sel.workspaceId)
   /** Archives or removes a workspace; if it was selected, selects the one above it in the sidebar. */
   const archive = async (w: Workspace, deleteAgents: boolean) => {
     const list = listed()
@@ -183,9 +186,11 @@ export default function App() {
         if (typeof next === 'string') setTab(next)
         else openChat(next)
       }
-      if (target && isShortcut(e, 'closeAgent') && (tab !== 'chat' || agent)) {
+      const composer = tab === 'chat' && !agent
+      if (target && isShortcut(e, 'closeAgent') && (!composer || agents.some((a) => a.id === back?.agentId))) {
         e.preventDefault()
-        if (tab === 'chat') void closeAgent(agent!)
+        if (composer) select(back!)
+        else if (tab === 'chat') void closeAgent(agent!)
         else if (tab === 'changes') closeChanges()
         else if (tab === 'graph') closeGraph()
         else if (tab === 'commit') closeCommit()
@@ -194,6 +199,10 @@ export default function App() {
       if (projectId && isShortcut(e, 'newWorkspace')) {
         e.preventDefault()
         select({ projectId })
+      }
+      if (workspace && isShortcut(e, 'newAgent')) {
+        e.preventDefault()
+        openChat()
       }
       const s = target && isShortcut(e, 'addToChat') && selectionRef()
       if (s) {

@@ -38,10 +38,19 @@ type State = {
   projects: Project[]
   workspaces: Workspace[]
   agents: Agent[]
+  /** Workspace ids pinned in the sidebar; the daemon has no pin, so they live in this browser. */
+  pinned: string[]
 }
 
 const hosts: Host[] = JSON.parse(localStorage.mypaseoHosts ?? 'null') ?? [DEFAULT_HOST]
-let state: State = { hosts, byHost: Object.fromEntries(hosts.map((h) => [h.id, EMPTY])), projects: [], workspaces: [], agents: [] }
+let state: State = {
+  hosts,
+  byHost: Object.fromEntries(hosts.map((h) => [h.id, EMPTY])),
+  projects: [],
+  workspaces: [],
+  agents: [],
+  pinned: JSON.parse(localStorage.mypaseoPinned ?? '[]'),
+}
 const listeners = new Set<() => void>()
 function set(patch: Partial<State>) {
   const s = { ...state, ...patch }
@@ -210,11 +219,17 @@ export function projectWorkspaces(projectId: string, workspaces: Workspace[], ag
 /** Running, or unread / waiting on a permission. */
 const isActive = (a: Agent) => a.status === 'running' || a.pendingPermissions.length > 0 || a.requiresAttention
 
-/** The workspaces the sidebar lists, in order. activeOnly keeps the selected one so opening it (which clears unread) doesn't hide it. */
-export const sidebarWorkspaces = (projects: Project[], workspaces: Workspace[], agents: Agent[], activeOnly: boolean, selectedId?: string) =>
+/** The workspaces the sidebar lists, in order. activeOnly keeps pinned ones, and the selected one so opening it (which clears unread) doesn't hide it. */
+export const sidebarWorkspaces = (projects: Project[], workspaces: Workspace[], agents: Agent[], pinned: string[], activeOnly: boolean, selectedId?: string) =>
   projects
     .flatMap((p) => projectWorkspaces(p.projectId, workspaces, agents))
-    .filter((w) => !activeOnly || w.id === selectedId || agents.some((a) => a.workspaceId === w.id && isActive(a)))
+    .filter((w) => !activeOnly || w.id === selectedId || pinned.includes(w.id) || agents.some((a) => a.workspaceId === w.id && isActive(a)))
+
+export function togglePin(workspaceId: string) {
+  const pinned = state.pinned.includes(workspaceId) ? state.pinned.filter((id) => id !== workspaceId) : [...state.pinned, workspaceId]
+  localStorage.mypaseoPinned = JSON.stringify(pinned)
+  set({ pinned })
+}
 
 /** The daemon has no workspace delete: removing permanently deletes the agents, then archives the workspace. */
 export async function archiveWorkspace(w: Workspace, deleteAgents: boolean) {

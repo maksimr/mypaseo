@@ -12,17 +12,19 @@ import {
   Loader2,
   Mail,
   MailOpen,
+  Pin,
+  PinOff,
   Plus,
   Server,
   Settings,
   Trash2,
   X,
 } from 'lucide-react'
-import { useEffect, useId, useState, type FormEvent, type MouseEvent } from 'react'
+import { useEffect, useId, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
 import { errorText, type Agent, type Project, type Workspace } from '../daemon'
 import { clickable, useEscape } from '../a11y'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
-import { byRecent, client, hostLabel, markRead, markUnread, projectWorkspaces as sortedWorkspaces, sidebarWorkspaces, useHostId, useStore } from '../store'
+import { byRecent, client, hostLabel, markRead, markUnread, projectWorkspaces as sortedWorkspaces, sidebarWorkspaces, togglePin, useHostId, useStore } from '../store'
 import { unreadPick } from '../unread'
 import { AddHostDialog, HostMenu } from './Hosts'
 import { ProviderIcon } from './ProviderIcon'
@@ -76,7 +78,7 @@ export function Sidebar({
   activeOnly: boolean
   onToggleActiveOnly: () => void
 }) {
-  const { hosts, byHost, projects, workspaces, agents } = useStore()
+  const { hosts, byHost, projects, workspaces, agents, pinned } = useStore()
   // The footer shows the first host that isn't connected.
   const down = hosts.find((h) => byHost[h.id]?.status !== 'connected')
   const downState = down && byHost[down.id]
@@ -119,6 +121,10 @@ export function Sidebar({
       if (op && w?.projectKind === 'git') {
         e.preventDefault()
         if (!syncing[w.id]) void sync(w, op)
+      }
+      if (w && isShortcut(e, 'togglePin')) {
+        e.preventDefault()
+        togglePin(w.id)
       }
       if (w && isShortcut(e, 'toggleRead')) {
         e.preventDefault()
@@ -164,7 +170,7 @@ export function Sidebar({
           {projects.map((p) => {
             const open = !collapsed.has(p.projectId)
             const projectWorkspaces = sortedWorkspaces(p.projectId, workspaces, agents)
-            const shownWorkspaces = sidebarWorkspaces([p], workspaces, agents, activeOnly, selection.workspaceId)
+            const shownWorkspaces = sidebarWorkspaces([p], workspaces, agents, pinned, activeOnly, selection.workspaceId)
             if (activeOnly && shownWorkspaces.length === 0) return null
             const name = p.projectCustomName || p.projectDisplayName
             const menuId = `project-menu-${p.projectId}`
@@ -220,6 +226,7 @@ export function Sidebar({
                       workspace={w}
                       agents={agents.filter((a) => a.workspaceId === w.id).sort(byRecent)}
                       collapsed={collapsed.has(w.id)}
+                      pinned={pinned.includes(w.id)}
                       onToggle={() => toggle(w.id)}
                       selection={selection}
                       onSelect={onSelect}
@@ -393,6 +400,7 @@ function WorkspaceRow({
   workspace: w,
   agents,
   collapsed: userCollapsed,
+  pinned,
   onToggle,
   selection,
   onSelect,
@@ -404,6 +412,7 @@ function WorkspaceRow({
   workspace: Workspace
   agents: Agent[]
   collapsed: boolean
+  pinned: boolean
   onToggle: () => void
   selection: Selection
   onSelect: (s: Selection) => void
@@ -470,12 +479,15 @@ function WorkspaceRow({
         {syncing ? (
           <Loader2 size={13} className="spin muted status-mark" aria-label={syncing === 'pull' ? 'Pulling…' : 'Pushing…'} />
         ) : (
-          <StatusMark agents={agents} />
+          <StatusMark agents={agents} idle={pinned && <Pin size={11} strokeWidth={1.75} className="muted status-mark" aria-label="Pinned" />} />
         )}
       </div>
       <div id={menuId} popover="auto" className="menu">
         <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => select()}>
           <Plus size={14} /> New Agent
+        </button>
+        <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => togglePin(w.id)}>
+          {pinned ? <PinOff size={14} /> : <Pin size={14} />} {pinned ? 'Unpin' : 'Pin'}
         </button>
         {unread ? (
           <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => void markRead(w)}>
@@ -541,11 +553,11 @@ function WorkspaceRow({
 }
 
 /** Derived from agents: the daemon's workspace status can lag behind them. */
-function StatusMark({ agents }: { agents: Agent[] }) {
+function StatusMark({ agents, idle = null }: { agents: Agent[]; idle?: ReactNode }) {
   if (agents.some((a) => a.status === 'running'))
     return <Loader2 size={13} className="spin muted status-mark" aria-label="Running" />
   if (agents.some((a) => a.pendingPermissions.length > 0 || a.requiresAttention))
     return <span className="dot attention status-mark" title="Needs attention" />
   if (agents.some((a) => a.status === 'error')) return <span className="dot failed status-mark" title="Error" />
-  return null
+  return idle
 }

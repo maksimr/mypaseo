@@ -14,6 +14,8 @@ export const SHORTCUTS = {
   closeAgent: { label: 'Close Tab', description: 'Close the open tab. On a chat tab, archive its agent.', default: 'Ctrl+KeyW' },
   // Browsers keep ⌘N / Ctrl+N (new window) for themselves.
   newWorkspace: { label: 'New Workspace', description: 'Start a new workspace in the current project.', default: isMac ? 'Ctrl+KeyN' : 'Alt+KeyN' },
+  // Ctrl on Mac too, as asked. Off Mac, Chrome keeps Ctrl+Shift+N (incognito) outside an installed app window.
+  newAgent: { label: 'New Agent', description: 'Open the new agent composer in the selected workspace.', default: 'Ctrl+Shift+KeyN' },
   nextWorkspace: { label: 'Next Workspace', description: 'Go to the workspace below in the sidebar.', default: 'Ctrl+BracketRight' },
   prevWorkspace: { label: 'Previous Workspace', description: 'Go to the workspace above in the sidebar.', default: 'Ctrl+BracketLeft' },
   prevHunk: { label: 'Go to Previous Hunk', description: 'Scroll the diff view to the previous change.', default: 'Alt+Shift+ArrowUp' },
@@ -23,6 +25,8 @@ export const SHORTCUTS = {
   removeWorkspace: { label: 'Remove Workspace', description: 'Delete the agents of the selected workspace, then archive it.', default: isMac ? 'Ctrl+Meta+Backspace' : 'Alt+Delete' },
   // Mac: Mail's Mark as Read/Unread. Elsewhere Alt, like Archive Workspace.
   toggleRead: { label: 'Mark Read or Unread', description: 'Mark the open agent read, or unread when it is read. With no agent open, the selected workspace.', default: isMac ? 'Shift+Meta+KeyU' : 'Alt+KeyU' },
+  // Like Archive Workspace; Alt+P is taken by Choose Model.
+  togglePin: { label: 'Pin or Unpin Workspace', description: 'Pin the selected workspace, or unpin it when pinned. Pinned workspaces stay listed when the sidebar shows only active ones.', default: isMac ? 'Ctrl+Meta+KeyP' : 'Alt+Shift+KeyP' },
   // Browsers keep ⌘L / Ctrl+L (address bar) for themselves.
   addToChat: { label: 'Add Selection to Chat', description: 'Insert the selected lines of a file or diff into the chat composer as path:start-end.', default: isMac ? 'Ctrl+KeyL' : 'Alt+KeyL' },
   send: { label: 'Send', description: 'Send the message in the chat composer.', default: `${mod}+Enter` },
