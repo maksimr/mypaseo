@@ -13,6 +13,7 @@ import {
   Loader2,
   Mail,
   MailOpen,
+  Pencil,
   Pin,
   PinOff,
   Plus,
@@ -98,6 +99,7 @@ export function Sidebar({
     })
 
   const [adding, setAdding] = useState(false)
+  const [renaming, setRenaming] = useState<Workspace>()
   // Lives here, not in the row: the selected workspace's row is unmounted while its project is collapsed.
   const [syncing, setSyncing] = useState<Record<string, 'pull' | 'push' | undefined>>({})
   const sync = async (w: Workspace, op: 'pull' | 'push') => {
@@ -233,6 +235,7 @@ export function Sidebar({
                       onSelect={onSelect}
                       onArchive={onArchive}
                       onCloseAgent={onCloseAgent}
+                      onRename={() => setRenaming(w)}
                       syncing={syncing[w.id]}
                       onSync={(op) => void sync(w, op)}
                     />
@@ -258,7 +261,69 @@ export function Sidebar({
       {/* Outside the aside: a hidden sidebar is display: none. */}
       {adding && <AddProjectDialog onClose={() => setAdding(false)} />}
       {addingHost && <AddHostDialog onClose={() => setAddingHost(false)} />}
+      {renaming && <RenameWorkspaceDialog workspace={renaming} onClose={() => setRenaming(undefined)} />}
     </>
+  )
+}
+
+/** Sets the workspace's title; an empty one goes back to the branch or folder name. */
+function RenameWorkspaceDialog({ workspace: w, onClose }: { workspace: Workspace; onClose: () => void }) {
+  const current = w.title || w.name
+  const [title, setTitle] = useState(current)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  useEscape(onClose)
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (title.trim() === current) return onClose()
+    setBusy(true)
+    setError(null)
+    try {
+      // The daemon trims it, and an empty title clears the override.
+      await client(w.hostId).setWorkspaceTitle(w.id, title)
+      onClose()
+    } catch (err) {
+      setError(errorText(err))
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <form className="dialog narrow" role="dialog" aria-label="Rename Workspace" onSubmit={submit}>
+        <header className="dialog-head">
+          <h2 className="grow">Rename Workspace</h2>
+          <button type="button" className="icon-btn" title="Close (Esc)" onClick={onClose}>
+            <X size={16} />
+          </button>
+        </header>
+        <p className="dialog-note muted">Leave empty to use the branch or folder name.</p>
+        <div className="dialog-toolbar">
+          <input
+            autoFocus
+            className="input grow"
+            name="title"
+            aria-label="Workspace name"
+            placeholder="Branch or folder name"
+            autoComplete="off"
+            spellCheck={false}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onFocus={(e) => e.target.select()}
+          />
+        </div>
+        {error && <div className="banner err">{error}</div>}
+        <footer className="dialog-actions">
+          <button type="button" className="text-btn muted" onClick={onClose}>
+            <kbd>Esc</kbd> Cancel
+          </button>
+          <button className="btn primary" disabled={busy}>
+            {busy && <Loader2 size={13} className="spin" />} Rename
+          </button>
+        </footer>
+      </form>
+    </div>
   )
 }
 
@@ -407,6 +472,7 @@ function WorkspaceRow({
   onSelect,
   onArchive,
   onCloseAgent,
+  onRename,
   syncing,
   onSync,
 }: {
@@ -419,6 +485,7 @@ function WorkspaceRow({
   onSelect: (s: Selection) => void
   onArchive: (w: Workspace, deleteAgents: boolean) => void
   onCloseAgent: (a: Agent) => void
+  onRename: () => void
   syncing?: 'pull' | 'push'
   onSync: (op: 'pull' | 'push') => void
 }) {
@@ -436,6 +503,12 @@ function WorkspaceRow({
   const archive = (deleteAgents: boolean) => onArchive(w, deleteAgents)
   const unread = agents.some((a) => a.requiresAttention)
   const pick = unreadPick(agents, w.id)
+  const [editing, setEditing] = useState(false)
+  const saveName = (value: string) => {
+    setEditing(false)
+    // The daemon trims it, and an empty title clears the override.
+    if (value.trim() !== name) client(w.hostId).setWorkspaceTitle(w.id, value).catch((e) => alert(`Could not rename workspace: ${errorText(e)}`))
+  }
 
   return (
     <>
@@ -456,7 +529,32 @@ function WorkspaceRow({
           <span className="chevron" />
         )}
         <span className="workspace-label">
-          <span className="truncate">{name}</span>
+          {editing ? (
+            <input
+              autoFocus
+              className="rename-input"
+              aria-label="Workspace name"
+              defaultValue={name}
+              autoComplete="off"
+              spellCheck={false}
+              onFocus={(e) => e.target.select()}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                e.stopPropagation() // keys edit the name: no app shortcuts, no row activation
+                if (e.nativeEvent.isComposing) return
+                if (e.key === 'Enter') e.currentTarget.blur()
+                if (e.key === 'Escape') {
+                  e.currentTarget.value = name // so the blur saves nothing
+                  e.currentTarget.blur()
+                }
+              }}
+              onBlur={(e) => saveName(e.target.value)}
+            />
+          ) : (
+            <span className="truncate" onDoubleClick={() => setEditing(true)}>
+              {name}
+            </span>
+          )}
           {branch && (
             <span className="workspace-branch muted">
               <GitBranch size={11} aria-label="Branch" />
@@ -496,6 +594,9 @@ function WorkspaceRow({
       <div id={menuId} popover="auto" className="menu">
         <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => select()}>
           <Plus size={14} /> New Agent
+        </button>
+        <button popoverTarget={menuId} popoverTargetAction="hide" onClick={onRename}>
+          <Pencil size={14} /> Rename
         </button>
         <button popoverTarget={menuId} popoverTargetAction="hide" onClick={() => togglePin(w.id)}>
           {pinned ? <PinOff size={14} /> : <Pin size={14} />} {pinned ? 'Unpin' : 'Pin'}
