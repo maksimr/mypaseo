@@ -1999,6 +1999,9 @@ kbd {
 .open-in {
   flex: none;
 }
+.open-in button:first-child {
+  padding: 4px;
+}
 .open-in img,
 #editor-menu img {
   display: block;
