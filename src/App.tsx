@@ -6,6 +6,7 @@ import { CommandPalette } from './components/CommandPalette'
 import { CommitDetails, CommitGraph } from './components/CommitGraph'
 import { FileTree, FileView } from './components/Files'
 import { ImportSession } from './components/ImportSession'
+import { OpenInEditor } from './components/OpenInEditor'
 import { ProviderIcon } from './components/ProviderIcon'
 import { Settings, type Section } from './components/Settings'
 import { Sidebar, type Selection } from './components/Sidebar'
@@ -397,116 +398,119 @@ export default function App() {
 
         <main className="center">
           <div className="tabbar">
-            {target &&
-              chatTabs.map((a) => (
-                <div key={a?.id ?? 'new'} className={`tab agent-tab ${tab === 'chat' && a === agent ? 'on' : ''}`} {...clickable(() => openChat(a))}>
-                  <ProviderIcon provider={a ? a.provider : draftProvider} size={13} />
-                  <span className="truncate">{a ? a.title || 'Agent' : 'New agent'}</span>
-                  {a && (
-                    <button
-                      className="tab-close hover-swap"
-                      title={`Close (${formatCombo(closeAgentKey)})`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        void closeAgent(a)
-                      }}
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                  {a?.status === 'running' && <Loader2 size={13} className="spin muted status-mark" aria-label="Working" />}
+            <div className="tabs">
+              {target &&
+                chatTabs.map((a) => (
+                  <div key={a?.id ?? 'new'} className={`tab agent-tab ${tab === 'chat' && a === agent ? 'on' : ''}`} {...clickable(() => openChat(a))}>
+                    <ProviderIcon provider={a ? a.provider : draftProvider} size={13} />
+                    <span className="truncate">{a ? a.title || 'Agent' : 'New agent'}</span>
+                    {a && (
+                      <button
+                        className="tab-close hover-swap"
+                        title={`Close (${formatCombo(closeAgentKey)})`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          void closeAgent(a)
+                        }}
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                    {a?.status === 'running' && <Loader2 size={13} className="spin muted status-mark" aria-label="Working" />}
+                  </div>
+                ))}
+              {terms.terminals.map((x) => (
+                <div key={x.id} className={`tab ${tab === `term:${x.id}` ? 'on' : ''}`} {...clickable(() => setTab(`term:${x.id}`))}>
+                  <SquareTerminal size={13} />
+                  <span className="truncate">{x.title || x.name}</span>
+                  <button
+                    className="tab-close hover-swap"
+                    title={`Close (${formatCombo(closeAgentKey)})`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      closeTerminal(x.id)
+                    }}
+                  >
+                    <X size={12} />
+                  </button>
+                  {x.activity?.state === 'working' && <Loader2 size={13} className="spin muted status-mark" aria-label="Working" />}
                 </div>
               ))}
-            {terms.terminals.map((x) => (
-              <div key={x.id} className={`tab ${tab === `term:${x.id}` ? 'on' : ''}`} {...clickable(() => setTab(`term:${x.id}`))}>
-                <SquareTerminal size={13} />
-                <span className="truncate">{x.title || x.name}</span>
-                <button
-                  className="tab-close hover-swap"
-                  title={`Close (${formatCombo(closeAgentKey)})`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    closeTerminal(x.id)
-                  }}
-                >
-                  <X size={12} />
-                </button>
-                {x.activity?.state === 'working' && <Loader2 size={13} className="spin muted status-mark" aria-label="Working" />}
-              </div>
-            ))}
-            {changesTab && (
-              <div className={`tab ${tab === 'changes' ? 'on' : ''}`} {...clickable(() => setTab('changes'))}>
-                <FileDiff size={13} />
-                {/* one inline run so the smaller counters sit on the label's baseline */}
-                <span>
-                  Changes{' '}
-                  <span className="stat">
-                    <span className="add">+{t.add}</span>
-                    <span className="del">−{t.del}</span>
+              {changesTab && (
+                <div className={`tab ${tab === 'changes' ? 'on' : ''}`} {...clickable(() => setTab('changes'))}>
+                  <FileDiff size={13} />
+                  {/* one inline run so the smaller counters sit on the label's baseline */}
+                  <span>
+                    Changes{' '}
+                    <span className="stat">
+                      <span className="add">+{t.add}</span>
+                      <span className="del">−{t.del}</span>
+                    </span>
                   </span>
-                </span>
-                <button
-                  className="tab-close"
-                  title="Close"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    closeChanges()
-                  }}
-                >
-                  <X size={12} />
-                </button>
-              </div>
-            )}
-            {graphTab && (
-              <div className={`tab ${tab === 'graph' ? 'on' : ''}`} {...clickable(() => setTab('graph'))}>
-                <GitGraphIcon size={13} />
-                <span>Git Graph</span>
-                <button
-                  className="tab-close"
-                  title="Close"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    closeGraph()
-                  }}
-                >
-                  <X size={12} />
-                </button>
-              </div>
-            )}
-            {commitTab && (
-              <div className={`tab ${tab === 'commit' ? 'on' : ''}`} {...clickable(() => setTab('commit'))}>
-                <GitCommitHorizontal size={13} />
-                <span>
-                  Commit <span className="faint mono">{commitTab.slice(0, 7)}</span>
-                </span>
-                <button
-                  className="tab-close"
-                  title="Close"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    closeCommit()
-                  }}
-                >
-                  <X size={12} />
-                </button>
-              </div>
-            )}
-            {files.map((path) => (
-              <div key={path} className={`tab ${tab === `file:${path}` ? 'on' : ''}`} onClick={() => setTab(`file:${path}`)} title={path}>
-                <FileCode size={13} />
-                <span className="truncate">{path.split('/').pop()}</span>
-                <button
-                  className="tab-close"
-                  title="Close"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    closeFile(path)
-                  }}
-                >
-                  <X size={12} />
-                </button>
-              </div>
-            ))}
+                  <button
+                    className="tab-close"
+                    title="Close"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      closeChanges()
+                    }}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+              {graphTab && (
+                <div className={`tab ${tab === 'graph' ? 'on' : ''}`} {...clickable(() => setTab('graph'))}>
+                  <GitGraphIcon size={13} />
+                  <span>Git Graph</span>
+                  <button
+                    className="tab-close"
+                    title="Close"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      closeGraph()
+                    }}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+              {commitTab && (
+                <div className={`tab ${tab === 'commit' ? 'on' : ''}`} {...clickable(() => setTab('commit'))}>
+                  <GitCommitHorizontal size={13} />
+                  <span>
+                    Commit <span className="faint mono">{commitTab.slice(0, 7)}</span>
+                  </span>
+                  <button
+                    className="tab-close"
+                    title="Close"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      closeCommit()
+                    }}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
+              {files.map((path) => (
+                <div key={path} className={`tab ${tab === `file:${path}` ? 'on' : ''}`} onClick={() => setTab(`file:${path}`)} title={path}>
+                  <FileCode size={13} />
+                  <span className="truncate">{path.split('/').pop()}</span>
+                  <button
+                    className="tab-close"
+                    title="Close"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      closeFile(path)
+                    }}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            {cwd && <OpenInEditor path={cwd} />}
           </div>
 
           {!target ? (

@@ -518,7 +518,15 @@ code.inline {
 }
 .tabbar {
   padding: 0 8px 0 4px;
+}
+/* Only the tabs scroll, so the Open in Editor button stays at the bar's end. */
+.tabs {
+  display: flex;
+  align-items: center;
   gap: 2px;
+  flex: 1;
+  align-self: stretch; /* full bar height, as when the bar itself scrolled */
+  min-width: 0;
   overflow-x: auto;
 }
 .tab {
@@ -1987,6 +1995,16 @@ kbd {
   place-items: center;
   padding: 0 6px;
   border-left: 1px solid var(--border-strong);
+}
+.open-in {
+  flex: none;
+}
+.open-in img,
+#editor-menu img {
+  display: block;
+}
+#editor-menu button {
+  text-align: left;
 }
 .split-btn button:hover:not(:disabled) {
   background: var(--bg-hover);
