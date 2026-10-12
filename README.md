@@ -15,13 +15,16 @@ npm test         # node:test unit tests (src/*.test.ts)
 ```
 
 Staging diff chunks and the Git Graph tab (top-right button of a git workspace) need the `mypaseo-git` daemon plugin in
-[paseo-plugin/](paseo-plugin/), since the daemon has no git index or log API. One-time setup per machine; the daemon then
-loads it from this directory on every start (Stage stays hidden without it):
+[paseo-plugin/](paseo-plugin/), since the daemon has no git index or log API. One-time setup per machine, no checkout
+needed: the daemon clones it from GitHub (Stage stays hidden without it):
 
 ```bash
 npx paseo daemon config set pluginsEnabled true && npx paseo daemon reload
-npx paseo plugin install ./paseo-plugin   # after editing it: npx paseo plugin reload mypaseo-git
+npx paseo plugin install github:maksimr/mypaseo:paseo-plugin   # later: npx paseo plugin update mypaseo-git
 ```
+
+To work on the plugin, install this checkout instead (`npx paseo plugin remove mypaseo-git` first if it came from
+GitHub): `npx paseo plugin install ./paseo-plugin`, then `npx paseo plugin reload mypaseo-git` after each edit.
 
 File browsing and diffs use the SDK's internal `DaemonClient` (`@getpaseo/client/internal/daemon-client`), since the
 public API doesn't expose them yet — see `src/daemon.ts`.
