@@ -1807,6 +1807,27 @@ kbd {
 .autocomplete.below .autocomplete-label {
   flex-shrink: 1;
 }
+
+/* Command palette: pinned near the top so filtering doesn't move the input. */
+.palette-backdrop {
+  align-items: flex-start;
+  padding-top: 12vh;
+}
+.dialog.palette {
+  width: min(560px, 92vw);
+  max-height: 60vh;
+  padding: 8px;
+}
+.palette .search {
+  flex: none;
+  margin-bottom: 6px;
+}
+.palette-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
 .dialog-actions {
   display: flex;
   justify-content: flex-end;

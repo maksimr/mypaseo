@@ -2,6 +2,7 @@ import { FileCode, FileDiff, Files, GitCommitHorizontal, Loader2, PanelLeft, Pan
 import { useEffect, useState, type CSSProperties } from 'react'
 import { ChangesList, ChangesView } from './components/Changes'
 import { Chat, type Target } from './components/Chat'
+import { CommandPalette } from './components/CommandPalette'
 import { CommitDetails, CommitGraph } from './components/CommitGraph'
 import { FileTree, FileView } from './components/Files'
 import { ImportSession } from './components/ImportSession'
@@ -145,6 +146,7 @@ export default function App() {
   const panelView = !isGit ? 'files' : panel
   const [focus, setFocus] = useState<{ path: string; n: number } | null>(null)
   const [settings, setSettings] = useState<{ hostId: string; section?: Section } | null>(null)
+  const [palette, setPalette] = useState(false)
   const [chatText, setChatText] = useState('') // handed to the composer when the chat tab mounts
   const [sidebar, setSidebar] = useState(() => localStorage.mypaseoSidebar !== 'false')
   useEffect(() => {
@@ -160,6 +162,10 @@ export default function App() {
   const closeAgentKey = useShortcut('closeAgent')
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (isShortcut(e, 'commandPalette')) {
+        e.preventDefault()
+        setPalette((p) => !p)
+      }
       if (isShortcut(e, 'toggleSidebar')) {
         e.preventDefault()
         setSidebar((s) => !s)
@@ -518,6 +524,7 @@ export default function App() {
             <Settings initialSection={settings.section} onClose={() => setSettings(null)} />
           </HostContext>
         )}
+        {palette && <CommandPalette onClose={() => setPalette(false)} />}
         {importTarget && (
           <HostContext value={projects.find((p) => p.projectId === importTarget.projectId)?.hostId ?? hostId}>
             <ImportSession

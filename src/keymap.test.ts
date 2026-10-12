@@ -5,7 +5,7 @@ const storage: Record<string, string> = {}
 Object.assign(globalThis, { localStorage: storage })
 // Mac defaults use Meta, the case most likely to get the modifier order wrong.
 Object.defineProperty(globalThis, 'navigator', { value: { userAgent: 'Mac' } })
-const { SHORTCUTS, binding, comboOf, formatCombo, isShortcut, setShortcut } = await import('./keymap.ts')
+const { SHORTCUTS, binding, comboOf, formatCombo, isShortcut, keysOf, pauseShortcuts, setShortcut } = await import('./keymap.ts')
 
 const press = (code: string, mods: { ctrlKey?: boolean; altKey?: boolean; shiftKey?: boolean; metaKey?: boolean } = {}) =>
   ({ code, ctrlKey: false, altKey: false, shiftKey: false, metaKey: false, ...mods })
@@ -21,6 +21,18 @@ test('combos use physical keys in a fixed modifier order', () => {
 
 test('defaults use the modifier order comboOf produces, or they never match', () => {
   for (const { default: combo } of Object.values(SHORTCUTS)) assert.match(combo, /^(Ctrl\+)?(Alt\+)?(Shift\+)?(Meta\+)?[^+]+$/)
+})
+
+test('keysOf replays a combo the command palette runs', () => {
+  for (const { default: combo } of Object.values(SHORTCUTS)) assert.equal(comboOf(keysOf(combo)), combo)
+})
+
+test('paused shortcuts match only the command palette', () => {
+  pauseShortcuts(true)
+  assert.ok(!isShortcut(keysOf(binding('newAgent')), 'newAgent'))
+  assert.ok(isShortcut(keysOf(binding('commandPalette')), 'commandPalette'))
+  pauseShortcuts(false)
+  assert.ok(isShortcut(keysOf(binding('newAgent')), 'newAgent'))
 })
 
 test('remapping persists and reset restores the default', () => {

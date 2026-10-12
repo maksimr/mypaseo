@@ -5,6 +5,7 @@ const mod = isMac ? 'Meta' : 'Ctrl'
 
 /** Remappable shortcuts. A combo is modifiers in Ctrl, Alt, Shift, Meta order plus a KeyboardEvent.code, e.g. "Meta+KeyB". */
 export const SHORTCUTS = {
+  commandPalette: { label: 'Command Palette', description: 'Search and run a command.', default: `${mod}+KeyK` },
   toggleSidebar: { label: 'Toggle Sidebar', description: 'Show or hide the project sidebar.', default: `${mod}+KeyB` },
   togglePanel: { label: 'Toggle File Panel', description: 'Show or hide the right panel with files and changes.', default: `${mod}+KeyE` },
   nextTab: { label: 'Next Tab', description: 'Go to the next tab of the current workspace: agents, changes, git graph, open files.', default: 'Ctrl+Shift+BracketRight' },
@@ -56,6 +57,13 @@ type Keys = Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'me
 export const comboOf = (e: Keys) =>
   [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Meta', e.code].filter(Boolean).join('+')
 
+/** The keys a combo stands for; comboOf(keysOf(c)) === c. */
+export function keysOf(combo: string): Keys {
+  const mods = combo.split('+')
+  const code = mods.pop()!
+  return { code, ctrlKey: mods.includes('Ctrl'), altKey: mods.includes('Alt'), shiftKey: mods.includes('Shift'), metaKey: mods.includes('Meta') }
+}
+
 const SYMBOLS: Record<string, string> = { Ctrl: '⌃', Alt: '⌥', Shift: '⇧', Meta: '⌘', Backspace: '⌫' }
 const PUNCTUATION: Record<string, string> = {
   Comma: ',', Period: '.', Slash: '/', Backslash: '\\', Semicolon: ';', Quote: "'", Backquote: '`',
@@ -73,7 +81,12 @@ let overrides: Partial<Record<ShortcutId, string>> = JSON.parse(localStorage[KEY
 const listeners = new Set<() => void>()
 
 export const binding = (id: ShortcutId) => overrides[id] ?? SHORTCUTS[id].default
-export const isShortcut = (e: Keys, id: ShortcutId) => comboOf(e) === binding(id)
+let paused = false
+/** While paused (the command palette is open), only the palette's own shortcut matches. */
+export const pauseShortcuts = (p: boolean) => {
+  paused = p
+}
+export const isShortcut = (e: Keys, id: ShortcutId) => (!paused || id === 'commandPalette') && comboOf(e) === binding(id)
 
 /** Rebind a shortcut; undefined restores the default. */
 export function setShortcut(id: ShortcutId, combo?: string) {
