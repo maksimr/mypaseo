@@ -4,6 +4,7 @@ import {
   ArrowUpFromLine,
   ChevronDown,
   ChevronRight,
+  Copy,
   Ellipsis,
   Folder,
   GitBranch,
@@ -460,6 +461,16 @@ function WorkspaceRow({
             <span className="workspace-branch muted">
               <GitBranch size={11} aria-label="Branch" />
               <span className="truncate">{branch}</span>
+              <button
+                className="icon-btn hover-swap"
+                title="Copy Path"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  navigator.clipboard.writeText(w.workspaceDirectory).catch((err) => alert(`Could not copy: ${errorText(err)}`))
+                }}
+              >
+                <Copy size={9} />
+              </button>
             </span>
           )}
         </span>

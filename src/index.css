@@ -453,6 +453,10 @@ code.inline {
 .workspace-branch svg {
   flex: none;
 }
+/* Keeps the 18px button from growing the 11px branch line on hover. */
+.workspace-branch .icon-btn {
+  margin-block: -4px;
+}
 .row.agent {
   padding-left: 40px;
   color: var(--text-muted);
