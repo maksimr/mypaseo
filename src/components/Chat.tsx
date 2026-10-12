@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Brain, ChevronDown, Folder, GitBranch, Import, Loader2, Plus, Shield, ShieldQuestion, Sparkles, Square, SquarePen, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Brain, ChevronDown, Folder, GitBranch, Import, Loader2, Paperclip, Plus, Shield, ShieldQuestion, Sparkles, Square, SquarePen, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { flushSync } from 'react-dom'
 import { errorText, type Agent, type Permission, type Workspace } from '../daemon'
@@ -136,7 +136,7 @@ export function Chat({
         )}
       </div>
       {agent?.pendingPermissions.map((p) => <PermissionCard key={p.id} agentId={agent.id} request={p} />)}
-      {/* Hidden, not unmounted: the draft and pasted images stay. */}
+      {/* Hidden, not unmounted: the draft and attachments stay. */}
       <div ref={foot} hidden={composerHidden}>
         <Composer
           agent={agent}
@@ -231,6 +231,9 @@ const readImage = (file: File) =>
     r.onerror = () => reject(r.error)
     r.readAsDataURL(file)
   })
+// Providers take these inline; any other file is uploaded to the daemon and attached by its path there.
+const inlineImage = (f: File) => /^image\/(png|jpeg|gif|webp)$/.test(f.type)
+const MAX_FILE_BYTES = 50 * 1024 * 1024 // the Paseo app's limit; the daemon sets none
 
 // Unsent composer text per agent, plus one shared by every "New agent" composer; switching tabs/workspaces remounts Chat. In-memory: lost on reload.
 const drafts = new Map<string, string>()
@@ -273,6 +276,7 @@ function Composer({
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [images, setImages] = useState<PastedImage[]>([])
+  const [files, setFiles] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
   const isGit = projects.find((p) => p.projectId === target.projectId)?.projectKind === 'git'
   const [worktree, setWorktree] = useState(false)
@@ -339,11 +343,18 @@ function Composer({
 
   const send = async () => {
     const prompt = text.trim()
-    if ((!prompt && !images.length) || busy) return
+    if ((!prompt && !images.length && !files.length) || busy) return
     setBusy(true)
     try {
+      // At send, not at pick: removed files never reach the daemon, and the upload lands on the host that runs the agent.
+      const attachments = []
+      for (const f of files) {
+        const res = await daemon.uploadFile({ fileName: f.name, mimeType: f.type || 'application/octet-stream', bytes: await f.arrayBuffer() })
+        if (!res.file) throw new Error(res.error ?? `Upload of ${f.name} failed`)
+        attachments.push(res.file)
+      }
       if (agent) {
-        await daemon.sendAgentMessage(agent.id, prompt, { images })
+        await daemon.sendAgentMessage(agent.id, prompt, { images, attachments })
       } else if (provider) {
         const config = {
           provider,
@@ -352,6 +363,7 @@ function Composer({
           modeId: modes.some((m) => m.id === mode) ? (mode ?? undefined) : undefined,
           initialPrompt: prompt,
           images,
+          attachments,
         }
         const { workspace } = target
         if (workspace) {
@@ -372,6 +384,7 @@ function Composer({
       }
       setText('')
       setImages([])
+      setFiles([])
     } catch (e) {
       alert(`Send failed: ${errorText(e)}`)
     } finally {
@@ -379,26 +392,40 @@ function Composer({
     }
   }
 
-  // Returns whether any images were found, so paste can fall back to text.
-  const addImages = (files: File[]) => {
-    const imgs = files.filter((f) => f.type.startsWith('image/'))
+  // Returns whether any files were found, so paste can fall back to text.
+  const addFiles = (picked: File[]) => {
+    const big = picked.filter((f) => f.size > MAX_FILE_BYTES)
+    if (big.length) alert(`Not attached, over 50 MB: ${big.map((f) => f.name).join(', ')}`)
+    const ok = picked.filter((f) => f.size <= MAX_FILE_BYTES)
+    const others = ok.filter((f) => !inlineImage(f))
+    if (others.length) setFiles((prev) => [...prev, ...others])
+    const imgs = ok.filter(inlineImage)
     if (imgs.length)
       Promise.all(imgs.map(readImage))
         .then((read) => setImages((prev) => [...prev, ...read]))
         .catch((err) => alert(`Image failed: ${errorText(err)}`))
-    return imgs.length > 0
+    return picked.length > 0
   }
 
-  const empty = !text.trim() && !images.length
+  const empty = !text.trim() && !images.length && !files.length
   return (
     <div className="composer">
       {ac.popup}
-      {images.length > 0 && (
+      {images.length + files.length > 0 && (
         <div className="composer-images">
           {images.map((img, i) => (
             <span key={i} className="composer-image">
               <img src={`data:${img.mimeType};base64,${img.data}`} alt={`Pasted image ${i + 1}`} />
               <button title="Remove" aria-label={`Remove Image ${i + 1}`} onClick={() => setImages(images.filter((_, j) => j !== i))}>
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+          {files.map((f, i) => (
+            <span key={`file${i}`} className="composer-image composer-file" title={f.name}>
+              <Paperclip size={14} />
+              <span>{f.name}</span>
+              <button title="Remove" aria-label={`Remove ${f.name}`} onClick={() => setFiles(files.filter((_, j) => j !== i))}>
                 <X size={11} />
               </button>
             </span>
@@ -418,7 +445,7 @@ function Composer({
         }}
         onSelect={(e) => ac.track(e.currentTarget)}
         onPaste={(e) => {
-          if (addImages([...e.clipboardData.files])) e.preventDefault()
+          if (addFiles([...e.clipboardData.files])) e.preventDefault()
         }}
         onKeyDown={(e) => {
           if (e.nativeEvent.isComposing || ac.onKeyDown(e)) return
@@ -439,17 +466,16 @@ function Composer({
         }}
       />
       <div className="composer-bar">
-        <button className="icon-btn composer-add" title="Attach Image" onClick={() => fileInput.current?.click()}>
+        <button className="icon-btn composer-add" title="Attach Files" onClick={() => fileInput.current?.click()}>
           <Plus size={16} />
         </button>
         <input
           ref={fileInput}
           type="file"
-          accept="image/*"
           multiple
           hidden
           onChange={(e) => {
-            addImages([...(e.target.files ?? [])])
+            addFiles([...(e.target.files ?? [])])
             e.target.value = ''
           }}
         />

@@ -1052,6 +1052,22 @@ code.inline {
   border: 1px solid var(--border-strong);
   border-radius: 4px;
 }
+.composer-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 56px;
+  max-width: 200px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-size: 12px;
+}
+.composer-file span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .composer-image button {
   position: absolute;
   top: -6px;

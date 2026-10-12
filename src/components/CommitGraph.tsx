@@ -116,14 +116,14 @@ export function CommitGraph({
 
   const commits = useMemo(() => (log?.cwd === cwd ? log.commits : []), [log, cwd])
   const { rows, width } = useMemo(() => layout(commits), [commits])
-  const [cols, setCols] = useState<Cols>(() => ({ date: 170, author: 150, sha: 72, ...JSON.parse(localStorage.mypaseoGraphColumns ?? '{}') }))
+  const [cols, setCols] = useState<Cols>(() => ({ date: 115, author: 120, sha: 60, ...JSON.parse(localStorage.mypaseoGraphColumns ?? '{}') }))
   const resize = (k: keyof Cols) => (w: number) => {
     const next = { ...cols, [k]: Math.round(Math.min(Math.max(w, MIN_COL), MAX_COL)) }
     setCols(next)
     localStorage.mypaseoGraphColumns = JSON.stringify(next)
   }
-  // Until dragged, the graph column fits the lanes; narrower clips them (the svg's css width is --graph-w).
-  const graphW = cols.graph ?? Math.max(64, x(width) + 4)
+  // Until dragged, the graph column fits up to 7 lanes so the description keeps the room; wider lanes clip (the svg's css width is --graph-w).
+  const graphW = cols.graph ?? Math.min(Math.max(64, x(width) + 4), x(6) + 12)
   const lines = useMemo(
     () => (
       <svg className="graph-lines" height={rows.length * ROW} aria-hidden>
