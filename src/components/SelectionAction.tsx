@@ -1,15 +1,15 @@
 import { MessageSquarePlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { selectionRef } from '../selection'
+import { selectionRef, type SelectedLines } from '../selection'
 
-/** Gutter button beside the last selected line of a file or diff; adds the selection to the chat. */
-export function SelectionAction({ title, onAdd }: { title: string; onAdd: (ref: string) => void }) {
-  const [at, setAt] = useState<{ ref: string; top: number; left: number } | null>(null)
+/** Gutter button beside the last selected line of a file or diff; acts on the selection. */
+export function SelectionAction({ title, onAdd }: { title: string; onAdd: (s: SelectedLines) => void }) {
+  const [at, setAt] = useState<{ s: SelectedLines; top: number; left: number } | null>(null)
   useEffect(() => {
     const update = () => {
       const s = selectionRef()
       const r = s?.line.getBoundingClientRect()
-      setAt(s && r ? { ref: s.ref, top: r.top + r.height / 2, left: r.left } : null)
+      setAt(s && r ? { s, top: r.top + r.height / 2, left: r.left } : null)
     }
     document.addEventListener('selectionchange', update)
     window.addEventListener('scroll', update, true) // capture: the file and diff views scroll, not the window
@@ -28,7 +28,7 @@ export function SelectionAction({ title, onAdd }: { title: string; onAdd: (ref: 
       title={title}
       aria-label={title}
       onMouseDown={(e) => e.preventDefault()} // keep the selection
-      onClick={() => onAdd(at.ref)}
+      onClick={() => onAdd(at.s)}
     >
       <MessageSquarePlus size={13} />
     </button>

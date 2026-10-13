@@ -17,6 +17,7 @@ import { useAttentionNotifications } from './notifications'
 import { OpenFileContext } from './openFile'
 import { selectionRef } from './selection'
 import { SelectionAction } from './components/SelectionAction'
+import { reviewKey, startComment } from './review'
 import { clickable } from './a11y'
 import { archiveAgent, archiveWorkspace, byRecent, HostContext, sidebarWorkspaces, startSync, useStore } from './store'
 import { useEdgeSwipe } from './swipe'
@@ -177,7 +178,6 @@ export default function App() {
   const [panelW, setPanelW] = useWidth('mypaseoPanelWidth', 320) // room for the Changes, Files and Git Graph tabs
   const sidebarKey = useShortcut('toggleSidebar')
   const panelKey = useShortcut('togglePanel')
-  const addKey = useShortcut('addToChat')
   const closeAgentKey = useShortcut('closeAgent')
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -618,7 +618,15 @@ export default function App() {
           </aside>
         )}
 
-        {target && tab !== 'chat' && <SelectionAction title={`Add to Chat (${formatCombo(addKey)})`} onAdd={addToChat} />}
+        {cwd && tab !== 'chat' && (
+          <SelectionAction
+            title="Add Comment"
+            onAdd={(s) => {
+              getSelection()?.removeAllRanges()
+              startComment(reviewKey(hostId, cwd), s)
+            }}
+          />
+        )}
         {/* A removed host's settings close themselves. */}
         {settings && hosts.some((h) => h.id === settings.hostId) && (
           <HostContext value={settings.hostId}>

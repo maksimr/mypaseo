@@ -63,6 +63,7 @@ export type SlashCommand = Awaited<ReturnType<DC['listCommands']>>['commands'][n
 export type DraftConfig = Parameters<DC['listProviderFeatures']>[0]
 /** As terminals_changed lists them, without cwd. */
 export type TerminalInfo = Omit<NonNullable<Awaited<ReturnType<DC['createTerminal']>>['terminal']>, 'cwd'>
+export type ReviewAttachment = Extract<NonNullable<NonNullable<Parameters<DC['sendAgentMessage']>[2]>['attachments']>[number], { type: 'review' }>
 export type UsageReport = Awaited<ReturnType<DC['listUsageReports']>>['reports'][number]
 
 export const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e))

@@ -3,8 +3,10 @@ import { ChevronRight, File, FileCode, FolderClosed, FolderOpen, RefreshCw } fro
 import { useCallback, useEffect, useState } from 'react'
 import { clickable } from '../a11y'
 import { errorText, type DirEntry } from '../daemon'
+import { useReview } from '../review'
 import { useDaemon } from '../store'
 import { Code } from './Code'
+import { ReviewThread } from './Review'
 
 const sortEntries = (entries: DirEntry[]) =>
   entries
@@ -84,6 +86,7 @@ type Loaded = { kind: 'text'; text: string } | { kind: 'image'; url: string } | 
 export function FileView({ cwd, path }: { cwd: string; path: string }) {
   const daemon = useDaemon()
   const [file, setFile] = useState<Loaded | null>(null)
+  const review = useReview(cwd)
   useEffect(() => {
     let url: string | undefined
     let alive = true
@@ -108,7 +111,7 @@ export function FileView({ cwd, path }: { cwd: string; path: string }) {
       {!file ? (
         <div className="empty">Loading…</div>
       ) : file.kind === 'text' ? (
-        <Code code={file.text} filename={path} lineNumbers />
+        <Code code={file.text} filename={path} lineNumbers after={(n) => <ReviewThread review={review} path={path} side="new" line={n} />} />
       ) : file.kind === 'image' ? (
         <img className="file-image" src={file.url} alt={path} />
       ) : file.kind === 'binary' ? (

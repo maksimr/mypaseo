@@ -1,8 +1,9 @@
-import { ArrowDown, ArrowUp, Brain, ChevronDown, Folder, GitBranch, Import, Loader2, Paperclip, Plus, Shield, ShieldQuestion, Sparkles, Square, SquarePen, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Brain, ChevronDown, Folder, GitBranch, Import, Loader2, MessageSquareCode, Paperclip, Plus, Shield, ShieldQuestion, Sparkles, Square, SquarePen, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { flushSync } from 'react-dom'
 import { errorText, type Agent, type Permission, type Workspace } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
+import { deleteComments, reviewAttachment, useReview } from '../review'
 import { hostLabel, keptUnread, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../store'
 import { useAutocomplete } from '../useAutocomplete'
 import { useTimeline } from '../useTimeline'
@@ -292,6 +293,9 @@ function Composer({
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [images, setImages] = useDraftList(imageDrafts, draftKey)
   const [files, setFiles] = useDraftList(fileDrafts, draftKey)
+  // Review comments from the workspace's diff and file views go with the next message.
+  const reviewCwd = target.workspace?.workspaceDirectory
+  const review = useReview(reviewCwd)
   const [busy, setBusy] = useState(false)
   const isGit = projects.find((p) => p.projectId === target.projectId)?.projectKind === 'git'
   const [worktree, setWorktree] = useState(false)
@@ -357,7 +361,9 @@ function Composer({
   }
 
   const send = async () => {
-    const prompt = text.trim()
+    const comments = review.comments
+    // Like Paseo desktop's Send Feedback; without text the chat would show an empty message.
+    const prompt = text.trim() || (comments.length ? 'Please address this code review.' : '')
     if ((!prompt && !images.length && !files.length) || busy) return
     setBusy(true)
     try {
@@ -368,6 +374,7 @@ function Composer({
         if (!res.file) throw new Error(res.error ?? `Upload of ${f.name} failed`)
         attachments.push(res.file)
       }
+      if (comments.length) attachments.push(reviewAttachment(reviewCwd!, comments))
       if (agent) {
         await daemon.sendAgentMessage(agent.id, prompt, { images, attachments })
       } else if (provider) {
@@ -400,6 +407,8 @@ function Composer({
       setText('')
       setImages([])
       setFiles([])
+      // Only the sent ones: comments added while sending stay.
+      deleteComments(review.key, comments.map((c) => c.id))
     } catch (e) {
       alert(`Send failed: ${errorText(e)}`)
     } finally {
@@ -422,12 +431,29 @@ function Composer({
     return picked.length > 0
   }
 
-  const empty = !text.trim() && !images.length && !files.length
+  const empty = !text.trim() && !images.length && !files.length && !review.comments.length
+  const n = review.comments.length
   return (
     <div className="composer">
       {ac.popup}
-      {images.length + files.length > 0 && (
+      {images.length + files.length + n > 0 && (
         <div className="composer-images">
+          {n > 0 && (
+            <span className="composer-image composer-file">
+              <MessageSquareCode size={16} />
+              <span className="composer-review">
+                Review
+                <span>{n === 1 ? '1 comment' : `${n} comments`}</span>
+              </span>
+              <button
+                title="Remove"
+                aria-label="Remove Review"
+                onClick={() => confirm(`Delete ${n === 1 ? 'the review comment' : `all ${n} review comments`}?`) && deleteComments(review.key, review.comments.map((c) => c.id))}
+              >
+                <X size={11} />
+              </button>
+            </span>
+          )}
           {images.map((img, i) => (
             <span key={i} className="composer-image">
               <img src={`data:${img.mimeType};base64,${img.data}`} alt={`Pasted image ${i + 1}`} />

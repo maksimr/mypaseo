@@ -11,15 +11,17 @@ import {
   Minus,
   Undo2,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { clickable, useEscape } from '../a11y'
 import { chunkKey, chunkPatch, chunks, restoreChunk, stagedKeys, stagedState, type Chunk } from '../chunks'
 import { errorText, type DiffFile } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
+import { useReview } from '../review'
 import { useDaemon } from '../store'
 import { split, totals, type DiffState } from '../useCheckoutDiff'
 import { Pick } from './Chat'
 import { Tokens } from './Code'
+import { ReviewThread } from './Review'
 
 // Toolbar 38px + .excerpt-head 34px (index.css): a chunk right under them is at the top of the view.
 const HEADERS = 72
@@ -449,6 +451,7 @@ export function ChangesView({
             </header>
             {open && (
               <FileHunks
+                cwd={cwd}
                 file={f}
                 staged={canStage ? (fileKeys ?? new Set()) : undefined}
                 filter={filter}
@@ -576,18 +579,21 @@ type ChunkAction = (cs: Chunk[], i: number, flag: boolean) => void
 
 /** A file's hunks; without onRestore they are read-only. */
 function FileHunks({
+  cwd,
   file,
   staged,
   filter,
   onStage,
   onRestore,
 }: {
+  cwd: string
   file: DiffFile
   staged?: Set<string>
   filter: Filter
   onStage: ChunkAction
   onRestore?: ChunkAction
 }) {
+  const review = useReview(cwd)
   if (file.status === 'binary') return <div className="empty">Binary file</div>
   if (file.status === 'too_large') return <div className="empty">File diff is too large to display</div>
   const isStagedChunk = (c: Chunk) => c.change && !!staged?.has(chunkKey(c))
@@ -624,11 +630,14 @@ function FileHunks({
                     </div>
                   )}
                   {c.rows.map((l, k) => (
-                    <div key={k} className={`dl ${l.type}`}>
-                      <span className="ln">{l.o}</span>
-                      <span className="ln">{l.n}</span>
-                      <span className="dc">{l.tokens ? <Tokens tokens={l.tokens} /> : l.content || ' '}</span>
-                    </div>
+                    <Fragment key={k}>
+                      <div className={`dl ${l.type}`}>
+                        <span className="ln">{l.o}</span>
+                        <span className="ln">{l.n}</span>
+                        <span className="dc">{l.tokens ? <Tokens tokens={l.tokens} /> : l.content || ' '}</span>
+                      </div>
+                      <ReviewThread review={review} path={file.path} side={l.type === 'remove' ? 'old' : 'new'} line={(l.type === 'remove' ? l.o : l.n) as number} />
+                    </Fragment>
                   ))}
                 </div>
               )
