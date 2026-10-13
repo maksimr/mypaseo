@@ -20,6 +20,7 @@ import {
   Server,
   Settings,
   Trash2,
+  TriangleAlert,
   X,
 } from 'lucide-react'
 import { useEffect, useId, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type ReactNode } from 'react'
@@ -730,9 +731,12 @@ function WorkspaceRow({
 
 /** Derived from agents: the daemon's workspace status can lag behind them. */
 function StatusMark({ agents, idle = null }: { agents: Agent[]; idle?: ReactNode }) {
+  // An agent waiting on a permission is still 'running', so this must come before the loader.
+  if (agents.some((a) => a.pendingPermissions.length > 0))
+    return <TriangleAlert size={13} color="var(--yellow)" className="status-mark" aria-label="Needs your action" />
   if (agents.some((a) => a.status === 'running'))
     return <Loader2 size={13} className="spin muted status-mark" aria-label="Running" />
-  if (agents.some((a) => a.pendingPermissions.length > 0 || a.requiresAttention))
+  if (agents.some((a) => a.requiresAttention))
     return <span className="dot attention status-mark" title="Needs attention" />
   if (agents.some((a) => a.status === 'error')) return <span className="dot failed status-mark" title="Error" />
   return idle
