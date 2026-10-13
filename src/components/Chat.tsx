@@ -239,6 +239,19 @@ const MAX_FILE_BYTES = 50 * 1024 * 1024 // the Paseo app's limit; the daemon set
 
 // Unsent composer text per agent, plus one shared by every "New agent" composer; switching tabs/workspaces remounts Chat. In-memory: lost on reload.
 const drafts = new Map<string, string>()
+const imageDrafts = new Map<string, PastedImage[]>()
+const fileDrafts = new Map<string, File[]>()
+// useState for a draft list that outlives remounts. Updaters read the stored list, so a paste that finishes after unmount still lands.
+function useDraftList<T>(store: Map<string, T[]>, key: string) {
+  const [list, setList] = useState(() => store.get(key) ?? [])
+  const set = (next: T[] | ((prev: T[]) => T[])) => {
+    const v = typeof next === 'function' ? next(store.get(key) ?? []) : next
+    setList(v)
+    if (v.length) store.set(key, v)
+    else store.delete(key)
+  }
+  return [list, set] as const
+}
 
 function Composer({
   agent,
@@ -277,8 +290,8 @@ function Composer({
       onInitialTextUsed?.()
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  const [images, setImages] = useState<PastedImage[]>([])
-  const [files, setFiles] = useState<File[]>([])
+  const [images, setImages] = useDraftList(imageDrafts, draftKey)
+  const [files, setFiles] = useDraftList(fileDrafts, draftKey)
   const [busy, setBusy] = useState(false)
   const isGit = projects.find((p) => p.projectId === target.projectId)?.projectKind === 'git'
   const [worktree, setWorktree] = useState(false)
