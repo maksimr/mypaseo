@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useEscape } from '../a11y'
 import { errorText, type DaemonClient, type DaemonConfig, type ProviderEntry } from '../daemon'
 import { toWsUrl } from '../hostUrl'
-import { SHORTCUTS, SHORTCUT_IDS, binding, comboOf, formatCombo, setShortcut, useShortcut, type ShortcutId } from '../keymap'
+import { SHORTCUTS, SHORTCUT_GROUPS, SHORTCUT_IDS, binding, comboOf, formatCombo, setShortcut, useShortcut, type ShortcutId } from '../keymap'
 import { notificationsOn, notificationsSupported } from '../notifications'
 import { hostEndpoint, hostLabel, removeHost, updateHost, useDaemon, useHost, useHostId, useStore } from '../store'
 import { ProviderIcon } from './ProviderIcon'
@@ -53,7 +53,7 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
     Host: [],
     General: GENERAL_GROUPS.map((g) => [g, anchor('general', g)]),
     'Providers': providers.map((p) => [p.label ?? p.provider, anchor('provider', p.provider)]),
-    'Keymap': [...SHORTCUT_IDS.map((id) => [SHORTCUTS[id].label, anchor('keymap', id)] as [string, string]), ['Close Dialog', anchor('keymap', 'close')]],
+    'Keymap': SHORTCUT_GROUPS.map(([g]) => [g, anchor('keymap', g)]),
   }
   const go = (s: Section, target?: string) => {
     setSection(s)
@@ -100,9 +100,6 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
           })}
         </nav>
         <div className="settings-body" ref={body}>
-          <button className="icon-btn close" title="Close (Esc)" onClick={onClose}>
-            <X size={16} />
-          </button>
           {error && <div className="banner err">{error}</div>}
           {shown.map((s) =>
             // Shortcuts live in localStorage, so they don't wait for the daemon config.
@@ -123,6 +120,10 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
             ),
           )}
         </div>
+        {/* Outside the scrolling body so it stays in view; after it so it paints on top. */}
+        <button className="icon-btn close" title="Close (Esc)" onClick={onClose}>
+          <X size={16} />
+        </button>
       </div>
     </div>
   )
@@ -360,8 +361,8 @@ function Providers({ config, patch, q }: SectionProps) {
     <section className="settings-section">
       <h2>
         Providers
-        <button className="btn" onClick={() => void daemon.refreshProvidersSnapshot().catch((e) => alert(errorText(e)))}>
-          <RefreshCw size={13} /> Refresh All
+        <button className="icon-btn" title="Refresh All" aria-label="Refresh All Providers" onClick={() => void daemon.refreshProvidersSnapshot().catch((e) => alert(errorText(e)))}>
+          <RefreshCw size={14} />
         </button>
       </h2>
       <div className="group-label">Agent providers on this daemon</div>
@@ -388,6 +389,7 @@ function ProviderRow({
   const [command, setCommand] = useState((saved.command ?? []).join(' '))
   const [env, setEnv] = useState<[string, string][]>(Object.entries(saved.env ?? {}))
   const [diagnostic, setDiagnostic] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
 
   const nextEnv = Object.fromEntries(env.filter(([k]) => k.trim()).map(([k, v]) => [k.trim(), v]))
   // shortcut: whitespace-split argv, no shell quoting; fine for a binary path plus simple flags.
@@ -418,6 +420,9 @@ function ProviderRow({
   return (
     <div className="provider" id={anchor('provider', id)}>
       <div className="setting-row">
+        <button className="icon-btn" aria-label={`${open ? 'Collapse' : 'Expand'} ${p.label ?? id} Settings`} aria-expanded={open} onClick={() => setOpen(!open)}>
+          {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </button>
         <ProviderIcon provider={id} size={18} />
         <div className="grow min0">
           <div className="setting-title">
@@ -432,59 +437,68 @@ function ProviderRow({
           <Toggle label={`Enable ${p.label ?? id}`} checked={p.enabled} onChange={(v) => void patch({ providers: { [id]: { enabled: v } } })} />
         </div>
       </div>
-      <div className="provider-body">
-        <div className="field">
-          <div className="field-label">Command</div>
-          <input className="input mono" name={`${id}-command`} placeholder="Default binary on PATH" value={command} onChange={(e) => setCommand(e.target.value)} />
+      {open && (
+        <div className="provider-body">
+          <div className="field">
+            <div className="field-label">Command</div>
+            <input className="input mono" name={`${id}-command`} placeholder="Default binary on PATH" value={command} onChange={(e) => setCommand(e.target.value)} />
+          </div>
+          <div className="field">
+            <div className="field-label">Environment (API keys, endpoints)</div>
+            {env.map(([k, v], i) => (
+              <div key={i} className="env-row">
+                <input className="input mono" aria-label="Variable name" placeholder="NAME" value={k} onChange={(e) => setEnv(env.with(i, [e.target.value, v]))} />
+                <input className="input mono" aria-label="Variable value" type="password" placeholder="value" value={v} onChange={(e) => setEnv(env.with(i, [k, e.target.value]))} />
+                <button className="icon-btn" title="Remove" onClick={() => setEnv(env.filter((_, j) => j !== i))}>
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+            <button className="btn ghost" onClick={() => setEnv([...env, ['', '']])}>
+              <Plus size={13} /> Add Variable
+            </button>
+          </div>
+          <div className="provider-actions">
+            <button className="btn primary" disabled={!dirty} onClick={() => void save()}>
+              Save
+            </button>
+            <button className="btn" onClick={() => void daemon.refreshProvidersSnapshot({ providers: [id] }).catch((e) => alert(errorText(e)))}>
+              <RefreshCw size={13} /> Refresh
+            </button>
+            <button className="btn" onClick={() => void diagnose()}>
+              <Stethoscope size={13} /> Diagnostics
+            </button>
+          </div>
+          {diagnostic && <pre className="term">{diagnostic}</pre>}
         </div>
-        <div className="field">
-          <div className="field-label">Environment (API keys, endpoints)</div>
-          {env.map(([k, v], i) => (
-            <div key={i} className="env-row">
-              <input className="input mono" aria-label="Variable name" placeholder="NAME" value={k} onChange={(e) => setEnv(env.with(i, [e.target.value, v]))} />
-              <input className="input mono" aria-label="Variable value" type="password" placeholder="value" value={v} onChange={(e) => setEnv(env.with(i, [k, e.target.value]))} />
-              <button className="icon-btn" title="Remove" onClick={() => setEnv(env.filter((_, j) => j !== i))}>
-                <X size={14} />
-              </button>
-            </div>
-          ))}
-          <button className="btn ghost" onClick={() => setEnv([...env, ['', '']])}>
-            <Plus size={13} /> Add Variable
-          </button>
-        </div>
-        <div className="provider-actions">
-          <button className="btn primary" disabled={!dirty} onClick={() => void save()}>
-            Save
-          </button>
-          <button className="btn" onClick={() => void daemon.refreshProvidersSnapshot({ providers: [id] }).catch((e) => alert(errorText(e)))}>
-            <RefreshCw size={13} /> Refresh
-          </button>
-          <button className="btn" onClick={() => void diagnose()}>
-            <Stethoscope size={13} /> Diagnostics
-          </button>
-        </div>
-        {diagnostic && <pre className="term">{diagnostic}</pre>}
-      </div>
+      )}
     </div>
   )
 }
 
 function Shortcuts({ q }: { q: string }) {
-  const ids = SHORTCUT_IDS.filter((id) => matches(q, SHORTCUTS[id].label, SHORTCUTS[id].description, 'keyboard shortcuts keymap'))
-  const esc = matches(q, 'close dialog escape keyboard shortcuts keymap')
-  if (!ids.length && !esc) return null
+  const esc = matches(q, 'close dialog escape keyboard shortcuts keymap general')
+  const visible = SHORTCUT_GROUPS.map(
+    ([label, ids]) => [label, ids.filter((id) => matches(q, SHORTCUTS[id].label, SHORTCUTS[id].description, label, 'keyboard shortcuts keymap'))] as const,
+  ).filter(([label, ids]) => ids.length || (label === 'General' && esc))
+  if (!visible.length) return null
   return (
     <section className="settings-section">
       <h2>Keymap</h2>
-      <div className="group-label">Click a shortcut, then press the new keys. Esc cancels.</div>
-      {ids.map((id) => (
-        <ShortcutRow key={id} id={id} />
+      <div className="setting-desc keymap-hint">Click a shortcut, then press the new keys. Esc cancels.</div>
+      {visible.map(([label, ids]) => (
+        <div key={label} id={anchor('keymap', label)} className="settings-group">
+          <div className="group-label">{label}</div>
+          {ids.map((id) => (
+            <ShortcutRow key={id} id={id} />
+          ))}
+          {label === 'General' && esc && (
+            <Row title="Close Dialog" description="Close Settings and other dialogs. Can't be remapped.">
+              <kbd>Esc</kbd>
+            </Row>
+          )}
+        </div>
       ))}
-      {esc && (
-        <Row id={anchor('keymap', 'close')} title="Close Dialog" description="Close Settings and other dialogs. Can't be remapped.">
-          <kbd>Esc</kbd>
-        </Row>
-      )}
     </section>
   )
 }
@@ -514,7 +528,7 @@ function ShortcutRow({ id }: { id: ShortcutId }) {
     <Row id={anchor('keymap', id)} title={label} description={error ? <span className="err">{error}</span> : description}>
       <span className="shortcut">
         <button
-          className={`btn ${recording ? 'recording' : ''}`}
+          className={`btn mono ${recording ? 'recording' : ''}`}
           aria-label={`Change ${label} Shortcut (${formatCombo(combo)})`}
           aria-pressed={recording}
           onClick={() => setRecording(!recording)}
@@ -524,7 +538,7 @@ function ShortcutRow({ id }: { id: ShortcutId }) {
             setError(null)
           }}
         >
-          {recording ? 'Press keys…' : <kbd>{formatCombo(combo)}</kbd>}
+          {recording ? 'Press keys…' : formatCombo(combo)}
         </button>
         {combo !== initial && (
           <button className="icon-btn" title="Reset" aria-label={`Reset ${label} Shortcut`} onClick={() => setShortcut(id)}>

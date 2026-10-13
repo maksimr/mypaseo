@@ -172,6 +172,11 @@ export function CommitGraph({
             go(e.shiftKey ? -1 : 1)
           }}
         />
+        {query && (
+          <span className="graph-count">
+            {matches.length ? at + 1 : 0}/{matches.length}
+          </span>
+        )}
         <button className={`icon-btn ${matchCase ? 'on' : ''}`} title="Match Case" aria-pressed={matchCase} onClick={() => setMatchCase(!matchCase)}>
           <CaseSensitive size={15} />
         </button>
@@ -181,9 +186,6 @@ export function CommitGraph({
         <button className="icon-btn" title="Next Match (Enter)" disabled={!matches.length} onClick={() => go(1)}>
           <ChevronDown size={14} />
         </button>
-        <span className="muted graph-count">
-          {matches.length ? at + 1 : 0}/{matches.length}
-        </span>
       </div>
       {error && <div className="empty err">{error}. The graph comes from the mypaseo-git daemon plugin, see the README to install or reload it.</div>}
       {!error && !log && <div className="empty">Loading…</div>}

@@ -56,6 +56,14 @@ export const SHORTCUTS = {
 }
 export type ShortcutId = keyof typeof SHORTCUTS
 export const SHORTCUT_IDS = Object.keys(SHORTCUTS) as ShortcutId[]
+/** Settings lists shortcuts under these headings; every id belongs to exactly one. */
+export const SHORTCUT_GROUPS: [string, ShortcutId[]][] = [
+  ['General', ['commandPalette', 'openSettings', 'toggleSidebar', 'togglePanel', 'addProject']],
+  ['Tabs', ['nextTab', 'prevTab', 'closeAgent', 'newAgent', 'newTerminal']],
+  ['Workspaces', ['newWorkspace', 'nextWorkspace', 'prevWorkspace', 'archiveWorkspace', 'removeWorkspace', 'togglePin', 'toggleRead', 'toggleActiveOnly']],
+  ['Chat', ['send', 'cycleThinking', 'pickModel', 'pickProject', 'expandTools', 'jumpToLatest', 'addToChat']],
+  ['Git', ['openChanges', 'openGraph', 'prevHunk', 'nextHunk', 'stageAll', 'commit', 'amend', 'pull', 'push']],
+]
 
 type Keys = Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>
 // Physical key (code), not key: Cmd+B must still match on a Cyrillic layout, and Alt+B on Mac types "∫".

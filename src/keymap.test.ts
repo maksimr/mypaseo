@@ -5,7 +5,7 @@ const storage: Record<string, string> = {}
 Object.assign(globalThis, { localStorage: storage })
 // Mac defaults use Meta, the case most likely to get the modifier order wrong.
 Object.defineProperty(globalThis, 'navigator', { value: { userAgent: 'Mac' } })
-const { SHORTCUTS, binding, comboOf, formatCombo, isShortcut, keysOf, pauseShortcuts, setShortcut } = await import('./keymap.ts')
+const { SHORTCUTS, SHORTCUT_GROUPS, SHORTCUT_IDS, binding, comboOf, formatCombo, isShortcut, keysOf, pauseShortcuts, setShortcut } = await import('./keymap.ts')
 
 const press = (code: string, mods: { ctrlKey?: boolean; altKey?: boolean; shiftKey?: boolean; metaKey?: boolean } = {}) =>
   ({ code, ctrlKey: false, altKey: false, shiftKey: false, metaKey: false, ...mods })
@@ -21,6 +21,10 @@ test('combos use physical keys in a fixed modifier order', () => {
 
 test('defaults use the modifier order comboOf produces, or they never match', () => {
   for (const { default: combo } of Object.values(SHORTCUTS)) assert.match(combo, /^(Ctrl\+)?(Alt\+)?(Shift\+)?(Meta\+)?[^+]+$/)
+})
+
+test('every shortcut is in exactly one settings group', () => {
+  assert.deepEqual(SHORTCUT_GROUPS.flatMap(([, ids]) => ids).sort(), [...SHORTCUT_IDS].sort())
 })
 
 test('keysOf replays a combo the command palette runs', () => {
