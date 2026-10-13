@@ -27,9 +27,17 @@ export function useTimeline(agentId: string | null) {
 
     const load = async () => {
       fetching = true
+      const opts = { direction: 'tail', projection: 'projected' } as const
+      // First load: the last 10 entries arrive well before a long timeline, so show them until it does.
+      // Sent first so the daemon answers it first. Stream events stay buffered for the full page.
+      if (!items.length)
+        daemon.fetchAgentTimeline(agentId, { ...opts, limit: 10 }).then(
+          (page) => alive && fetching && setTl({ items: page.entries.map((e) => e.item), loading: false, error: null }),
+          () => {},
+        )
       try {
         // limit 0 = the whole timeline.
-        const page = await daemon.fetchAgentTimeline(agentId, { direction: 'tail', limit: 0, projection: 'projected' })
+        const page = await daemon.fetchAgentTimeline(agentId, { ...opts, limit: 0 })
         if (!alive) return
         items = page.entries.map((e) => e.item)
         lastSeq = page.endCursor?.seq ?? 0
