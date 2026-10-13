@@ -35,7 +35,8 @@ export const SHORTCUTS = {
   togglePin: { label: 'Pin or Unpin Workspace', description: 'Pin the selected workspace, or unpin it when pinned. Pinned workspaces stay listed when the sidebar shows only active ones.', default: isMac ? 'Ctrl+Meta+KeyP' : 'Alt+Shift+KeyP' },
   // Browsers keep ⌘L / Ctrl+L (address bar) for themselves.
   addToChat: { label: 'Add Selection to Chat', description: 'Insert the selected lines of a file or diff into the chat composer as path:start-end.', default: isMac ? 'Ctrl+KeyL' : 'Alt+KeyL' },
-  send: { label: 'Send', description: 'Send the message in the chat composer.', default: `${mod}+Enter` },
+  // Shift+Enter still inserts a newline since combos match exactly.
+  send: { label: 'Send', description: 'Send the message in the chat composer.', default: 'Enter' },
   pull: { label: 'Pull', description: 'Pull the selected workspace from its remote.', default: 'Ctrl+Shift+KeyP' },
   push: { label: 'Push', description: 'Push the selected workspace to its remote.', default: 'Ctrl+Shift+KeyK' },
   stageAll: { label: 'Stage All', description: 'Stage every change from the diff view.', default: isMac ? 'Ctrl+Meta+KeyY' : 'Alt+KeyY' },

@@ -41,9 +41,9 @@ test('paused shortcuts match only the command palette', () => {
 
 test('remapping persists and reset restores the default', () => {
   const initial = binding('send')
-  setShortcut('send', 'Enter')
-  assert.ok(isShortcut(press('Enter'), 'send'))
-  assert.equal(storage.mypaseoKeymap, '{"send":"Enter"}')
+  setShortcut('send', 'Meta+Enter')
+  assert.ok(isShortcut(press('Enter', { metaKey: true }), 'send'))
+  assert.equal(storage.mypaseoKeymap, '{"send":"Meta+Enter"}')
   setShortcut('send')
   assert.equal(binding('send'), initial)
   assert.equal(storage.mypaseoKeymap, '{}')
