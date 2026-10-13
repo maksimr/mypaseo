@@ -1,9 +1,8 @@
 import {
-  ArrowDown,
-  ArrowUp,
   Check,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   ChevronsDownUp,
   ChevronsUpDown,
   FileCode,
@@ -315,14 +314,14 @@ export function ChangesView({
           title={`Go to Previous Hunk (${formatCombo(prevKey)})`}
           onClick={() => root.current && goToChunk(root.current, -1)}
         >
-          <ArrowUp size={14} />
+          <ChevronUp size={14} />
         </button>
         <button
           className="icon-btn"
           title={`Go to Next Hunk (${formatCombo(nextKey)})`}
           onClick={() => root.current && goToChunk(root.current, 1)}
         >
-          <ArrowDown size={14} />
+          <ChevronDown size={14} />
         </button>
         {!readOnly && (
           <>
