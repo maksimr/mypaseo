@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp, Brain, ChevronDown, Folder, GitBranch, Import, Load
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { flushSync } from 'react-dom'
 import { errorText, type Agent, type Permission, type Workspace } from '../daemon'
+import { dropImageRef, imageRef } from '../imageRefs'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { deleteComments, reviewAttachment, useReview } from '../review'
 import { hostLabel, keptUnread, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../store'
@@ -416,6 +417,15 @@ function Composer({
     }
   }
 
+  // At the cursor and on the native undo stack, like autocomplete; into the stored draft if Chat unmounted mid-read.
+  const insertText = (s: string) => {
+    const el = input.current
+    if (!el) return setText((drafts.get(draftKey) ?? '') + s)
+    if (document.activeElement === el && document.execCommand('insertText', false, s)) return
+    el.setRangeText(s, el.selectionStart, el.selectionEnd, 'end')
+    setText(el.value)
+  }
+
   // Returns whether any files were found, so paste can fall back to text.
   const addFiles = (picked: File[]) => {
     const big = picked.filter((f) => f.size > MAX_FILE_BYTES)
@@ -426,7 +436,11 @@ function Composer({
     const imgs = ok.filter(inlineImage)
     if (imgs.length)
       Promise.all(imgs.map(readImage))
-        .then((read) => setImages((prev) => [...prev, ...read]))
+        .then((read) => {
+          const start = (imageDrafts.get(draftKey)?.length ?? 0) + 1
+          setImages((prev) => [...prev, ...read])
+          insertText(read.map((_, k) => imageRef(start + k)).join(' ') + ' ')
+        })
         .catch((err) => alert(`Image failed: ${errorText(err)}`))
     return picked.length > 0
   }
@@ -457,7 +471,14 @@ function Composer({
           {images.map((img, i) => (
             <span key={i} className="composer-image">
               <img src={`data:${img.mimeType};base64,${img.data}`} alt={`Pasted image ${i + 1}`} />
-              <button title="Remove" aria-label={`Remove Image ${i + 1}`} onClick={() => setImages(images.filter((_, j) => j !== i))}>
+              <button
+                title="Remove"
+                aria-label={`Remove Image ${i + 1}`}
+                onClick={() => {
+                  setImages(images.filter((_, j) => j !== i))
+                  setText(dropImageRef(text, i + 1))
+                }}
+              >
                 <X size={11} />
               </button>
             </span>
