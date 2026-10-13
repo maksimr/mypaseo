@@ -328,6 +328,10 @@ code.inline {
   overflow: auto;
   padding: 4px 0;
 }
+/* The project being dragged, at the place it would drop. */
+.tree .dragging {
+  opacity: 0.5;
+}
 .row {
   display: flex;
   align-items: center;

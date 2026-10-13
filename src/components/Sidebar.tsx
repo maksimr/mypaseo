@@ -22,11 +22,11 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useEffect, useId, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react'
+import { useEffect, useId, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type ReactNode } from 'react'
 import { errorText, type Agent, type Project, type Workspace } from '../daemon'
 import { clickable, useEscape } from '../a11y'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
-import { byRecent, client, hostLabel, markRead, markUnread, projectWorkspaces as sortedWorkspaces, sidebarWorkspaces, togglePin, useHostId, useStore } from '../store'
+import { byRecent, client, hostLabel, markRead, markUnread, moveProject, projectWorkspaces as sortedWorkspaces, sidebarWorkspaces, togglePin, useHostId, useStore } from '../store'
 import { unreadPick } from '../unread'
 import { AddHostDialog, HostMenu } from './Hosts'
 import { ProviderIcon } from './ProviderIcon'
@@ -97,6 +97,22 @@ export function Sidebar({
       localStorage.mypaseoCollapsed = JSON.stringify([...next])
       return next
     })
+
+  // The project being dragged to a new place.
+  const [dragged, setDragged] = useState<string>()
+  const listed = projects
+    .map((p) => ({ p, shownWorkspaces: sidebarWorkspaces([p], workspaces, agents, pinned, activeOnly, selection.workspaceId) }))
+    .filter((x) => !activeOnly || x.shownWorkspaces.length > 0)
+  /** Alt+↑/↓ on a project row moves it past its neighbor: drag & drop by keyboard. */
+  const moveByKey = (e: ReactKeyboardEvent<HTMLElement>, i: number) => {
+    const step = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0
+    const target = listed[i + step]
+    if (!e.altKey || !step || !target || e.target !== e.currentTarget) return
+    e.preventDefault()
+    const row = e.currentTarget
+    moveProject(listed[i].p.projectId, target.p.projectId, step > 0)
+    requestAnimationFrame(() => row.focus()) // React re-inserts a row it moves down, which drops its focus
+  }
 
   const [adding, setAdding] = useState(false)
   const [renaming, setRenaming] = useState<Workspace>()
@@ -170,19 +186,41 @@ export function Sidebar({
         </div>
         <nav className="tree">
           {projects.length === 0 && <div className="empty">{down ? 'Connecting…' : 'No projects yet'}</div>}
-          {projects.map((p) => {
+          {listed.map(({ p, shownWorkspaces }, i) => {
             const open = !collapsed.has(p.projectId)
             const projectWorkspaces = sortedWorkspaces(p.projectId, workspaces, agents)
-            const shownWorkspaces = sidebarWorkspaces([p], workspaces, agents, pinned, activeOnly, selection.workspaceId)
-            if (activeOnly && shownWorkspaces.length === 0) return null
             const name = p.projectCustomName || p.projectDisplayName
             const menuId = `project-menu-${p.projectId}`
+            const row = clickable(() => toggle(p.projectId))
             return (
-              <div key={p.projectId}>
+              <div
+                key={p.projectId}
+                className={dragged === p.projectId ? 'dragging' : undefined}
+                onDragOver={(e) => {
+                  if (!dragged) return // a file or text, not a project
+                  e.preventDefault() // accepts the drop
+                  const r = e.currentTarget.getBoundingClientRect()
+                  // The list reorders live; halves keep a short row from flipping back and forth over a tall one.
+                  if (dragged !== p.projectId) moveProject(dragged, p.projectId, e.clientY > r.top + r.height / 2)
+                }}
+              >
                 <div
                   className="row project"
                   aria-expanded={open}
-                  {...clickable(() => toggle(p.projectId))}
+                  aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+                  draggable
+                  onDragStart={(e) => {
+                    // A custom type: a text field won't take the drop.
+                    e.dataTransfer.setData('application/x-mypaseo-project', p.projectId)
+                    e.dataTransfer.effectAllowed = 'move'
+                    setTimeout(() => setDragged(p.projectId)) // after the browser snapshots the drag image, so it isn't dimmed
+                  }}
+                  onDragEnd={() => setDragged(undefined)}
+                  {...row}
+                  onKeyDown={(e) => {
+                    row.onKeyDown(e)
+                    moveByKey(e, i)
+                  }}
                 >
                   {open ? <FolderExpanded /> : <Folder size={15} />}
                   <span className="truncate">{name}</span>

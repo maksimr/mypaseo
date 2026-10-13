@@ -3,7 +3,7 @@
 Custom web UI for [Paseo](https://github.com/getpaseo/paseo). The backend is the official Paseo daemon
 (`@getpaseo/cli`); the UI talks to it over WebSocket with the official SDK (`@getpaseo/client`).
 
-Features: project → workspace → agent sidebar, agent chat (streaming timeline, permissions, model/mode/thinking
+Features: project → workspace → agent sidebar (drag projects, or Alt+↑/↓ on one, to reorder), agent chat (streaming timeline, permissions, model/mode/thinking
 pickers), workspace terminals (xterm.js tabs, like Paseo desktop's), file browser, Zed-style multibuffer of uncommitted /
 branch changes, and settings for daemon + providers.
 

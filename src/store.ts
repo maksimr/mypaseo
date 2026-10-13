@@ -14,6 +14,7 @@ import {
   type RawAgent,
   type Workspace,
 } from './daemon'
+import { inOrder, moveId } from './order'
 
 export type ConnectionStatus = ReturnType<DaemonClient['getConnectionState']>['status']
 
@@ -34,12 +35,14 @@ const EMPTY: HostState = { status: 'idle', error: null, projects: [], workspaces
 type State = {
   hosts: Host[]
   byHost: Record<string, HostState>
-  /** Every host's lists merged, in host order. */
+  /** Every host's lists merged, in host order; projects in projectOrder. */
   projects: Project[]
   workspaces: Workspace[]
   agents: Agent[]
   /** Workspace ids pinned in the sidebar; the daemon has no pin, so they live in this browser. */
   pinned: string[]
+  /** Project ids in the order they were dragged to in the sidebar; kept in this browser, like Paseo desktop's. */
+  projectOrder: string[]
 }
 
 const hosts: Host[] = JSON.parse(localStorage.mypaseoHosts ?? 'null') ?? [DEFAULT_HOST]
@@ -50,13 +53,18 @@ let state: State = {
   workspaces: [],
   agents: [],
   pinned: JSON.parse(localStorage.mypaseoPinned ?? '[]'),
+  projectOrder: JSON.parse(localStorage.mypaseoProjectOrder ?? '[]'),
 }
 const listeners = new Set<() => void>()
 function set(patch: Partial<State>) {
   const s = { ...state, ...patch }
   state = {
     ...s,
-    projects: s.hosts.flatMap((h) => s.byHost[h.id]?.projects ?? []),
+    projects: inOrder(
+      s.hosts.flatMap((h) => s.byHost[h.id]?.projects ?? []),
+      s.projectOrder,
+      (p) => p.projectId,
+    ),
     workspaces: s.hosts.flatMap((h) => s.byHost[h.id]?.workspaces ?? []),
     agents: s.hosts.flatMap((h) => s.byHost[h.id]?.agents ?? []),
   }
@@ -229,6 +237,14 @@ export function togglePin(workspaceId: string) {
   const pinned = state.pinned.includes(workspaceId) ? state.pinned.filter((id) => id !== workspaceId) : [...state.pinned, workspaceId]
   localStorage.mypaseoPinned = JSON.stringify(pinned)
   set({ pinned })
+}
+
+/** Puts the project before or after target in the sidebar. */
+export function moveProject(projectId: string, target: string, after: boolean) {
+  const json = JSON.stringify(moveId(state.projects.map((p) => p.projectId), state.projectOrder, projectId, target, after))
+  if (json === localStorage.mypaseoProjectOrder) return // dragover repeats the same move
+  localStorage.mypaseoProjectOrder = json
+  set({ projectOrder: JSON.parse(json) })
 }
 
 /** The daemon has no workspace delete: removing permanently deletes the agents, then archives the workspace. */
