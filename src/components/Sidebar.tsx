@@ -19,8 +19,8 @@ import {
   Plus,
   Server,
   Settings,
+  ShieldQuestion,
   Trash2,
-  TriangleAlert,
   X,
 } from 'lucide-react'
 import { useEffect, useId, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type ReactNode } from 'react'
@@ -733,7 +733,7 @@ function WorkspaceRow({
 function StatusMark({ agents, idle = null }: { agents: Agent[]; idle?: ReactNode }) {
   // An agent waiting on a permission is still 'running', so this must come before the loader.
   if (agents.some((a) => a.pendingPermissions.length > 0))
-    return <TriangleAlert size={13} color="var(--yellow)" className="status-mark" aria-label="Needs your action" />
+    return <ShieldQuestion size={13} color="var(--yellow)" className="status-mark" aria-label="Needs your action" />
   if (agents.some((a) => a.status === 'running'))
     return <Loader2 size={13} className="spin muted status-mark" aria-label="Running" />
   if (agents.some((a) => a.requiresAttention))
