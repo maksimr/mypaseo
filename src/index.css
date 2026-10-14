@@ -5,6 +5,7 @@
   --bg-elev: #2a2c33;
   --bg-hover: #2c2f36;
   --bg-active: #33363e;
+  --bg-input: #17191c;
   --border: #33363d;
   --border-strong: #43464f;
   --text: #dce0e5;
@@ -1591,7 +1592,7 @@ code.inline {
   border: 0;
   border-bottom: 1px solid var(--border);
   border-radius: 0;
-  background: #17191c;
+  background: var(--bg-input);
 }
 /* Like .sidebar-head, bleeding over the nav padding. */
 .settings-nav .search {
@@ -2051,53 +2052,48 @@ kbd {
 .review-thread {
   position: sticky;
   left: 0;
-  display: grid;
-  gap: 6px;
-  padding: 6px 12px;
+  border-top: 1px solid var(--border);
   font: 13px/1.45 var(--sans);
   white-space: normal;
 }
-.review-comment {
+/* Zed-like edge-to-edge rows: the comment or its input, then actions; the left bar continues the line's add/remove stripe. */
+.review-comment,
+.review-editor {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 6px 6px 6px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-elev);
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  background: var(--bg-input);
+}
+.dl.add + .review-thread > * {
+  border-left-color: var(--green);
+}
+.dl.remove + .review-thread > * {
+  border-left-color: var(--red);
+}
+.review-comment {
+  background: var(--bg-panel);
 }
 .review-comment .danger {
   color: var(--red);
 }
-.review-editor {
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-elev);
-}
 .review-editor textarea {
-  display: block;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   field-sizing: content;
-  min-height: calc(3lh + 14px);
   max-height: 40vh;
-  padding: 6px 10px;
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
+  padding: 0;
+  border: 0;
   outline: none;
   resize: none;
-  background: var(--bg-panel);
+  background: none;
   color: var(--text);
   font: inherit;
 }
-.review-editor textarea:focus {
-  border-color: var(--accent);
-}
-.review-editor-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-  margin-top: 8px;
+.review-editor textarea::placeholder {
+  color: var(--text-faint);
 }
 
 .selection-action {

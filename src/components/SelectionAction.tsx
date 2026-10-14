@@ -1,21 +1,32 @@
 import { MessageSquarePlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { selectionRef, type SelectedLines } from '../selection'
+import { hoveredRef, selectionRef, type SelectedLines } from '../selection'
 
-/** Gutter button beside the last selected line of a file or diff; acts on the selection. */
+/** Gutter button beside the last selected line of a file or diff, or else the hovered line; acts on those lines. */
 export function SelectionAction({ title, onAdd }: { title: string; onAdd: (s: SelectedLines) => void }) {
   const [at, setAt] = useState<{ s: SelectedLines; top: number; left: number } | null>(null)
   useEffect(() => {
+    let hovered: SelectedLines | null = null
     const update = () => {
-      const s = selectionRef()
+      const s = selectionRef() ?? (hovered?.line.isConnected ? hovered : null)
       const r = s?.line.getBoundingClientRect()
       setAt(s && r ? { s, top: r.top + r.height / 2, left: r.left } : null)
     }
+    const over = (e: MouseEvent) => {
+      const t = e.target as Element
+      if (t.closest('.selection-action')) return // moving onto the button keeps it
+      const h = hoveredRef(t)
+      if (h?.line === hovered?.line) return
+      hovered = h
+      update()
+    }
     document.addEventListener('selectionchange', update)
+    document.addEventListener('mouseover', over)
     window.addEventListener('scroll', update, true) // capture: the file and diff views scroll, not the window
     window.addEventListener('resize', update)
     return () => {
       document.removeEventListener('selectionchange', update)
+      document.removeEventListener('mouseover', over)
       window.removeEventListener('scroll', update, true)
       window.removeEventListener('resize', update)
     }

@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from 'lucide-react'
+import { CornerDownLeft, Pencil, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { isShortcut } from '../keymap'
 import { cancelComment, deleteComments, editComment, saveComment, type Editing, type Review, type Side } from '../review'
@@ -15,7 +15,7 @@ export function ReviewThread({ review, path, side, line }: { review: Review; pat
         c.id === editing?.id ? (
           <CommentEditor key={c.id} editing={editing} />
         ) : (
-          <div key={c.id} className="review-comment">
+          <div key={c.id} className="review-comment" onDoubleClick={() => editComment(review.key, c)}>
             <span className="grow pre-wrap">{c.body}</span>
             <button className="icon-btn" title="Edit Comment" onClick={() => editComment(review.key, c)}>
               <Pencil size={13} />
@@ -38,6 +38,7 @@ function CommentEditor({ editing }: { editing: Editing }) {
     <div className="review-editor">
       <textarea
         autoFocus
+        rows={1}
         name="comment"
         aria-label="Comment"
         placeholder="Leave a comment"
@@ -54,14 +55,12 @@ function CommentEditor({ editing }: { editing: Editing }) {
           }
         }}
       />
-      <div className="review-editor-actions">
-        <button className="btn ghost" onClick={cancelComment}>
-          Cancel
-        </button>
-        <button className="btn primary" disabled={!body.trim()} onClick={save}>
-          {editing.id ? 'Save' : 'Comment'}
-        </button>
-      </div>
+      <button className="icon-btn" title="Cancel" onClick={cancelComment}>
+        <X size={14} />
+      </button>
+      <button className="icon-btn" title={editing.id ? 'Save' : 'Comment'} disabled={!body.trim()} onClick={save}>
+        <CornerDownLeft size={14} />
+      </button>
     </div>
   )
 }

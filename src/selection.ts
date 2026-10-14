@@ -25,8 +25,19 @@ export function selectionRef(sel: Selection | null = getSelection()): SelectedLi
   let end = at?.closest(LINE)
   // Triple-click ends the range at offset 0 of the next line, or of the comment thread under the line: that one is not selected.
   if (r.endOffset === 0 && end !== start) end = prevLine(end ?? at?.closest('.review-thread')) ?? end
-  const path = start?.closest('[data-path]')?.getAttribute('data-path')
-  if (!start || !end || !path || end.closest('[data-path]')?.getAttribute('data-path') !== path) return null
+  return start && end ? linesRef(start, end) : null
+}
+
+/** The file or diff line under the pointer at `target`, or null if there is none. */
+export function hoveredRef(target: Element): SelectedLines | null {
+  const line = target.closest(LINE)
+  return line ? linesRef(line, line) : null
+}
+
+/** Lines `start` to `end` as "path:start-end", or null unless both are in the same file or diff. */
+function linesRef(start: Element, end: Element): SelectedLines | null {
+  const path = start.closest('[data-path]')?.getAttribute('data-path')
+  if (!path || end.closest('[data-path]')?.getAttribute('data-path') !== path) return null
   const [a, b] = [lineNo(start), lineNo(end)].sort((x, y) => x - y)
   return { ref: a === b ? `${path}:${a}` : `${path}:${a}-${b}`, path, start, line: end }
 }
