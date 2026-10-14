@@ -168,12 +168,14 @@ export default function App() {
     setSidebar(false)
     setPanel(null)
   }
-  // Touch: dragging in from the left edge slides out the sidebar, from the right edge the file panel.
+  // Touch: dragging in from the left edge slides out the sidebar, from the right edge the file panel;
+  // on narrow windows, dragging an open one toward its edge slides it back.
   const appRef = useRef<HTMLDivElement>(null)
   const swipe = useEdgeSwipe(
     appRef,
     (side) => (side === 'left' ? !sidebar : !!cwd && !panel),
-    (side) => (side === 'left' ? setSidebar(true) : setPanel((p) => p ?? 'changes')),
+    () => matchMedia(NARROW).matches,
+    (side, open) => (side === 'left' ? setSidebar(open) : setPanel((p) => (open ? (p ?? 'changes') : null))),
   )
   const [sidebarW, setSidebarW] = useWidth('mypaseoSidebarWidth', 270)
   const [panelW, setPanelW] = useWidth('mypaseoPanelWidth', 320) // room for the Changes, Files and Git Graph tabs
@@ -403,10 +405,12 @@ export default function App() {
         {sidebar && <Resizer side="left" label="Resize Sidebar" width={sidebarW} onResize={setSidebarW} />}
         <button className={`icon-btn corner left ${sidebar ? 'on' : ''}`} title={`Toggle Sidebar (${formatCombo(sidebarKey)})`} onClick={() => setSidebar(!sidebar)}>
           <PanelLeft size={15} />
+          <X size={15} />
         </button>
         {cwd && (
           <button className={`icon-btn corner right ${panel ? 'on' : ''}`} title={`Toggle File Panel (${formatCombo(panelKey)})`} onClick={() => setPanel(panel ? null : 'changes')}>
             <PanelRight size={15} />
+            <X size={15} />
           </button>
         )}
 
