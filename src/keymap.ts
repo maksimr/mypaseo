@@ -26,6 +26,9 @@ export const SHORTCUTS = {
   prevWorkspace: { label: 'Previous Workspace', description: 'Go to the workspace above in the sidebar.', default: 'Ctrl+BracketLeft' },
   prevHunk: { label: 'Go to Previous Hunk', description: 'Scroll the diff view to the previous change.', default: 'Alt+Shift+ArrowUp' },
   nextHunk: { label: 'Go to Next Hunk', description: 'Scroll the diff view to the next change.', default: 'Alt+Shift+ArrowDown' },
+  // VS Code's binding.
+  prevComment: { label: 'Go to Previous Comment', description: 'Scroll the diff or file view to the previous review comment.', default: 'Alt+Shift+F9' },
+  nextComment: { label: 'Go to Next Comment', description: 'Scroll the diff or file view to the next review comment.', default: 'Alt+F9' },
   // Mac: Mail's Archive. Elsewhere Alt, like New Workspace.
   archiveWorkspace: { label: 'Archive Workspace', description: 'Archive the selected workspace.', default: isMac ? 'Ctrl+Meta+KeyA' : 'Alt+KeyA' },
   removeWorkspace: { label: 'Remove Workspace', description: 'Delete the agents of the selected workspace, then archive it.', default: isMac ? 'Ctrl+Meta+Backspace' : 'Alt+Delete' },
@@ -63,7 +66,7 @@ export const SHORTCUT_GROUPS: [string, ShortcutId[]][] = [
   ['Tabs', ['nextTab', 'prevTab', 'closeAgent', 'newAgent', 'newTerminal']],
   ['Workspaces', ['newWorkspace', 'nextWorkspace', 'prevWorkspace', 'archiveWorkspace', 'removeWorkspace', 'togglePin', 'toggleRead', 'toggleActiveOnly']],
   ['Chat', ['send', 'cycleThinking', 'pickModel', 'pickProject', 'expandTools', 'jumpToLatest', 'addToChat']],
-  ['Git', ['openChanges', 'openGraph', 'prevHunk', 'nextHunk', 'stageAll', 'commit', 'amend', 'pull', 'push']],
+  ['Git', ['openChanges', 'openGraph', 'prevHunk', 'nextHunk', 'prevComment', 'nextComment', 'stageAll', 'commit', 'amend', 'pull', 'push']],
 ]
 
 type Keys = Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>

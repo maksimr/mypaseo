@@ -1,6 +1,7 @@
-import { CornerDownLeft, MessageCircle, Pencil, Trash2, X } from 'lucide-react'
-import { useState } from 'react'
-import { isShortcut } from '../keymap'
+import { ChevronDown, ChevronUp, CornerDownLeft, MessageCircle, Pencil, Trash2, X } from 'lucide-react'
+import { useContext, useEffect, useState, type RefObject } from 'react'
+import { ActiveViewContext } from '../activeView'
+import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { cancelComment, deleteComments, editComment, revealRef, saveComment, type Editing, type Review, type Side } from '../review'
 
 /** The review comments and open editor under one line of a file or diff; nothing when it has none. */
@@ -29,6 +30,60 @@ export function ReviewThread({ review, path, side, line }: { review: Review; pat
       )}
       {editing && !editing.id && <CommentEditor editing={editing} />}
     </div>
+  )
+}
+
+// The thread last jumped to and the view's scroll then: one near the end can't reach the middle, so position alone would stop on it.
+let last: { el: Element; top: number } | undefined
+
+/** Scrolls `root` to the middle of its next (dir 1) or previous (-1) comment thread. */
+function goToComment(root: HTMLElement, dir: number) {
+  const els = [...root.querySelectorAll('.review-thread')]
+  const mid = (el: Element) => {
+    const r = el.getBoundingClientRect()
+    return (r.top + r.bottom) / 2
+  }
+  const y = mid(root)
+  const el =
+    last && last.top === root.scrollTop && els.includes(last.el)
+      ? els[els.indexOf(last.el) + dir]
+      : dir > 0
+        ? els.find((e) => mid(e) > y + 1)
+        : els.findLast((e) => mid(e) < y - 1)
+  if (!el) return
+  el.scrollIntoView({ block: 'center' })
+  last = { el, top: root.scrollTop }
+}
+
+/** Previous and next comment buttons, with their shortcuts, for the view `root` scrolls. */
+export function CommentNav({ root }: { root: RefObject<HTMLElement | null> }) {
+  const prevKey = useShortcut('prevComment')
+  const nextKey = useShortcut('nextComment')
+  // Kept mounted behind another tab, the view leaves the shortcuts to the shown one.
+  const active = useContext(ActiveViewContext)
+  useEffect(() => {
+    if (!active) return
+    const onKey = (e: KeyboardEvent) => {
+      const dir = isShortcut(e, 'nextComment') ? 1 : isShortcut(e, 'prevComment') ? -1 : 0
+      if (!dir || !root.current) return
+      e.preventDefault()
+      goToComment(root.current, dir)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [active, root])
+  return (
+    <span className="comment-nav">
+      <MessageCircle size={13} />
+      <span className="comment-arrows">
+        <button className="icon-btn" title={`Go to Previous Comment (${formatCombo(prevKey)})`} onClick={() => root.current && goToComment(root.current, -1)}>
+          <ChevronUp size={12} />
+        </button>
+        <button className="icon-btn" title={`Go to Next Comment (${formatCombo(nextKey)})`} onClick={() => root.current && goToComment(root.current, 1)}>
+          <ChevronDown size={12} />
+        </button>
+      </span>
+    </span>
   )
 }
 

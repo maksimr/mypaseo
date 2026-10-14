@@ -2162,6 +2162,36 @@ kbd {
 /* Add-to-chat button in the gutter beside the last selected line. */
 /* Review comments and their editor under a line of a diff or file view, like Paseo desktop's.
    Sticky: a file view scrolls sideways, the thread stays in view. */
+/* The comment icon; hovering swaps it for the previous (top) and next (bottom) arrows. No hover: the arrows stay beside it. */
+.comment-nav {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.comment-arrows {
+  display: flex;
+  flex-direction: column;
+}
+.comment-nav .icon-btn {
+  width: 14px;
+  height: 12px;
+  margin: 0;
+}
+@media (hover: hover) {
+  .comment-arrows {
+    position: absolute;
+    visibility: hidden;
+  }
+  .comment-nav:hover > svg {
+    visibility: hidden;
+  }
+  .comment-nav:hover .comment-arrows {
+    visibility: visible;
+  }
+}
 .review-thread {
   position: sticky;
   left: 0;

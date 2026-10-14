@@ -1,12 +1,12 @@
 import { isLanguageSupported } from '@getpaseo/highlight'
 import { ChevronRight, File, FileCode, FolderClosed, FolderOpen, History, RefreshCw } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { clickable } from '../a11y'
 import { errorText, type DirEntry } from '../daemon'
 import { useReview } from '../review'
 import { useDaemon } from '../store'
 import { Code } from './Code'
-import { ReviewThread } from './Review'
+import { CommentNav, ReviewThread } from './Review'
 
 const sortEntries = (entries: DirEntry[]) =>
   entries
@@ -88,6 +88,7 @@ export function FileView({ cwd, path, onHistory }: { cwd: string; path: string; 
   const daemon = useDaemon()
   const [file, setFile] = useState<Loaded | null>(null)
   const review = useReview(cwd)
+  const root = useRef<HTMLDivElement>(null)
   useEffect(() => {
     let url: string | undefined
     let alive = true
@@ -107,8 +108,9 @@ export function FileView({ cwd, path, onHistory }: { cwd: string; path: string; 
   }, [daemon, cwd, path])
 
   return (
-    <div className="file-view" data-path={path}>
+    <div className="file-view" data-path={path} ref={root}>
       <div className="file-path">
+        {review.comments.some((c) => c.path === path) && <CommentNav root={root} />}
         <span className="grow truncate">{path}</span>
         {onHistory && (
           <button className="icon-btn" title="History" onClick={onHistory}>

@@ -22,7 +22,7 @@ import { useDaemon } from '../store'
 import { split, totals, type DiffState } from '../useCheckoutDiff'
 import { Pick } from './Chat'
 import { Tokens } from './Code'
-import { ReviewThread } from './Review'
+import { CommentNav, ReviewThread } from './Review'
 
 // Toolbar 38px + .excerpt-head 34px (index.css): a chunk right under them is at the top of the view.
 const HEADERS = 72
@@ -101,6 +101,8 @@ export function ChangesView({
   // Renames can't be staged here (see canStage below), so they count as unstaged.
   const fileState = (f: DiffFile) => (keys && !f.oldPath ? stagedState(f.hunks, keys.get(f.path)) : 'none')
   const shown = filter === 'all' ? diff.files : diff.files.filter((f) => fileState(f) !== (filter === 'staged' ? 'none' : 'all'))
+  const review = useReview(cwd)
+  const commented = review.comments.some((c) => shown.some((f) => f.path === c.path))
   // Staged state of the chunk at the top of the view; null when there is none.
   const [current, setCurrent] = useState<boolean | null>(null)
   const [committing, setCommitting] = useState(false)
@@ -293,6 +295,7 @@ export function ChangesView({
   return (
     <div className="changes" ref={root} onScroll={syncCurrent}>
       <div className="changes-toolbar">
+        {commented && <CommentNav root={root} />}
         <button
           className="icon-btn"
           title={allCollapsed ? 'Expand All Files' : 'Collapse All Files'}
