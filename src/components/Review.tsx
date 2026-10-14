@@ -1,7 +1,7 @@
-import { CornerDownLeft, Pencil, Trash2, X } from 'lucide-react'
+import { CornerDownLeft, MessageCircle, Pencil, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { isShortcut } from '../keymap'
-import { cancelComment, deleteComments, editComment, saveComment, type Editing, type Review, type Side } from '../review'
+import { cancelComment, deleteComments, editComment, revealRef, saveComment, type Editing, type Review, type Side } from '../review'
 
 /** The review comments and open editor under one line of a file or diff; nothing when it has none. */
 export function ReviewThread({ review, path, side, line }: { review: Review; path: string; side: Side; line: number }) {
@@ -15,7 +15,8 @@ export function ReviewThread({ review, path, side, line }: { review: Review; pat
         c.id === editing?.id ? (
           <CommentEditor key={c.id} editing={editing} />
         ) : (
-          <div key={c.id} className="review-comment" onDoubleClick={() => editComment(review.key, c)}>
+          <div key={c.id} ref={revealRef(c.id)} className="review-comment" onDoubleClick={() => editComment(review.key, c)}>
+            <MessageCircle size={13} />
             <span className="grow pre-wrap">{c.body}</span>
             <button className="icon-btn" title="Edit Comment" onClick={() => editComment(review.key, c)}>
               <Pencil size={13} />
@@ -36,6 +37,7 @@ function CommentEditor({ editing }: { editing: Editing }) {
   const save = () => body.trim() && saveComment(body.trim())
   return (
     <div className="review-editor">
+      <MessageCircle size={13} />
       <textarea
         autoFocus
         rows={1}

@@ -1,4 +1,4 @@
-import { MessageSquarePlus } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { hoveredRef, selectionRef, type SelectedLines } from '../selection'
 
@@ -10,7 +10,8 @@ export function SelectionAction({ title, onAdd }: { title: string; onAdd: (s: Se
     const update = () => {
       const s = selectionRef() ?? (hovered?.line.isConnected ? hovered : null)
       const r = s?.line.getBoundingClientRect()
-      setAt(s && r ? { s, top: r.top + r.height / 2, left: r.left } : null)
+      // A file view's lines scroll sideways in their <pre>; the button stays at its left edge like the sticky comment thread.
+      setAt(s && r ? { s, top: r.top + r.height / 2, left: Math.max(r.left, s.line.parentElement!.getBoundingClientRect().left) } : null)
     }
     const over = (e: MouseEvent) => {
       const t = e.target as Element
@@ -41,7 +42,7 @@ export function SelectionAction({ title, onAdd }: { title: string; onAdd: (s: Se
       onMouseDown={(e) => e.preventDefault()} // keep the selection
       onClick={() => onAdd(at.s)}
     >
-      <MessageSquarePlus size={13} />
+      <MessageCircle size={13} />
     </button>
   )
 }

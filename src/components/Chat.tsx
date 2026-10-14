@@ -1,10 +1,11 @@
-import { ArrowDown, ArrowUp, Brain, ChevronDown, Folder, GitBranch, Import, Loader2, MessageSquareCode, Paperclip, Plus, Shield, ShieldQuestion, Sparkles, Square, SquarePen, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Brain, ChevronDown, Folder, GitBranch, Import, Loader2, MessageCircle, Paperclip, Plus, Shield, ShieldQuestion, Sparkles, Square, SquarePen, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { flushSync } from 'react-dom'
 import { errorText, type Agent, type Permission, type Workspace } from '../daemon'
 import { dropImageRef, imageRef } from '../imageRefs'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
-import { deleteComments, reviewAttachment, useReview } from '../review'
+import { deleteComments, reviewAttachment, useReview, type ReviewComment } from '../review'
+import { clickable } from '../a11y'
 import { hostLabel, keptUnread, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../store'
 import { useAutocomplete } from '../useAutocomplete'
 import { useTimeline } from '../useTimeline'
@@ -29,6 +30,7 @@ export function Chat({
   onInitialTextUsed,
   onProjectChange,
   onDraftProvider,
+  onShowComment,
 }: {
   agent: Agent | undefined
   target: Target
@@ -38,6 +40,7 @@ export function Chat({
   onInitialTextUsed?: () => void
   onProjectChange: (projectId: string) => void
   onDraftProvider?: (provider: string | undefined) => void
+  onShowComment: (c: ReviewComment) => void
 }) {
   const daemon = useDaemon()
   const tl = useTimeline(agent?.id ?? null)
@@ -150,6 +153,7 @@ export function Chat({
           onInitialTextUsed={onInitialTextUsed}
           onProjectChange={onProjectChange}
           onDraftProvider={onDraftProvider}
+          onShowComment={onShowComment}
         />
       </div>
       {composerHidden && (
@@ -263,6 +267,7 @@ function Composer({
   onInitialTextUsed,
   onProjectChange,
   onDraftProvider,
+  onShowComment,
 }: {
   agent?: Agent
   target: Target
@@ -271,6 +276,7 @@ function Composer({
   onInitialTextUsed?: () => void
   onProjectChange: (projectId: string) => void
   onDraftProvider?: (provider: string | undefined) => void
+  onShowComment: (c: ReviewComment) => void
 }) {
   const daemon = useDaemon()
   const hostId = useHostId()
@@ -447,27 +453,35 @@ function Composer({
 
   const empty = !text.trim() && !images.length && !files.length && !review.comments.length
   const n = review.comments.length
+  const reviewPaths = [...new Set(review.comments.map((c) => c.path))]
   return (
     <div className="composer">
       {ac.popup}
       {images.length + files.length + n > 0 && (
         <div className="composer-images">
-          {n > 0 && (
-            <span className="composer-image composer-file">
-              <MessageSquareCode size={16} />
-              <span className="composer-review">
-                Review
-                <span>{n === 1 ? '1 comment' : `${n} comments`}</span>
+          {reviewPaths.map((path) => {
+            const cs = review.comments.filter((c) => c.path === path)
+            const count = cs.length === 1 ? '1 comment' : `${cs.length} comments`
+            return (
+              <span key={`review${path}`} className="composer-image composer-file" title={cs.map((c) => c.ref).join('\n')} {...clickable(() => onShowComment(cs[0]))}>
+                <span className="composer-review">
+                  <MessageCircle size={12} />
+                  {path.split('/').pop()}
+                  <span>{count}</span>
+                </span>
+                <button
+                  title="Remove"
+                  aria-label={`Remove Review of ${path}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (confirm(`Delete ${cs.length === 1 ? 'the review comment' : `all ${cs.length} review comments`} on ${path}?`)) deleteComments(review.key, cs.map((c) => c.id))
+                  }}
+                >
+                  <X size={11} />
+                </button>
               </span>
-              <button
-                title="Remove"
-                aria-label="Remove Review"
-                onClick={() => confirm(`Delete ${n === 1 ? 'the review comment' : `all ${n} review comments`}?`) && deleteComments(review.key, review.comments.map((c) => c.id))}
-              >
-                <X size={11} />
-              </button>
-            </span>
-          )}
+            )
+          })}
           {images.map((img, i) => (
             <span key={i} className="composer-image">
               <img src={`data:${img.mimeType};base64,${img.data}`} alt={`Pasted image ${i + 1}`} />

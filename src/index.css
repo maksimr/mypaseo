@@ -1076,16 +1076,24 @@ code.inline {
   border-radius: 4px;
   font-size: 12px;
 }
+.composer-file[role='button'] {
+  cursor: pointer;
+}
 .composer-file span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Icon and file name on the first line, the count under both. */
 .composer-review {
   display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 5px;
   font-size: 13px;
 }
 .composer-review span {
+  grid-column: 1 / -1;
   font-size: 12px;
   color: var(--text-muted);
 }
@@ -2060,7 +2068,7 @@ kbd {
 .review-comment,
 .review-editor {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 8px 8px 8px 12px;
   border-bottom: 1px solid var(--border);
@@ -2074,7 +2082,25 @@ kbd {
   border-left-color: var(--red);
 }
 .review-comment {
-  background: var(--bg-panel);
+  background: #2b3a4b;
+}
+.review-thread > * > svg {
+  flex: none;
+  margin-top: 3px; /* centers 13px in the first ~19px line */
+  color: var(--text-muted);
+}
+/* Actions sit on the first text line (24px button in a ~19px line); comment actions show on hover, touch: see the end. */
+.review-thread .icon-btn {
+  margin-block: -3px;
+}
+.review-comment .icon-btn {
+  visibility: hidden;
+}
+.review-thread .icon-btn + .icon-btn {
+  margin-left: -8px; /* cancels the row gap */
+}
+.review-comment:is(:hover, :focus-within) .icon-btn {
+  visibility: visible;
 }
 .review-comment .danger {
   color: var(--red);
@@ -2104,11 +2130,11 @@ kbd {
   width: 20px;
   height: 20px;
   padding: 0;
-  transform: translate(2px, -50%);
-  border: 1px solid var(--border);
+  transform: translate(11.5px, -50%); /* icon centered over the thread's: 3px bar + 12px padding + 6.5px half icon - 10px half button */
+  border: 0;
   border-radius: 5px;
-  background: var(--accent);
-  color: var(--bg);
+  background: var(--bg-hover);
+  color: var(--accent);
   cursor: pointer;
 }
 
@@ -2301,7 +2327,8 @@ kbd {
 /* No hover: hover-revealed controls stay visible; the selected row and expanded projects show their actions beside the mark. */
 @media (hover: none) {
   .row .hover-only,
-  .sidebar-head .hover-only {
+  .sidebar-head .hover-only,
+  .review-comment .icon-btn {
     visibility: visible;
   }
   .row:is(.active, .project[aria-expanded='true']) .hover-swap {

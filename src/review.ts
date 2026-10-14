@@ -65,6 +65,15 @@ export function saveComment(body: string) {
 }
 export const deleteComments = (key: string, ids: string[]) => setComments(key, (cs) => cs.filter((c) => !ids.includes(c.id)))
 
+// The comment to scroll to once its row renders: the composer's Review chip opens its file or diff first.
+let revealing: string | undefined
+export const revealComment = (id: string) => (revealing = id)
+export const revealRef = (id: string) => (el: HTMLElement | null) => {
+  if (!el || id !== revealing) return
+  revealing = undefined
+  el.scrollIntoView({ block: 'center' })
+}
+
 /** The daemon renders this into the prompt as "Comment N: path:side:line", the body, and the commented lines. */
 export const reviewAttachment = (cwd: string, comments: ReviewComment[]): ReviewAttachment => ({
   type: 'review',

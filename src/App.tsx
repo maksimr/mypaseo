@@ -17,7 +17,7 @@ import { useAttentionNotifications } from './notifications'
 import { OpenFileContext } from './openFile'
 import { selectionRef } from './selection'
 import { SelectionAction } from './components/SelectionAction'
-import { reviewKey, startComment } from './review'
+import { revealComment, reviewKey, startComment, type ReviewComment } from './review'
 import { clickable } from './a11y'
 import { archiveAgent, archiveWorkspace, byRecent, HostContext, sidebarWorkspaces, startSync, useStore } from './store'
 import { useEdgeSwipe } from './swipe'
@@ -360,6 +360,18 @@ export default function App() {
     setFocus((f) => ({ path, n: (f?.n ?? 0) + 1 }))
     dismiss()
   }
+  // The diff when it shows the comment's line, else the file.
+  const showComment = (c: ReviewComment) => {
+    revealComment(c.id)
+    const inDiff = diff.files
+      .find((f) => f.path === c.path)
+      ?.hunks.some((h) => (c.side === 'old' ? c.line >= h.oldStart && c.line < h.oldStart + h.oldCount : c.line >= h.newStart && c.line < h.newStart + h.newCount))
+    if (!inDiff) return openFile(c.path)
+    setFocus(null) // its scroll to the file's top would undo the one to the comment
+    setChangesPick(true)
+    setTab('changes')
+    dismiss()
+  }
 
   return (
     <HostContext value={hostId}>
@@ -557,6 +569,7 @@ export default function App() {
               onInitialTextUsed={() => setChatText('')}
               onProjectChange={(projectId) => select({ projectId })}
               onDraftProvider={setDraftProvider}
+              onShowComment={showComment}
             />
           )}
         </main>
