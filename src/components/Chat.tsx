@@ -7,7 +7,7 @@ import { dropImageRef, imageRef } from '../imageRefs'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { deleteComments, reviewAttachment, useReview, type ReviewComment } from '../review'
 import { clickable } from '../a11y'
-import { hostLabel, keptUnread, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../store'
+import { hostLabel, isScratch, keptUnread, projectName, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../store'
 import { useAutocomplete } from '../useAutocomplete'
 import { useTimeline } from '../useTimeline'
 import { ContextMeter } from './ContextMeter'
@@ -139,7 +139,9 @@ export function Chat({
             <p className="muted">
               {target.workspace
                 ? `Starts in ${target.workspace.title || target.workspace.name}`
-                : `Starts a new workspace in ${target.name}`}
+                : isScratch(target.rootPath)
+                  ? 'Starts a new scratch'
+                  : `Starts a new workspace in ${target.name}`}
             </p>
             <button className="btn ghost" onClick={onImport}>
               <Import size={13} /> Import Session
@@ -405,13 +407,24 @@ function Composer({
           const created = await daemon.createAgent({ ...config, cwd: workspace.workspaceDirectory, workspaceId: workspace.id })
           onCreated(rememberAgent(hostId, created))
         } else {
+          const scratch = isScratch(target.rootPath)
+          let path = target.rootPath
+          if (scratch) {
+            // Each scratch gets its own folder, named by its UTC start time.
+            const name = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')
+            const dir = await daemon.createFileEntry({ cwd: path, parentPath: '.', name, kind: 'directory' })
+            if (!dir.success) throw new Error(dir.error ?? 'Could not create the scratch folder')
+            path = `${path}/${name}`
+          }
           const res = await daemon.createWorkspace({
             source:
               worktree && isGit
                 ? // daemon branches off the default branch; an empty name gets a generated one
                   { kind: 'worktree', cwd: target.rootPath, projectId: target.projectId, worktreeSlug: worktreeName.trim() || undefined }
-                : { kind: 'directory', path: target.rootPath, projectId: target.projectId },
-            agent: { ...config, cwd: target.rootPath },
+                : { kind: 'directory', path, projectId: target.projectId },
+            agent: { ...config, cwd: path },
+            // The daemon titles the workspace after the prompt, instead of the timestamp folder.
+            firstAgentContext: scratch ? { prompt } : undefined,
           })
           if (res.error || !res.agent) throw new Error(res.error ?? 'Workspace was created without an agent')
           onCreated(rememberAgent(hostId, res.agent))
@@ -567,7 +580,7 @@ function Composer({
             icon={<Folder size={14} />}
             value={target.projectId}
             onChange={onProjectChange}
-            options={projects.map((p) => [p.projectId, `${p.projectCustomName || p.projectDisplayName}${hosts.length > 1 ? ` · ${hostLabel(p.hostId)}` : ''}`])}
+            options={projects.map((p) => [p.projectId, `${projectName(p)}${hosts.length > 1 ? ` · ${hostLabel(p.hostId)}` : ''}`])}
             title="Project"
           />
         )}

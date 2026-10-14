@@ -5,7 +5,8 @@ Custom web UI for [Paseo](https://github.com/getpaseo/paseo). The backend is the
 
 Features: project → workspace → agent sidebar (drag projects, or Alt+↑/↓ on one, to reorder), agent chat (streaming timeline, permissions, model/mode/thinking
 pickers), workspace terminals (xterm.js tabs, like Paseo desktop's), file browser, Zed-style multibuffer of uncommitted /
-branch changes, and settings for daemon + providers.
+branch changes, and settings for daemon + providers. Scratches (New Scratch in the sidebar head) are workspaces outside your projects:
+each gets a fresh folder in `~/.paseo/scratches`, which the daemon lists as one project, since it ties every workspace to one.
 
 ```bash
 npm install

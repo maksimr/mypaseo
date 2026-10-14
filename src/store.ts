@@ -247,6 +247,27 @@ export function moveProject(projectId: string, target: string, after: boolean) {
   set({ projectOrder: JSON.parse(json) })
 }
 
+/** The daemon ties every workspace to a project, so scratches are workspaces in their own folders under this one, a project of its own. */
+const SCRATCHES = '~/.paseo/scratches'
+export const isScratch = (rootPath: string) => /[/\\]\.paseo[/\\]scratches$/.test(rootPath)
+/** The daemon names a project after its folder; the scratches folder is lowercase. */
+export const projectName = (p: Project) => p.projectCustomName || (isScratch(p.projectRootPath) ? 'Scratches' : p.projectDisplayName)
+
+/** The host's scratches project; the first scratch creates it. */
+export async function scratchProject(hostId: string) {
+  const found = state.projects.find((p) => p.hostId === hostId && isScratch(p.projectRootPath))
+  if (found) return found.projectId
+  const daemon = client(hostId)
+  const created = await daemon.createProjectDirectory({ parentPath: '~/.paseo', name: 'scratches' })
+  // The folder outlives its project when the project is removed.
+  const res = created.errorCode === 'directory_exists' ? await daemon.addProject(SCRATCHES) : created
+  if (!res.project) throw new Error(res.error ?? 'No project was created')
+  // So it can be selected before its project.update arrives.
+  const project = { ...res.project, hostId }
+  patchHost(hostId, (h) => ({ projects: upsert(h.projects, project, (x) => x.projectId === project.projectId) }))
+  return project.projectId
+}
+
 /** The daemon has no workspace delete: removing permanently deletes the agents, then archives the workspace. */
 export async function archiveWorkspace(w: Workspace, deleteAgents: boolean) {
   const daemon = client(w.hostId)

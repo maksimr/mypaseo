@@ -20,7 +20,7 @@ import { selectionRef } from './selection'
 import { SelectionAction } from './components/SelectionAction'
 import { revealComment, reviewKey, startComment, type ReviewComment } from './review'
 import { clickable } from './a11y'
-import { archiveAgent, archiveWorkspace, byRecent, HostContext, sidebarWorkspaces, startSync, useStore } from './store'
+import { archiveAgent, archiveWorkspace, byRecent, HostContext, projectName, sidebarWorkspaces, startSync, useStore } from './store'
 import { useEdgeSwipe } from './swipe'
 import { useTabStatus } from './tabStatus'
 import { totals, useCheckoutDiff, useCommitDiff } from './useCheckoutDiff'
@@ -135,7 +135,7 @@ export default function App() {
   const target: Target | null = workspace
     ? { projectId: workspace.projectId, name: workspace.projectDisplayName, rootPath: workspace.projectRootPath, workspace }
     : project
-      ? { projectId: project.projectId, name: project.projectCustomName || project.projectDisplayName, rootPath: project.projectRootPath }
+      ? { projectId: project.projectId, name: projectName(project), rootPath: project.projectRootPath }
       : null
   useTabStatus(agent?.title || workspace?.title || workspace?.name || target?.name, agents)
   const projectId = project?.projectId
@@ -457,7 +457,7 @@ export default function App() {
           onOpenHost={(id) => setSettings({ hostId: id, section: 'Host' })}
           onImport={(projectId) => {
             const p = projects.find((x) => x.projectId === projectId)
-            if (p) setImportTarget({ projectId, name: p.projectCustomName || p.projectDisplayName, rootPath: p.projectRootPath })
+            if (p) setImportTarget({ projectId, name: projectName(p), rootPath: p.projectRootPath })
           }}
         />
         {sidebar && <Resizer side="left" label="Resize Sidebar" width={sidebarW} onResize={setSidebarW} />}

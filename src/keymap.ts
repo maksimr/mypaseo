@@ -18,6 +18,7 @@ export const SHORTCUTS = {
   closeAgent: { label: 'Close Tab', description: 'Close the open tab. On a chat tab, archive its agent.', default: 'Ctrl+KeyW' },
   // Browsers keep ⌘N / Ctrl+N (new window) for themselves.
   newWorkspace: { label: 'New Workspace', description: 'Start a new workspace in the current project.', default: isMac ? 'Ctrl+KeyN' : 'Alt+KeyN' },
+  newScratch: { label: 'New Scratch', description: 'Start a workspace in a fresh folder, outside your projects.', default: `${mod}+Semicolon` },
   // Ctrl on Mac too, as asked. Off Mac, Chrome keeps Ctrl+Shift+N (incognito) outside an installed app window.
   newAgent: { label: 'New Agent', description: 'Open the new agent composer in the selected workspace.', default: 'Ctrl+Shift+KeyN' },
   // Paseo desktop's binding, Ctrl on Mac too: browsers keep ⌘⇧T (reopen tab). Off Mac, Chrome keeps Ctrl+Shift+T outside an installed app window.
@@ -64,7 +65,7 @@ export const SHORTCUT_IDS = Object.keys(SHORTCUTS) as ShortcutId[]
 export const SHORTCUT_GROUPS: [string, ShortcutId[]][] = [
   ['General', ['commandPalette', 'openSettings', 'toggleSidebar', 'togglePanel', 'addProject']],
   ['Tabs', ['nextTab', 'prevTab', 'closeAgent', 'newAgent', 'newTerminal']],
-  ['Workspaces', ['newWorkspace', 'nextWorkspace', 'prevWorkspace', 'archiveWorkspace', 'removeWorkspace', 'togglePin', 'toggleRead', 'toggleActiveOnly']],
+  ['Workspaces', ['newWorkspace', 'newScratch', 'nextWorkspace', 'prevWorkspace', 'archiveWorkspace', 'removeWorkspace', 'togglePin', 'toggleRead', 'toggleActiveOnly']],
   ['Chat', ['send', 'cycleThinking', 'pickModel', 'pickProject', 'expandTools', 'jumpToLatest', 'addToChat']],
   ['Git', ['openChanges', 'openGraph', 'prevHunk', 'nextHunk', 'prevComment', 'nextComment', 'stageAll', 'commit', 'amend', 'pull', 'push']],
 ]

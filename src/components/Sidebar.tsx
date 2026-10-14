@@ -25,7 +25,22 @@ import { useEffect, useId, useState, type FormEvent, type KeyboardEvent as React
 import { errorText, type Agent, type Project, type Workspace } from '../daemon'
 import { clickable, useEscape } from '../a11y'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
-import { byRecent, client, hostLabel, markRead, markUnread, moveProject, projectWorkspaces as sortedWorkspaces, sidebarWorkspaces, togglePin, useHostId, useStore } from '../store'
+import {
+  byRecent,
+  client,
+  hostLabel,
+  isScratch,
+  markRead,
+  markUnread,
+  moveProject,
+  projectName,
+  projectWorkspaces as sortedWorkspaces,
+  scratchProject,
+  sidebarWorkspaces,
+  togglePin,
+  useHostId,
+  useStore,
+} from '../store'
 import { unreadPick } from '../unread'
 import { AddHostDialog, HostMenu } from './Hosts'
 import { ProviderIcon } from './ProviderIcon'
@@ -44,6 +59,29 @@ const FolderExpanded = () => (
 const FolderAdd = () => (
   <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
     <path d="M12 19H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4l3 3h7a2 2 0 0 1 2 2v3.5M16 19h6M19 16v6" />
+  </svg>
+)
+
+/** Material Symbols note_stack. */
+const Scratches = () => (
+  <svg width={15} height={15} viewBox="0 -960 960 960" fill="currentColor" aria-hidden>
+    <path d="M280-160v-441q0-33 24-56t57-23h439q33 0 56.5 23.5T880-600v320L680-80H360q-33 0-56.5-23.5T280-160ZM81-710q-6-33 13-59.5t52-32.5l434-77q33-6 59.5 13t32.5 52l10 54h-82l-7-40-433 77 40 226v279q-16-9-27.5-24T158-276L81-710Zm279 110v440h280v-160h160v-280H360Zm220 220Z" />
+  </svg>
+)
+
+const PLUS = 'M680-160h240M800-280v240'
+/** note_stack with a plus at its bottom-right corner, like FolderAdd: the front note loses its folded corner, the mask clears a gap around the plus. */
+const ScratchAdd = () => (
+  <svg width={15} height={15} viewBox="0 -960 960 960" fill="currentColor" aria-hidden>
+    <mask id="scratch-add-gap">
+      <rect y={-960} width={960} height={960} fill="white" />
+      <path d={PLUS} stroke="black" strokeWidth={200} strokeLinecap="round" />
+    </mask>
+    <path
+      mask="url(#scratch-add-gap)"
+      d="M81-710q-6-33 13-59.5t52-32.5l434-77q33-6 59.5 13t32.5 52l10 54h-82l-7-40-433 77 40 226v279q-16-9-27.5-24T158-276L81-710ZM280-160v-441q0-33 24-56t57-23h439q33 0 56.5 23.5T880-600v440q0 33-23.5 56.5T800-80H360q-33 0-56.5-23.5T280-160Zm80 0h440v-440H360v440Z"
+    />
+    <path d={PLUS} stroke="currentColor" strokeWidth={80} strokeLinecap="round" />
   </svg>
 )
 
@@ -111,6 +149,7 @@ export function Sidebar({
   const settingsKey = useShortcut('openSettings')
   const newWorkspaceKey = useShortcut('newWorkspace')
   const addProjectKey = useShortcut('addProject')
+  const newScratchKey = useShortcut('newScratch')
   const activeOnlyKey = useShortcut('toggleActiveOnly')
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(JSON.parse(localStorage.mypaseoCollapsed ?? '[]')))
   const toggle = (id: string) =>
@@ -138,6 +177,14 @@ export function Sidebar({
   }
 
   const [adding, setAdding] = useState(false)
+  const hostId = useHostId()
+  const newScratch = async () => {
+    try {
+      onSelect({ projectId: await scratchProject(hostId) })
+    } catch (e) {
+      alert(`Could not start a scratch: ${errorText(e)}`)
+    }
+  }
   const [renaming, setRenaming] = useState<Workspace>()
   // Lives here, not in the row: the selected workspace's row is unmounted while its project is collapsed.
   const [syncing, setSyncing] = useState<Record<string, 'pull' | 'push' | undefined>>({})
@@ -157,6 +204,10 @@ export function Sidebar({
       if (isShortcut(e, 'addProject')) {
         e.preventDefault()
         setAdding(true)
+      }
+      if (isShortcut(e, 'newScratch')) {
+        e.preventDefault()
+        void newScratch()
       }
       const op = isShortcut(e, 'pull') ? 'pull' : isShortcut(e, 'push') ? 'push' : undefined
       const w = workspaces.find((x) => x.id === selection.workspaceId)
@@ -198,6 +249,9 @@ export function Sidebar({
           <button className="icon-btn hover-only" title={`Add Project (${formatCombo(addProjectKey)})`} onClick={() => setAdding(true)}>
             <FolderAdd />
           </button>
+          <button className="icon-btn hover-only" title={`New Scratch (${formatCombo(newScratchKey)})`} onClick={() => void newScratch()}>
+            <ScratchAdd />
+          </button>
           <button
             className={`icon-btn ${activeOnly ? 'on' : 'hover-only'}`}
             title={`Show Only Active Workspaces (${formatCombo(activeOnlyKey)})`}
@@ -212,7 +266,7 @@ export function Sidebar({
           {listed.map(({ p, shownWorkspaces }, i) => {
             const open = !collapsed.has(p.projectId)
             const projectWorkspaces = sortedWorkspaces(p.projectId, workspaces, agents)
-            const name = p.projectCustomName || p.projectDisplayName
+            const name = projectName(p)
             const menuId = `project-menu-${p.projectId}`
             const row = clickable(() => toggle(p.projectId))
             return (
@@ -245,7 +299,7 @@ export function Sidebar({
                     moveByKey(e, i)
                   }}
                 >
-                  {open ? <FolderExpanded /> : <Folder size={15} />}
+                  {isScratch(p.projectRootPath) ? <Scratches /> : open ? <FolderExpanded /> : <Folder size={15} />}
                   <span className="truncate">{name}</span>
                   <span className="chevron hover-only">{open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
                   <span className="grow" />
