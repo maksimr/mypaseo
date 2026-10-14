@@ -2,8 +2,9 @@ import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import { Plus, SquareTerminal } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { clickable } from '../a11y'
+import { ActiveViewContext } from '../activeView'
 import { errorText, type TerminalInfo } from '../daemon'
 import { formatCombo, isShortcut, SHORTCUT_IDS, useShortcut } from '../keymap'
 import { useDaemon } from '../store'
@@ -34,11 +35,12 @@ const appKey = (e: KeyboardEvent) => (e.metaKey || (e.ctrlKey && e.shiftKey)) &&
 export function TerminalView({ terminalId }: { terminalId: string }) {
   const daemon = useDaemon()
   const host = useRef<HTMLDivElement>(null)
+  const xterm = useRef<Terminal>(null)
   const [error, setError] = useState<string>()
   useEffect(() => {
     const el = host.current!
     const css = getComputedStyle(el)
-    const term = new Terminal({
+    const term = (xterm.current = new Terminal({
       fontFamily: css.getPropertyValue('--mono'),
       fontSize: 18,
       lineHeight: 1.125,
@@ -69,7 +71,7 @@ export function TerminalView({ terminalId }: { terminalId: string }) {
         brightCyan: '#80d0e4',
         brightWhite: '#f0f0f0',
       },
-    })
+    }))
     const fit = new FitAddon()
     term.loadAddon(fit)
     term.attachCustomKeyEventHandler((e) => !appKey(e))
@@ -99,7 +101,6 @@ export function TerminalView({ terminalId }: { terminalId: string }) {
     term.textarea?.addEventListener('focus', claim)
     const ro = new ResizeObserver(() => fit.fit())
     ro.observe(el)
-    term.focus()
     return () => {
       ro.disconnect()
       input.dispose()
@@ -108,6 +109,11 @@ export function TerminalView({ terminalId }: { terminalId: string }) {
       term.dispose()
     }
   }, [daemon, terminalId])
+  // Shown (mounted, or back from behind another tab): the keys go to the shell.
+  const active = useContext(ActiveViewContext)
+  useEffect(() => {
+    if (active) xterm.current?.focus()
+  }, [active])
 
   return (
     <>

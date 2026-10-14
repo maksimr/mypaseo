@@ -11,8 +11,9 @@ import {
   Minus,
   Undo2,
 } from 'lucide-react'
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useContext, useEffect, useRef, useState } from 'react'
 import { clickable, useEscape } from '../a11y'
+import { ActiveViewContext } from '../activeView'
 import { chunkKey, chunkPatch, chunks, restoreChunk, stagedKeys, stagedState, type Chunk } from '../chunks'
 import { errorText, type DiffFile } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
@@ -120,7 +121,10 @@ export function ChangesView({
   }
   useEffect(syncCurrent, [diff.files, index, collapsed])
 
+  // Kept mounted behind another tab, the view leaves the shortcuts to the shown one.
+  const active = useContext(ActiveViewContext)
   useEffect(() => {
+    if (!active) return
     const onKey = (e: KeyboardEvent) => {
       const dir = isShortcut(e, 'nextHunk') ? 1 : isShortcut(e, 'prevHunk') ? -1 : 0
       if (!dir || !root.current) return
@@ -129,10 +133,10 @@ export function ChangesView({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [active])
 
   useEffect(() => {
-    if (!canCommit) return
+    if (!active || !canCommit) return
     const onKey = (e: KeyboardEvent) => {
       // defaultPrevented: the open dialog already took the same combo as Commit.
       if (e.defaultPrevented || !isShortcut(e, 'commit')) return
@@ -141,7 +145,7 @@ export function ChangesView({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [canCommit])
+  }, [active, canCommit])
 
   // Re-read on every diff push: the daemon diff is HEAD→worktree, so it doesn't carry index state itself.
   useEffect(() => {
@@ -252,7 +256,7 @@ export function ChangesView({
   const canStageAll = !!keys && diff.files.length > 0 && !allStaged
 
   useEffect(() => {
-    if (!canStageAll) return
+    if (!active || !canStageAll) return
     const onKey = (e: KeyboardEvent) => {
       if (!isShortcut(e, 'stageAll')) return
       e.preventDefault()

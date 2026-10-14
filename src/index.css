@@ -529,6 +529,28 @@ code.inline {
   min-height: 0;
   min-width: 0;
 }
+/* The tab views share one cell, so a hidden one keeps the shown one's size and lays out the same when it's back. */
+.views {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+}
+.view {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+/* Unlike display: none, this keeps the hidden view's rendering state, its scroll positions included. */
+.view[inert] {
+  content-visibility: hidden;
+}
+@supports not (content-visibility: hidden) {
+  .view[inert] {
+    display: none;
+  }
+}
 .tabbar {
   padding: 0 8px 0 4px;
 }

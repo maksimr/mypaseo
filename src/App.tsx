@@ -1,5 +1,6 @@
 import { ChevronDown, FileCode, FileDiff, Files, GitCommitHorizontal, History, Loader2, PanelLeft, PanelRight, SquareTerminal, X } from 'lucide-react'
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { ActiveViewContext } from './activeView'
 import { ChangesList, ChangesView } from './components/Changes'
 import { Chat, type Target } from './components/Chat'
 import { CommandPalette } from './components/CommandPalette'
@@ -142,6 +143,7 @@ export default function App() {
   const isGit = workspace?.projectKind === 'git'
 
   const [tab, setTab] = useState<Tab>('chat')
+  const [visited, setVisited] = useState<string[]>([]) // views shown since the workspace opened, in that order
   const [files, setFiles] = useState<string[]>([])
   // undefined: shown while the workspace has changes; true/false: the user opened or closed it.
   const [changesPick, setChangesPick] = useState<boolean>()
@@ -307,6 +309,7 @@ export default function App() {
     setCommit(s?.commit)
     setCommitTab(s?.commitTab)
     setTab(s?.tab ?? 'chat')
+    setVisited([])
   }
 
   const openFile = (path: string) => {
@@ -383,6 +386,54 @@ export default function App() {
     setTab('changes')
     dismiss()
   }
+
+  const chatKey = (a?: Agent) => `chat:${a?.id ?? `${target?.projectId}/${workspace?.id}`}`
+  /** A tab's view by key (`tab`, or chatKey for chats); null once the tab is closed. */
+  const view = (k: string): ReactNode => {
+    if (!target) return null
+    if (k === 'changes') return changesTab && cwd ? <ChangesView cwd={cwd} diff={diff} focus={focus} onOpenFile={openFile} /> : null
+    if (k === 'graph')
+      return graphTab && workspace ? (
+        <CommitGraph
+          key={graphPath}
+          workspace={workspace}
+          files={diff.files}
+          path={graphPath}
+          selected={commit}
+          onSelect={(sha) => {
+            setCommit(sha)
+            setPanel('graph')
+          }}
+        />
+      ) : null
+    if (k === 'commit') return commitTab && cwd ? <ChangesView key={commitTab} cwd={cwd} diff={commitDiff} focus={commitFocus} onOpenFile={openFile} readOnly /> : null
+    if (k.startsWith('term:'))
+      return k === tab || terms.terminals.some((x) => `term:${x.id}` === k) ? <TerminalView terminalId={k.slice('term:'.length)} /> : null
+    if (k.startsWith('file:')) {
+      const path = k.slice('file:'.length)
+      return files.includes(path) && cwd ? <FileView cwd={cwd} path={path} onHistory={isGit ? () => openGraph(path) : undefined} /> : null
+    }
+    const i = chatTabs.findIndex((a) => chatKey(a) === k)
+    if (i < 0) return null
+    const a = chatTabs[i]
+    return (
+      <Chat
+        agent={a}
+        target={target}
+        onCreated={(a) => select({ projectId: target.projectId, workspaceId: a.workspaceId, agentId: a.id })}
+        onImport={() => setImportTarget(target)}
+        initialText={a === agent ? chatText : ''}
+        onInitialTextUsed={() => setChatText('')}
+        onProjectChange={(projectId) => select({ projectId })}
+        onDraftProvider={setDraftProvider}
+        onShowComment={showComment}
+      />
+    )
+  }
+  // A tab that can't show (its workspace is gone) falls back to the chat.
+  const viewKey = tab !== 'chat' && view(tab) ? tab : chatKey(agent)
+  // Not during the workspace switch above: it reset them.
+  if (tabsWs === sel.workspaceId && !visited.includes(viewKey)) setVisited([...visited, viewKey])
 
   return (
     <HostContext value={hostId}>
@@ -563,39 +614,21 @@ export default function App() {
                 </>
               )}
             </div>
-          ) : tab === 'changes' && cwd ? (
-            <ChangesView cwd={cwd} diff={diff} focus={focus} onOpenFile={openFile} />
-          ) : tab === 'graph' && workspace ? (
-            <CommitGraph
-              key={graphPath}
-              workspace={workspace}
-              files={diff.files}
-              path={graphPath}
-              selected={commit}
-              onSelect={(sha) => {
-                setCommit(sha)
-                setPanel('graph')
-              }}
-            />
-          ) : tab === 'commit' && commitTab && cwd ? (
-            <ChangesView key={commitTab} cwd={cwd} diff={commitDiff} focus={commitFocus} onOpenFile={openFile} readOnly />
-          ) : tab.startsWith('term:') ? (
-            <TerminalView key={tab} terminalId={tab.slice('term:'.length)} />
-          ) : tab.startsWith('file:') && cwd ? (
-            <FileView key={tab} cwd={cwd} path={tab.slice(5)} onHistory={isGit ? () => openGraph(tab.slice(5)) : undefined} />
           ) : (
-            <Chat
-              key={agent?.id ?? `${target.projectId}/${workspace?.id}`}
-              agent={agent}
-              target={target}
-              onCreated={(a) => select({ projectId: target.projectId, workspaceId: a.workspaceId, agentId: a.id })}
-              onImport={() => setImportTarget(target)}
-              initialText={chatText}
-              onInitialTextUsed={() => setChatText('')}
-              onProjectChange={(projectId) => select({ projectId })}
-              onDraftProvider={setDraftProvider}
-              onShowComment={showComment}
-            />
+            // Every view shown since the workspace opened stays mounted, so each tab keeps its scroll and state.
+            // In mount order, never reordered: moving a node would reset its scroll. Inert keeps hidden ones out of focus and clicks.
+            <div className="views">
+              {visited.map((k) => {
+                const v = view(k)
+                return (
+                  v && (
+                    <div key={k} className="view" inert={k !== viewKey}>
+                      <ActiveViewContext value={k === viewKey}>{v}</ActiveViewContext>
+                    </div>
+                  )
+                )
+              })}
+            </div>
           )}
         </main>
         {(sidebar || (panel && cwd)) && <div className="scrim" onClick={dismiss} />}

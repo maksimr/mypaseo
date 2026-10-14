@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react'
-import { memo, useEffect, useState } from 'react'
+import { memo, useContext, useEffect, useState } from 'react'
+import { ActiveViewContext } from '../activeView'
 import type { TimelineItem, ToolCall, ToolDetail } from '../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { Code } from './Code'
@@ -8,7 +9,9 @@ import { Markdown } from './Markdown'
 export function Timeline({ items, running }: { items: TimelineItem[]; running: boolean }) {
   // Like pi's Ctrl+O (here Ctrl+" by default): expand or collapse every tool output at once.
   const [expanded, setExpanded] = useState(false)
+  const active = useContext(ActiveViewContext)
   useEffect(() => {
+    if (!active) return
     const onKey = (e: KeyboardEvent) => {
       if (!isShortcut(e, 'expandTools')) return
       e.preventDefault()
@@ -16,7 +19,7 @@ export function Timeline({ items, running }: { items: TimelineItem[]; running: b
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [active])
   return (
     <div className="timeline">
       {items.map((item, i) => (

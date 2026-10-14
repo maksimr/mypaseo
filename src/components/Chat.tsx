@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, Brain, ChevronDown, Folder, GitBranch, Import, Loader2, MessageCircle, Paperclip, Plus, Shield, ShieldQuestion, Sparkles, Square, SquarePen, X } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { flushSync } from 'react-dom'
+import { ActiveViewContext } from '../activeView'
 import { errorText, type Agent, type Permission, type Workspace } from '../daemon'
 import { dropImageRef, imageRef } from '../imageRefs'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
@@ -59,7 +60,9 @@ export function Chat({
     const el = scroller.current
     if (el) el.scrollTop = el.scrollHeight
   }
+  const active = useContext(ActiveViewContext)
   useEffect(() => {
+    if (!active) return
     const onKey = (e: KeyboardEvent) => {
       if (!isShortcut(e, 'jumpToLatest')) return
       if (!(e.target instanceof HTMLTextAreaElement)) e.preventDefault() // Ctrl+End still moves the composer caret
@@ -67,7 +70,7 @@ export function Chat({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [active])
 
   // Stick to the bottom while streaming unless the user scrolled up.
   useLayoutEffect(() => {
@@ -87,14 +90,16 @@ export function Chat({
     return () => ro.disconnect()
   }, [])
   // Viewing an agent acknowledges its "finished" / "error" attention flag, except a Mark Unread made while it's open.
+  // A chat kept mounted behind another tab isn't viewed.
   const agentId = agent?.id
   useEffect(() => {
-    if (agentId) keptUnread.delete(agentId) // opening it reads it
-  }, [agentId])
+    if (active && agentId) keptUnread.delete(agentId) // opening it reads it
+  }, [active, agentId])
   useEffect(() => {
+    if (!active) return
     if (agentId && !agent?.requiresAttention) keptUnread.delete(agentId) // so finishing again while open reads it
     else if (agent?.requiresAttention && !agent.pendingPermissions.length && !keptUnread.has(agentId!)) void daemon.clearAgentAttention(agentId!).catch(() => {})
-  }, [daemon, agentId, agent?.requiresAttention, agent?.pendingPermissions.length])
+  }, [active, daemon, agentId, agent?.requiresAttention, agent?.pendingPermissions.length])
 
   return (
     <div className="chat">
@@ -283,21 +288,19 @@ function Composer({
   const { providers } = useHost()
   const { hosts, projects } = useStore()
   const draftKey = agent ? `${hostId}/${agent.id}` : 'new'
-  const [text, setTextState] = useState(() => {
-    const d = drafts.get(draftKey) ?? ''
-    return d && initialText ? `${d}${/\s$/.test(d) ? '' : ' '}${initialText}` : d || initialText || ''
-  })
+  const [text, setTextState] = useState(() => drafts.get(draftKey) ?? '')
   const setText = (t: string) => {
     setTextState(t)
     if (t) drafts.set(draftKey, t)
     else drafts.delete(draftKey)
   }
+  // Joins the draft on mount and, for a chat kept mounted behind another tab, whenever it's handed over.
   useEffect(() => {
-    if (initialText) {
-      drafts.set(draftKey, text)
-      onInitialTextUsed?.()
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!initialText) return
+    // eslint-disable-next-line react/set-state-in-effect -- a hand-off from App, which clears it
+    setText(text ? `${text}${/\s$/.test(text) ? '' : ' '}${initialText}` : initialText)
+    onInitialTextUsed?.()
+  }, [initialText]) // eslint-disable-line react-hooks/exhaustive-deps
   const [images, setImages] = useDraftList(imageDrafts, draftKey)
   const [files, setFiles] = useDraftList(fileDrafts, draftKey)
   // Review comments from the workspace's diff and file views go with the next message.
@@ -319,13 +322,16 @@ function Composer({
       el.showPicker()
     } catch {}
   }
-  // Mount only: a new chat takes focus, and so does the remount after a send creates its agent (focus fell to <body>).
+  // On showing: a new chat takes focus, and so do the remount after a send creates its agent and a return to the tab
+  // (focus fell to <body>, or is still in the tab just hidden).
+  const active = useContext(ActiveViewContext)
   useEffect(() => {
     const el = input.current
-    if (!el || (agent && document.activeElement !== document.body)) return
+    const a = document.activeElement
+    if (!active || !el || (agent && a !== document.body && !a?.closest('[inert]'))) return
     el.focus()
     el.setSelectionRange(el.value.length, el.value.length) // after any inserted selection ref
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [active]) // eslint-disable-line react-hooks/exhaustive-deps
   const [draft, setDraftState] = useState<Draft>(loadDraft)
   const setDraft = (d: Draft) => {
     setDraftState(d)
