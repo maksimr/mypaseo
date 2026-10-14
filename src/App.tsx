@@ -1,4 +1,4 @@
-import { FileCode, FileDiff, Files, GitCommitHorizontal, History, Loader2, PanelLeft, PanelRight, SquareTerminal, X } from 'lucide-react'
+import { ChevronDown, FileCode, FileDiff, Files, GitCommitHorizontal, History, Loader2, PanelLeft, PanelRight, SquareTerminal, X } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ChangesList, ChangesView } from './components/Changes'
 import { Chat, type Target } from './components/Chat'
@@ -416,7 +416,8 @@ export default function App() {
 
         <main className="center">
           <div className="tabbar">
-            <div className="tabs">
+            {/* On phones, a popover listing every tab (the bar shows only the open one); picking one closes it. */}
+            <div className="tabs" id="tab-list" popover="auto" onClick={(e) => e.currentTarget.hidePopover()}>
               {target &&
                 chatTabs.map((a) => (
                   <div key={a?.id ?? 'new'} className={`tab agent-tab ${tab === 'chat' && a === agent ? 'on' : ''}`} {...clickable(() => openChat(a))}>
@@ -534,6 +535,9 @@ export default function App() {
                 </div>
               ))}
             </div>
+            <button className="icon-btn tab-list-btn" title="All Tabs" popoverTarget="tab-list">
+              <ChevronDown size={15} />
+            </button>
             {cwd && <OpenInEditor path={cwd} />}
           </div>
 
