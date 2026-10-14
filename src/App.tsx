@@ -633,7 +633,7 @@ export default function App() {
             <Settings initialSection={settings.section} onClose={() => setSettings(null)} />
           </HostContext>
         )}
-        {palette && <CommandPalette onClose={() => setPalette(false)} />}
+        {palette && <CommandPalette cwd={cwd} onClose={() => setPalette(false)} />}
         {importTarget && (
           <HostContext value={projects.find((p) => p.projectId === importTarget.projectId)?.hostId ?? hostId}>
             <ImportSession
