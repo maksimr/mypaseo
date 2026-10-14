@@ -692,12 +692,18 @@ function WorkspaceRow({
           <Loader2 size={13} className="spin muted status-mark" aria-label={syncing === 'pull' ? 'Pulling…' : 'Pushing…'} />
         ) : (
           <>
-            {unpushed > 0 && (
-              <Push size={13} className="muted status-mark">
-                <title>{`${unpushed} unpushed commit${unpushed > 1 ? 's' : ''}`}</title>
-              </Push>
-            )}
-            <StatusMark agents={agents} idle={pinned && <Pin size={11} strokeWidth={1.75} className="muted status-mark" aria-label="Pinned" />} />
+            <StatusMark
+              agents={agents}
+              idle={
+                unpushed > 0 ? (
+                  <Push size={13} className="muted status-mark">
+                    <title>{`${unpushed} unpushed commit${unpushed > 1 ? 's' : ''}`}</title>
+                  </Push>
+                ) : (
+                  pinned && <Pin size={11} strokeWidth={1.75} className="muted status-mark" aria-label="Pinned" />
+                )
+              }
+            />
           </>
         )}
       </div>
