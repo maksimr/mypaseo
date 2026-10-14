@@ -42,10 +42,10 @@ const commit = defineRpc({
   output: done,
 })
 const reset = defineRpc({ name: 'index.reset', input: paths, output: done })
-/** Newest `limit` commits of every branch, remote and tag, children before parents, for the git graph. */
+/** Newest `limit` commits of every branch, remote and tag, children before parents, for the git graph; with `path`, HEAD's commits that touch it. */
 const log = defineRpc({
   name: 'log',
-  input: z.object({ cwd: z.string(), limit: z.number().int().positive() }),
+  input: z.object({ cwd: z.string(), limit: z.number().int().positive(), path: z.string().optional() }),
   output: z.object({
     commits: z.array(
       z.object({
@@ -103,9 +103,11 @@ export default function contribute(server: PluginServerContext) {
     await git(cwd, hasHead ? ['reset', '-q', '--', ...paths] : ['rm', '--cached', '-r', '-q', '--ignore-unmatch', '--', ...paths])
     return {}
   })
-  server.handle(log, async ({ cwd, limit }) => {
+  server.handle(log, async ({ cwd, limit, path }) => {
+    // --parents rewrites %P to the nearest listed ancestors, so a file's graph stays connected.
+    const [from, only] = path ? [['--parents'], ['--', path]] : [['--exclude=refs/stash', '--all'], []]
     // \x1e starts a commit, \x1f separates fields; neither shows up in names or subjects.
-    const out = await git(cwd, ['log', '--exclude=refs/stash', '--all', '--date-order', `-n${limit}`, '--format=%x1e%H%x1f%P%x1f%D%x1f%an%x1f%aI%x1f%s'])
+    const out = await git(cwd, ['log', ...from, '--date-order', `-n${limit}`, '--format=%x1e%H%x1f%P%x1f%D%x1f%an%x1f%aI%x1f%s', ...only])
     const commits = out.split('\x1e').slice(1).map((rec) => {
       const [sha, parents, refs, author, date, subject] = rec.replace(/\n$/, '').split('\x1f')
       return { sha, parents: parents.split(' ').filter(Boolean), refs: refs ? refs.split(', ') : [], author, date, subject }

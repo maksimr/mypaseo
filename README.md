@@ -14,7 +14,7 @@ npm run dev      # Vite on :5173, proxies /ws -> 127.0.0.1:6767
 npm test         # node:test unit tests (src/*.test.ts)
 ```
 
-Staging diff chunks and the Git Graph tab (top-right button of a git workspace) need the `mypaseo-git` daemon plugin in
+Staging diff chunks, the Git Graph tab (top-right button of a git workspace) and a file's History button need the `mypaseo-git` daemon plugin in
 [paseo-plugin/](paseo-plugin/), since the daemon has no git index or log API. One-time setup per machine, no checkout
 needed: the daemon clones it from GitHub (Stage stays hidden without it):
 

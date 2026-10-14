@@ -1,4 +1,4 @@
-import { FileCode, FileDiff, Files, GitCommitHorizontal, Loader2, PanelLeft, PanelRight, SquareTerminal, X } from 'lucide-react'
+import { FileCode, FileDiff, Files, GitCommitHorizontal, History, Loader2, PanelLeft, PanelRight, SquareTerminal, X } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ChangesList, ChangesView } from './components/Changes'
 import { Chat, type Target } from './components/Chat'
@@ -146,6 +146,7 @@ export default function App() {
   // undefined: shown while the workspace has changes; true/false: the user opened or closed it.
   const [changesPick, setChangesPick] = useState<boolean>()
   const [graphTab, setGraphTab] = useState(false)
+  const [graphPath, setGraphPath] = useState<string>() // set: the graph tab shows this file's history
   const [commit, setCommit] = useState<string>() // picked in the git graph, shown in the panel
   const [commitTab, setCommitTab] = useState<string>() // the commit whose diff the 'commit' tab shows
   const [commitFocus, setCommitFocus] = useState<{ path: string; n: number } | null>(null)
@@ -310,9 +311,10 @@ export default function App() {
     setChangesPick(true)
     setTab('changes')
   }
-  const openGraph = () => {
+  const openGraph = (path?: string) => {
     setPanel('graph')
     setGraphTab(true)
+    setGraphPath(path)
     setTab('graph')
   }
   const closeChanges = () => {
@@ -472,9 +474,15 @@ export default function App() {
                 </div>
               )}
               {graphTab && (
-                <div className={`tab ${tab === 'graph' ? 'on' : ''}`} {...clickable(() => setTab('graph'))}>
-                  <GitGraphIcon size={13} />
-                  <span>Git Graph</span>
+                <div className={`tab ${tab === 'graph' ? 'on' : ''}`} {...clickable(() => setTab('graph'))} title={graphPath}>
+                  {graphPath ? <History size={13} /> : <GitGraphIcon size={13} />}
+                  {graphPath ? (
+                    <span className="truncate">
+                      History <span className="faint">{graphPath.split('/').pop()}</span>
+                    </span>
+                  ) : (
+                    <span>Git Graph</span>
+                  )}
                   <button
                     className="tab-close"
                     title="Close"
@@ -544,8 +552,10 @@ export default function App() {
             <ChangesView cwd={cwd} diff={diff} focus={focus} onOpenFile={openFile} />
           ) : tab === 'graph' && workspace ? (
             <CommitGraph
+              key={graphPath}
               workspace={workspace}
               files={diff.files}
+              path={graphPath}
               selected={commit}
               onSelect={(sha) => {
                 setCommit(sha)
@@ -557,7 +567,7 @@ export default function App() {
           ) : tab.startsWith('term:') ? (
             <TerminalView key={tab} terminalId={tab.slice('term:'.length)} />
           ) : tab.startsWith('file:') && cwd ? (
-            <FileView key={tab} cwd={cwd} path={tab.slice(5)} />
+            <FileView key={tab} cwd={cwd} path={tab.slice(5)} onHistory={isGit ? () => openGraph(tab.slice(5)) : undefined} />
           ) : (
             <Chat
               key={agent?.id ?? `${target.projectId}/${workspace?.id}`}
@@ -588,7 +598,7 @@ export default function App() {
                 <Files size={14} /> <span className="truncate">Files</span>
               </button>
               {isGit && (
-                <button className={`panel-tab ${panelView === 'graph' ? 'on' : ''}`} title="Git Graph" onClick={openGraph}>
+                <button className={`panel-tab ${panelView === 'graph' ? 'on' : ''}`} title="Git Graph" onClick={() => openGraph()}>
                   <GitGraphIcon size={14} /> <span className="truncate">Git Graph</span>
                 </button>
               )}

@@ -81,15 +81,17 @@ function Ref({ name }: { name: string }) {
   )
 }
 
-/** Every branch, remote and tag of the workspace's repo as a commit graph, with find-in-list search. */
+/** Every branch, remote and tag of the workspace's repo as a commit graph, with find-in-list search; with `path`, that file's history. */
 export function CommitGraph({
   workspace,
   files,
+  path,
   selected,
   onSelect,
 }: {
   workspace: Workspace
   files: DiffFile[]
+  path?: string
   selected?: string
   onSelect: (sha: string) => void
 }) {
@@ -101,7 +103,7 @@ export function CommitGraph({
   const runtime = JSON.stringify(workspace.gitRuntime)
   useEffect(() => {
     let live = true
-    daemon.invokePluginRpc('mypaseo-git', 'log', { cwd, limit: LIMIT }).then(
+    daemon.invokePluginRpc('mypaseo-git', 'log', { cwd, limit: LIMIT, path }).then(
       (r) => {
         if (!live) return
         setLog({ cwd, commits: (r as { commits: Commit[] }).commits })
@@ -112,7 +114,7 @@ export function CommitGraph({
     return () => {
       live = false
     }
-  }, [daemon, cwd, runtime, files])
+  }, [daemon, cwd, path, runtime, files])
 
   const commits = useMemo(() => (log?.cwd === cwd ? log.commits : []), [log, cwd])
   const { rows, width } = useMemo(() => layout(commits), [commits])

@@ -1,5 +1,5 @@
 import { isLanguageSupported } from '@getpaseo/highlight'
-import { ChevronRight, File, FileCode, FolderClosed, FolderOpen, RefreshCw } from 'lucide-react'
+import { ChevronRight, File, FileCode, FolderClosed, FolderOpen, History, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { clickable } from '../a11y'
 import { errorText, type DirEntry } from '../daemon'
@@ -83,7 +83,8 @@ export function FileTree({ cwd, rootName, onOpen, activePath }: { cwd: string; r
 
 type Loaded = { kind: 'text'; text: string } | { kind: 'image'; url: string } | { kind: 'binary' } | { kind: 'error'; message: string }
 
-export function FileView({ cwd, path }: { cwd: string; path: string }) {
+/** `onHistory` shows the file's commits; pass it only in git workspaces. */
+export function FileView({ cwd, path, onHistory }: { cwd: string; path: string; onHistory?: () => void }) {
   const daemon = useDaemon()
   const [file, setFile] = useState<Loaded | null>(null)
   const review = useReview(cwd)
@@ -107,7 +108,14 @@ export function FileView({ cwd, path }: { cwd: string; path: string }) {
 
   return (
     <div className="file-view" data-path={path}>
-      <div className="file-path">{path}</div>
+      <div className="file-path">
+        <span className="grow truncate">{path}</span>
+        {onHistory && (
+          <button className="icon-btn" title="History" onClick={onHistory}>
+            <History size={13} />
+          </button>
+        )}
+      </div>
       {!file ? (
         <div className="empty">Loading…</div>
       ) : file.kind === 'text' ? (
