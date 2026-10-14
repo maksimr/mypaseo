@@ -290,16 +290,23 @@ export default function App() {
   // A terminal whose shell exited leaves the list.
   if (tab.startsWith('term:') && terms.loaded && !terms.terminals.some((x) => `term:${x.id}` === tab)) setTab('chat')
 
-  // Tabs belong to a workspace: reset them while rendering when the workspace changes.
-  const [tabsCwd, setTabsCwd] = useState(cwd)
-  if (tabsCwd !== cwd) {
-    setTabsCwd(cwd)
-    setFiles([])
-    setChangesPick(undefined)
-    setGraphTab(false)
-    setCommit(undefined)
-    setCommitTab(undefined)
-    setTab('chat')
+  // Tabs belong to a workspace: while rendering, stash the old one's and restore the new one's when the workspace changes.
+  // Keyed by id, not directory: workspaces can share a checkout.
+  const [tabsWs, setTabsWs] = useState(sel.workspaceId)
+  const [savedTabs, setSavedTabs] = useState(
+    new Map<string | undefined, { tab: Tab; files: string[]; changesPick?: boolean; graphTab: boolean; graphPath?: string; commit?: string; commitTab?: string }>(),
+  )
+  if (tabsWs !== sel.workspaceId) {
+    setSavedTabs(new Map(savedTabs).set(tabsWs, { tab, files, changesPick, graphTab, graphPath, commit, commitTab }))
+    const s = savedTabs.get(sel.workspaceId)
+    setTabsWs(sel.workspaceId)
+    setFiles(s?.files ?? [])
+    setChangesPick(s?.changesPick)
+    setGraphTab(s?.graphTab ?? false)
+    setGraphPath(s?.graphPath)
+    setCommit(s?.commit)
+    setCommitTab(s?.commitTab)
+    setTab(s?.tab ?? 'chat')
   }
 
   const openFile = (path: string) => {
