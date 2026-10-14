@@ -565,9 +565,13 @@ function WorkspaceRow({
   const menuId = `workspace-menu-${w.id}`
   const archiveKey = useShortcut('archiveWorkspace')
   const readKey = useShortcut('toggleRead')
+  const pushKey = useShortcut('push')
   const archive = (deleteAgents: boolean) => onArchive(w, deleteAgents)
   const unread = agents.some((a) => a.requiresAttention)
   const pick = unreadPick(agents, w.id)
+  const git = w.gitRuntime
+  // A branch without an upstream was never pushed: its commits ahead of the base are unpushed.
+  const unpushed = git?.aheadOfOrigin ?? (git?.remoteUrl ? git.aheadBehind?.ahead : 0) ?? 0
   const [editing, setEditing] = useState(false)
   const saveName = (value: string) => {
     setEditing(false)
@@ -650,10 +654,29 @@ function WorkspaceRow({
         >
           <Archive size={11} strokeWidth={1.75} />
         </button>
+        {unpushed > 0 && !syncing && (
+          <button
+            className="icon-btn hover-swap"
+            title={`Push (${formatCombo(pushKey)})`}
+            onClick={(e) => {
+              e.stopPropagation()
+              onSync('push')
+            }}
+          >
+            <ArrowUpFromLine size={13} />
+          </button>
+        )}
         {syncing ? (
           <Loader2 size={13} className="spin muted status-mark" aria-label={syncing === 'pull' ? 'Pulling…' : 'Pushing…'} />
         ) : (
-          <StatusMark agents={agents} idle={pinned && <Pin size={11} strokeWidth={1.75} className="muted status-mark" aria-label="Pinned" />} />
+          <>
+            {unpushed > 0 && (
+              <ArrowUpFromLine size={13} className="muted status-mark">
+                <title>{`${unpushed} unpushed commit${unpushed > 1 ? 's' : ''}`}</title>
+              </ArrowUpFromLine>
+            )}
+            <StatusMark agents={agents} idle={pinned && <Pin size={11} strokeWidth={1.75} className="muted status-mark" aria-label="Pinned" />} />
+          </>
         )}
       </div>
       <div id={menuId} popover="auto" className="menu">
