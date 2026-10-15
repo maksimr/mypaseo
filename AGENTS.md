@@ -15,7 +15,11 @@
    `spin`), `styles/modal.css` (`modal-backdrop`), `styles/dialog.css` (`dialog`), plus two that sit in feature sheets
    because moving them would reorder the cascade: `text-btn` (`changes/changes.css`) and `banner`
    (`settings/settings.css`). Follow `doc/action-grid.md` and `doc/action-labels.md`.
-5. Run `npm run check` before finishing. Tests exist only for pure modules; `tsc` and `oxlint` are the real gate.
+5. Run `npm run check` before finishing: `tsc`, `oxlint`, `knip`, `jscpd` and the tests. Tests exist only for pure
+   modules; the rest are the real gate. `knip` (`knip.jsonc`) fails on unused files, exports, types and dependencies
+   and on circular imports: to share code between a component and its parts, move it to a third module (as
+   `settings/section.ts` and `settings/Row.tsx` do), don't import back. `jscpd` (`.jscpd.json`) fails on a copied block
+   of 75+ tokens (about 8 lines): import the original or move it to a shared module instead of copying it.
 6. No two modules in one folder may differ only in case (`review.ts` + `Review.tsx`): on macOS `./Review` resolves
    to `review.ts`.
 

@@ -1,7 +1,7 @@
 import type { DiffFile } from '../../daemon'
 
 type Hunk = DiffFile['hunks'][number]
-export type Row = Hunk['lines'][number] & { o: number | ''; n: number | '' }
+type Row = Hunk['lines'][number] & { o: number | ''; n: number | '' }
 /** A run of context rows, or a run of changed rows (a Zed "diff hunk"). `from`/`at`: 0-based index of the run in the old/new file. */
 export type Chunk = { change: boolean; from: number; at: number; rows: Row[] }
 

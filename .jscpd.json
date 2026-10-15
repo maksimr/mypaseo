@@ -1,0 +1,8 @@
+{
+  "path": ["src", "paseo-plugin"],
+  "format": ["typescript", "tsx", "css"],
+  "crossFormats": ["typescript,tsx"],
+  "minTokens": 75,
+  "exitCode": 1,
+  "noTips": true
+}

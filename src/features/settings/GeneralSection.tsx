@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { notificationsOn, notificationsSupported } from '../../notifications'
 import { useHost } from '../../store'
-import { Row, Toggle, anchor, matches, type SectionProps } from './Settings'
-
-export const GENERAL_GROUPS = ['Agents', 'Notifications'] as const
+import { Row, Toggle } from './Row'
+import { anchor, GENERAL_GROUPS, matches, type SectionProps } from './section'
 
 export function General({ config, patch, q }: SectionProps) {
   const [prompt, setPrompt] = useState(config.appendSystemPrompt)

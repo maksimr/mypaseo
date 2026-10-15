@@ -1,24 +1,23 @@
 import { ChevronDown, ChevronRight, Search, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useEscape } from '../../a11y'
-import { errorText, type DaemonClient, type DaemonConfig } from '../../daemon'
+import { errorText, type DaemonConfig } from '../../daemon'
 import { SHORTCUT_GROUPS } from '../../keymap'
 import { hostLabel, useDaemon, useHost, useHostId, useStore } from '../../store'
 import { HostSection } from './HostSection'
-import { General, GENERAL_GROUPS } from './GeneralSection'
+import { General } from './GeneralSection'
 import { Providers } from './ProvidersSection'
 import { Shortcuts } from './KeymapSection'
+import { anchor, GENERAL_GROUPS, type Patch } from './section'
 
 const SECTIONS = ['Host', 'General', 'Providers', 'Keymap'] as const
 export type Section = (typeof SECTIONS)[number]
-export const anchor = (...parts: string[]) => `settings-${parts.join('-')}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-')
 const toggled = <T,>(set: Set<T>, v: T, on = !set.has(v)) => {
   const next = new Set(set)
   if (on) next.add(v)
   else next.delete(v)
   return next
 }
-export type Patch = Parameters<DaemonClient['patchDaemonConfig']>[0]
 
 /** Settings of the context host's daemon, plus this browser's own (keymap, notifications, default agent). */
 export function Settings({ initialSection = 'General', onClose }: { initialSection?: Section; onClose: () => void }) {
@@ -125,28 +124,5 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
         </button>
       </div>
     </div>
-  )
-}
-
-export type SectionProps = { config: DaemonConfig; patch: (p: Patch) => Promise<void>; q: string }
-export const matches = (q: string, ...texts: (string | undefined)[]) => !q || texts.some((t) => t?.toLowerCase().includes(q))
-
-export function Row({ id, title, description, children }: { id?: string; title: string; description?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="setting-row" id={id}>
-      <div className="grow">
-        <div className="setting-title">{title}</div>
-        {description && <div className="setting-desc">{description}</div>}
-      </div>
-      <div className="setting-control">{children}</div>
-    </div>
-  )
-}
-
-export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
-  return (
-    <button role="switch" aria-checked={checked} aria-label={label} className="toggle" onClick={() => onChange(!checked)}>
-      <span />
-    </button>
   )
 }

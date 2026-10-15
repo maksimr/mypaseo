@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 
-export const isMac = navigator.userAgent.includes('Mac')
+const isMac = navigator.userAgent.includes('Mac')
 const mod = isMac ? 'Meta' : 'Ctrl'
 
 /** Settings lists shortcuts under these headings, in this order. */

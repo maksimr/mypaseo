@@ -16,7 +16,7 @@ import {
 } from './daemon'
 import { inOrder, moveId } from './order'
 
-export type ConnectionStatus = ReturnType<DaemonClient['getConnectionState']>['status']
+type ConnectionStatus = ReturnType<DaemonClient['getConnectionState']>['status']
 
 type HostState = {
   status: ConnectionStatus

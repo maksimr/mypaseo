@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { errorText } from '../../daemon'
 import { toWsUrl } from '../hosts/hostUrl'
 import { hostEndpoint, hostLabel, removeHost, updateHost, useHost, useHostId, useStore } from '../../store'
-import { Row, matches } from './Settings'
+import { Row } from './Row'
+import { matches } from './section'
 
 /** Saved in this browser, so it renders while the host is offline: that's when its address needs fixing. */
 export function HostSection({ q }: { q: string }) {

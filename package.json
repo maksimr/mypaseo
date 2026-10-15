@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "daemon": "paseo daemon run",
     "test": "node --test 'src/**/*.test.ts'",
-    "check": "tsc -b && oxlint && node --test 'src/**/*.test.ts'"
+    "knip": "knip",
+    "cpd": "jscpd",
+    "check": "tsc -b && oxlint && knip && jscpd --silent && node --test 'src/**/*.test.ts'"
   },
   "dependencies": {
     "@getpaseo/client": "^0.11.2",
@@ -30,6 +32,8 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "jscpd": "^5.4.1",
+    "knip": "^6.41.0",
     "oxlint": "^1.81.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"

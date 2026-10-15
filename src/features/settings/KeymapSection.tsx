@@ -1,7 +1,8 @@
 import { RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { SHORTCUTS, SHORTCUT_GROUPS, SHORTCUT_IDS, binding, comboOf, formatCombo, setShortcut, useShortcut, type ShortcutId } from '../../keymap'
-import { Row, anchor, matches } from './Settings'
+import { Row } from './Row'
+import { anchor, matches } from './section'
 
 export function Shortcuts({ q }: { q: string }) {
   const esc = matches(q, 'close dialog escape keyboard shortcuts keymap general')

@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { errorText, type DaemonConfig, type ProviderEntry } from '../../daemon'
 import { useDaemon, useHost } from '../../store'
 import { ProviderIcon } from '../../components/ProviderIcon'
-import { Toggle, anchor, matches, type SectionProps } from './Settings'
+import { Toggle } from './Row'
+import { anchor, matches, type SectionProps } from './section'
 
 type ProviderConfig = Record<string, unknown> & { enabled?: boolean; env?: Record<string, string>; command?: string[] }
 
