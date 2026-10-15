@@ -4,7 +4,7 @@
 1. One task → one feature folder under `src/features/`. Add files freely inside it. Two concurrent agents never get
    tasks in the same folder.
 2. Shared files are append-one-block: `App.tsx`, `keymap.ts`, `store.ts`, `daemon.ts`, `git.ts`, `styles/*.css`,
-   `index.css`. Insert inside your feature's existing group; never reorder or reformat. More than one block in shared
+   `index.css`, `.dependency-cruiser.cjs`. Insert inside your feature's existing group; never reorder or reformat. More than one block in shared
    files → do it in a serial step after the parallel work merges.
 3. A feature's shortcuts are handled in the feature's component with its own `window` `keydown` listener (as
    Changes, Chat, Sidebar, ReviewThread, Timeline already do). `App.tsx` handles only cross-feature ones (tabs,
@@ -15,11 +15,14 @@
    `spin`), `styles/modal.css` (`modal-backdrop`), `styles/dialog.css` (`dialog`), plus two that sit in feature sheets
    because moving them would reorder the cascade: `text-btn` (`changes/changes.css`) and `banner`
    (`settings/settings.css`). Follow `doc/action-grid.md` and `doc/action-labels.md`.
-5. Run `npm run check` before finishing: `tsc`, `oxlint`, `knip`, `jscpd` and the tests. Tests exist only for pure
+5. Run `npm run check` before finishing: `tsc`, `oxlint`, `knip`, `jscpd`, `depcruise` and the tests. Tests exist only for pure
    modules; the rest are the real gate. `knip` (`knip.jsonc`) fails on unused files, exports, types and dependencies
    and on circular imports: to share code between a component and its parts, move it to a third module (as
    `settings/section.ts` and `settings/Row.tsx` do), don't import back. `jscpd` (`.jscpd.json`) fails on a copied block
    of 75+ tokens (about 8 lines): import the original or move it to a shared module instead of copying it.
+   `depcruise` (`.dependency-cruiser.cjs`) enforces the import rules: a feature imports another only if `FEATURE_DEPS`
+   lists it; `src/*.ts` and `src/components/` never import a feature (only `App.tsx` composes them); our CSS loads only
+   through `index.css`; `src/` imports no Node built-ins outside tests; `src/` and `paseo-plugin/` never import each other.
 6. No two modules in one folder may differ only in case (`review.ts` + `Review.tsx`): on macOS `./Review` resolves
    to `review.ts`.
 

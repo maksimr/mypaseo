@@ -13,7 +13,7 @@ npm install
 npm run daemon   # official daemon, foreground, uses ~/.paseo (skip if Paseo desktop is already running)
 npm run dev      # Vite on :5173, proxies /ws -> 127.0.0.1:6767
 npm test         # node:test unit tests (src/**/*.test.ts)
-npm run check    # tsc, oxlint, knip (unused code, circular imports), jscpd (copy-paste) and the tests
+npm run check    # tsc, oxlint, knip (unused code, circular imports), jscpd (copy-paste), depcruise (import rules), tests
 ```
 
 Staging diff chunks, the Git Graph tab (top-right button of a git workspace) and a file's History button need the `mypaseo-git` daemon plugin in
