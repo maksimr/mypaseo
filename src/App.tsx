@@ -9,6 +9,7 @@ import { CommitDetails, CommitGraph } from './components/CommitGraph'
 import { FileTree, FileView } from './components/Files'
 import { ImportSession } from './components/ImportSession'
 import { OpenInEditor } from './components/OpenInEditor'
+import { GitGraphIcon } from './components/icons'
 import { ProviderIcon } from './components/ProviderIcon'
 import { Settings, type Section } from './components/Settings'
 import { Sidebar, type Selection } from './components/Sidebar'
@@ -28,16 +29,6 @@ import { totals, useCheckoutDiff, useCommitDiff } from './useCheckoutDiff'
 import { useTerminals } from './useTerminals'
 
 type Tab = 'chat' | 'changes' | 'graph' | 'commit' | `file:${string}` | `term:${string}`
-
-/** Zed's git graph glyph (lucide has none): a commit with a branch off to the right. Sized and stroked like lucide icons. */
-const GitGraphIcon = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
-    <circle cx="6" cy="6" r="3" />
-    <path d="M6 9v12" />
-    <circle cx="18" cy="15" r="3" />
-    <path d="M18 18v3M15 15h-4a5 5 0 0 1-5-5" />
-  </svg>
-)
 
 const MIN_W = 180
 const MAX_W = 600
