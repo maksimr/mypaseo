@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useEscape } from '../a11y'
 import { errorText, type Agent, type DaemonClient, type SessionEntry } from '../daemon'
 import { rememberAgent, useDaemon, useHost, useHostId } from '../store'
-import type { Target } from './Chat'
+import type { Target } from './target'
 
 type Listing = Awaited<ReturnType<DaemonClient['fetchRecentProviderSessions']>>
 

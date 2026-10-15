@@ -20,7 +20,7 @@ import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { useReview } from '../review'
 import { useDaemon } from '../store'
 import { split, totals, type DiffState } from '../useCheckoutDiff'
-import { Pick } from './Chat'
+import { Pick } from './Pick'
 import { Tokens } from './Code'
 import { CommentNav, ReviewThread } from './Review'
 
