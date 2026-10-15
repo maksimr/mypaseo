@@ -1,0 +1,182 @@
+/* Changes (multibuffer) */
+.status {
+  flex: none;
+  width: 14px;
+  font: 600 11px var(--mono);
+  text-align: center;
+}
+.s-A {
+  color: var(--green);
+}
+.s-D {
+  color: var(--red);
+}
+.s-M,
+.s-R {
+  color: var(--yellow);
+}
+.stat {
+  display: inline-flex;
+  gap: 6px;
+  font: 12px var(--mono);
+  flex: none;
+}
+.stat .add {
+  color: var(--green);
+}
+.stat .del {
+  color: var(--red);
+}
+.changes {
+  flex: 1;
+  overflow: auto;
+}
+.changes-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 38px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  /* Narrow panes scroll the toolbar itself instead of widening the whole diff view. */
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+.changes-toolbar .pick {
+  margin-left: 8px;
+}
+.changes-toolbar .sep {
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin: 0 6px;
+  background: var(--border);
+}
+/* Zed-style plain text action. */
+.text-btn {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.text-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+.excerpt {
+  border-bottom: 1px solid var(--border);
+}
+.excerpt-head {
+  position: sticky;
+  top: 38px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+  cursor: pointer;
+  user-select: none;
+}
+/* Zed-style file checkbox: dark box, accent check. */
+.check {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--accent);
+}
+.check:hover {
+  border-color: var(--text-faint);
+}
+.excerpt-name {
+  font-weight: 600;
+  flex: none;
+}
+/* Soft wrap, not a horizontal scroller: a scroll container here would stop .chunk-actions sticking to the view. */
+.hunks {
+  padding: 4px 0;
+  font: 12.5px/1.6 var(--mono);
+}
+.dl {
+  display: flex;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border-left: 3px solid transparent;
+}
+.dl .ln {
+  width: 5.5ch;
+}
+.dl .dc {
+  min-width: 0;
+  padding: 0 24px 0 12px;
+}
+.dl.add {
+  background: var(--add-bg);
+  border-left-color: var(--green);
+}
+.dl.remove {
+  background: var(--del-bg);
+  border-left-color: var(--red);
+}
+/* Zed-style tab over the chunk's first line (negative margin: takes no space). It sticks under the file header:
+   top = toolbar 38px + .excerpt-head 34px. */
+.chunk-actions {
+  position: sticky;
+  top: 72px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  height: 30px;
+  margin: 0 8px -30px auto;
+  padding: 0 4px;
+  border-radius: 0 0 8px 8px;
+  background: var(--bg-panel);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  font: 13px var(--sans);
+  opacity: 0;
+}
+.chunk:is(:hover, :focus-within) .chunk-actions {
+  opacity: 1;
+}
+.chunk {
+  scroll-margin-top: 72px;
+}
+/* Staged chunks are hollow, like Zed: hairlines above and below, a faint fill and colored line numbers instead of the gutter bar. */
+.chunk.staged {
+  border-block: 0.5px solid color-mix(in srgb, var(--green) 60%, transparent);
+}
+.chunk.staged:not(:has(.add)) {
+  border-color: color-mix(in srgb, var(--red) 60%, transparent);
+}
+.chunk.staged .dl {
+  border-left-color: transparent;
+}
+.chunk.staged .dl.add {
+  background: rgba(161, 193, 129, 0.06);
+}
+.chunk.staged .dl.remove {
+  background: rgba(224, 108, 117, 0.06);
+}
+.chunk.staged .add .ln {
+  color: var(--green);
+}
+.chunk.staged .remove .ln {
+  color: var(--red);
+}
+.hunk-sep {
+  height: 1px;
+  margin: 6px 0;
+  background: repeating-linear-gradient(90deg, var(--border-strong) 0 4px, transparent 4px 8px);
+}

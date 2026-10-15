@@ -1,0 +1,75 @@
+/* Sidebar & tree rows */
+.row.workspace {
+  padding-left: 14px;
+}
+.row.workspace:has(.workspace-branch) {
+  height: auto;
+  padding-block: 4px;
+  align-items: flex-start;
+}
+/* Chevron, actions and status mark center on the title line, not the whole two-line row. */
+.row.workspace:has(.workspace-branch) > :not(.workspace-label) {
+  position: relative;
+  top: 0.5lh;
+  translate: 0 -50%;
+}
+.workspace-label {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+/* Edits the name in place: same line height, and the text stays where the name was. */
+.rename-input {
+  min-width: 0;
+  margin: 0 -4px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 4px;
+  outline: 1px solid var(--accent);
+  background: var(--bg-panel);
+  user-select: text;
+}
+.workspace-branch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+.workspace-branch svg {
+  flex: none;
+}
+/* Keeps the 18px button in the 11px branch icon's slot, so the swap doesn't grow the line or shift the name. */
+.workspace-branch .icon-btn {
+  margin: -4px -3.5px;
+}
+.row.agent {
+  padding-left: 40px;
+  color: var(--text-muted);
+}
+.row.agent.active {
+  color: var(--text);
+}
+.chevron {
+  display: inline-flex;
+  width: 14px;
+  color: var(--text-muted);
+  flex: none;
+}
+.chev {
+  color: var(--text-muted);
+  flex: none;
+  transition: transform 0.1s;
+}
+.panel-root {
+  font-weight: 500;
+}
+.sidebar-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 8px 0 14px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}

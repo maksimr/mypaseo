@@ -1,0 +1,161 @@
+/* Git graph: one svg draws every lane under the rows' empty first column. */
+.graph {
+  flex: 1;
+  overflow: auto;
+}
+.graph-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 38px;
+  padding: 0 12px;
+}
+/* Narrow, so Aa and the prev/next pair read as one control. */
+.graph-toolbar .icon-btn {
+  width: 20px;
+}
+.graph-toolbar .input {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.graph-count {
+  margin: 0 8px;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+.graph-row {
+  display: grid;
+  grid-template-columns: var(--graph-w) minmax(0, 1fr) var(--date-w) var(--author-w) var(--sha-w);
+  align-items: center;
+  column-gap: 12px;
+  height: 28px; /* ROW in CommitGraph.tsx */
+  padding-right: 12px;
+  white-space: nowrap;
+  scroll-margin-top: 66px; /* under the sticky toolbar and header */
+}
+.graph-head {
+  position: sticky;
+  top: 38px;
+  z-index: 2;
+  padding-left: 12px;
+  grid-template-columns: calc(var(--graph-w) - 12px) minmax(0, 1fr) var(--date-w) var(--author-w) var(--sha-w);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+}
+/* Absolute in the sticky header, placed by grid-column at the start of its column: the middle of the 12px gap. */
+.graph-resizer {
+  left: -9px;
+}
+.graph-body {
+  position: relative;
+}
+.graph-body .graph-row:hover {
+  background: var(--bg-hover);
+}
+.graph-row.match {
+  background: rgba(222, 193, 132, 0.1);
+}
+.graph-row.current,
+.graph-body .graph-row.current:hover {
+  background: rgba(222, 193, 132, 0.22);
+}
+.graph-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--graph-w);
+  pointer-events: none;
+}
+.graph-lines path {
+  fill: none;
+  stroke-width: 2;
+}
+.graph-desc {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden; /* long refs stop at the column edge */
+}
+.graph-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  padding: 0 5px;
+  border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  font: 12px/18px var(--mono);
+}
+.graph-body .graph-row {
+  cursor: pointer;
+}
+.graph-row.selected,
+.graph-body .graph-row.selected:hover {
+  background: var(--bg-active);
+}
+/* Phones: graph and description only; date, author and sha show in the picked commit's details.
+   Hides the 3rd-5th cells and, in the header, their resizers (7th-9th; the 6th resizes the graph). */
+@media (width < 600px) {
+  .graph-row {
+    grid-template-columns: var(--graph-w) minmax(0, 1fr);
+  }
+  .graph-head {
+    grid-template-columns: calc(var(--graph-w) - 12px) minmax(0, 1fr);
+  }
+  .graph-row > :nth-child(n + 3):not(:nth-child(6)) {
+    display: none;
+  }
+}
+
+/* Commit picked in the git graph, in the panel. */
+.commit-author {
+  padding: 14px 12px 10px;
+  color: var(--text-faint);
+  font-size: 12px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.commit-author-name {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.commit-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 12px 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.commit-meta > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.commit-meta svg {
+  flex: none;
+  color: var(--text-faint);
+}
+.commit-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  margin-bottom: 4px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.commit-text .muted {
+  color: var(--text-faint);
+}

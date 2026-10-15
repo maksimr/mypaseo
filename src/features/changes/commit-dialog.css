@@ -1,0 +1,80 @@
+/* Commit dialog */
+.commit-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(640px, 92vw);
+  border-radius: 10px;
+  background: var(--bg-panel);
+  /* Zed's double frame: a lighter ring around the card. */
+  box-shadow: 0 0 0 7px var(--bg-elev), 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.commit-message {
+  padding: 14px 16px;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: none;
+  font: 13px/1.6 var(--mono);
+}
+.commit-message::placeholder {
+  color: var(--text-faint);
+}
+.commit-error {
+  max-height: 30vh;
+  overflow: auto;
+  padding: 0 16px 6px;
+  font-size: 12px;
+}
+.commit-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 10px 16px;
+}
+.commit-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.commit-foot .text-btn,
+.dialog-actions .text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+}
+.split-btn {
+  display: inline-flex;
+  height: 26px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.split-btn button {
+  padding: 0 10px;
+}
+.split-btn button + button {
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+  border-left: 1px solid var(--border-strong);
+}
+.open-in {
+  flex: none;
+}
+.open-in button:first-child {
+  padding: 4px;
+}
+.open-in img,
+#editor-menu img {
+  display: block;
+}
+#editor-menu button {
+  text-align: left;
+}
+.split-btn button:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+.menu kbd {
+  margin-left: 16px;
+}

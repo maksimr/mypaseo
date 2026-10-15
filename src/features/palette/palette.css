@@ -1,0 +1,40 @@
+/* Command palette: pinned near the top so filtering doesn't move the input. */
+.palette-backdrop {
+  align-items: flex-start;
+  padding-top: 12vh;
+}
+.dialog.palette {
+  width: min(560px, 92vw);
+  max-height: 60vh;
+}
+.palette-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  padding-right: 10px;
+}
+.palette-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 12px 16px;
+  outline: none;
+  font-size: 15px;
+}
+.palette-input::placeholder {
+  color: var(--text-faint);
+}
+.palette-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 18px 14px;
+}

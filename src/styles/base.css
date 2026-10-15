@@ -1,0 +1,426 @@
+/* Dark, Zed-like palette (One Dark). */
+:root {
+  --bg: #23252b;
+  --bg-panel: #1f2125;
+  --bg-elev: #2a2c33;
+  --bg-hover: #2c2f36;
+  --bg-active: #33363e;
+  --bg-input: #17191c;
+  --border: #33363d;
+  --border-strong: #43464f;
+  --text: #dce0e5;
+  --text-muted: #9097a1;
+  --text-faint: #646a74;
+  --accent: #74ade8;
+  --green: #a1c181;
+  --red: #e06c75;
+  --yellow: #dec184;
+  --add-bg: rgba(161, 193, 129, 0.12);
+  --del-bg: rgba(224, 108, 117, 0.13);
+  --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'Zed Mono', 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+
+  color-scheme: dark;
+  font: 13px/1.5 var(--sans);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+/* The page never scrolls (panes do), so no rubber-band bounce either. */
+html {
+  overscroll-behavior: none;
+}
+body {
+  margin: 0;
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+h2 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Helpers */
+.grow {
+  flex: 1;
+}
+.min0 {
+  min-width: 0;
+}
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.muted {
+  color: var(--text-muted);
+}
+.faint {
+  color: var(--text-faint);
+}
+.err {
+  color: var(--red);
+}
+.pre-wrap {
+  white-space: pre-wrap;
+}
+.rot90 {
+  transform: rotate(90deg);
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.empty {
+  padding: 12px 16px;
+  color: var(--text-muted);
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--text-faint);
+}
+.dot.connected {
+  background: var(--green);
+}
+.dot.connecting {
+  background: var(--yellow);
+}
+.dot.disconnected,
+.dot.failed {
+  background: var(--red);
+}
+.dot.attention {
+  background: var(--accent);
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  color: var(--text-muted);
+  flex: none;
+}
+.icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.icon-btn.on {
+  color: var(--accent);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 5px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elev);
+  font-size: 12px;
+}
+.btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+.btn.primary {
+  background: #3b5a85;
+  border-color: #4a6c9b;
+}
+.btn.danger {
+  border-color: #7a3b40;
+  color: var(--red);
+}
+.btn.ghost {
+  border-color: transparent;
+  background: none;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+.input {
+  width: 100%;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  padding: 5px 8px;
+  outline: none;
+  resize: vertical;
+}
+.input:focus {
+  border-color: var(--accent);
+}
+.mono,
+code.inline {
+  font-family: var(--mono);
+}
+code.inline {
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-elev);
+}
+
+/* Layout */
+.app {
+  --sidebar-w: 270px;
+  --panel-w: 320px;
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  height: 100svh;
+}
+.app.with-panel {
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--panel-w);
+}
+/* The sidebar stays mounted while hidden so its collapsed rows survive. */
+.app.no-sidebar {
+  grid-template-columns: minmax(0, 1fr);
+}
+.app.no-sidebar.with-panel {
+  grid-template-columns: minmax(0, 1fr) var(--panel-w);
+}
+/* Out of the grid flow, centered on the pane border. */
+.resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  z-index: 5;
+  cursor: col-resize;
+  touch-action: none;
+}
+.resizer.left {
+  left: calc(var(--sidebar-w) - 3px);
+}
+.resizer.right {
+  right: calc(var(--panel-w) - 3px);
+}
+.resizer:hover,
+.resizer:active,
+.resizer:focus-visible {
+  outline: none;
+  background: linear-gradient(var(--accent), var(--accent)) center / 2px 100% no-repeat;
+}
+.app.no-sidebar .sidebar {
+  display: none;
+}
+
+/* Panes, tree rows, menus (shared) */
+.sidebar,
+.panel {
+  background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.sidebar {
+  border-right: 1px solid var(--border);
+}
+.panel {
+  border-left: 1px solid var(--border);
+}
+.sidebar-head,
+.panel-tabs,
+.tabbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 38px;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+.panel-tabs {
+  padding-left: 6px;
+  container-type: inline-size;
+}
+/* All four labels need ~372px; narrower, only the open tab keeps its label, the rest show icons (named by title). */
+@container (width < 372px) {
+  .panel-tabs:has(> :nth-child(4)) .panel-tab:not(.on) .truncate {
+    display: none;
+  }
+}
+/* Sidebar/panel toggles stay pinned to the window corners; the bars under them make room. */
+.corner {
+  position: absolute;
+  top: 6.5px;
+  z-index: 6;
+}
+.corner.left {
+  left: 8px;
+}
+.corner.right {
+  right: 8px;
+}
+/* The X, shown on phones for the open pane. */
+.corner > :last-child {
+  display: none;
+}
+.sidebar-head,
+.app.no-sidebar .tabbar {
+  padding-left: 36px;
+}
+.panel-tabs,
+.app:not(.with-panel) .tabbar {
+  padding-right: 36px;
+}
+.panel-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 6px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  min-width: 0; /* shrink and ellipsize labels so the tabs never run under the corner toggle */
+}
+.panel-tab svg {
+  flex: none;
+}
+.panel-tab:hover {
+  color: var(--text);
+}
+.panel-tab.on {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.section-label {
+  flex: 1;
+  color: var(--text-muted);
+}
+.tree,
+.file-tree,
+.changes-list {
+  flex: 1;
+  overflow: auto;
+  padding: 4px 0;
+}
+/* The project being dragged, at the place it would drop. */
+.tree .dragging {
+  opacity: 0.5;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 8px 0 12px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.row:hover {
+  background: var(--bg-hover);
+}
+.row.active {
+  background: var(--bg-active);
+}
+.row .hover-only,
+.sidebar-head .hover-only {
+  visibility: hidden;
+}
+.sidebar:hover .sidebar-head .hover-only,
+.sidebar-head:focus-within .hover-only {
+  visibility: visible;
+}
+.row:hover .hover-only {
+  visibility: visible;
+}
+.row:has(+ .menu:popover-open) .hover-only {
+  visibility: visible;
+}
+/* Actions take the status mark's slot on hover, so the mark always sits at the right edge. */
+/* Action grid, see doc/action-grid.md: marks and actions share a 13px slot; negative margins give buttons an 18px hit area. */
+.dot.status-mark {
+  margin-inline: 3px;
+}
+.row .icon-btn {
+  width: 18px;
+  height: 18px;
+  margin-inline: -2.5px;
+}
+.row .icon-btn + .icon-btn {
+  margin-left: -4.5px; /* centers 18px apart: buttons touch without overlapping */
+}
+.row .hover-swap {
+  display: none;
+}
+/* Hover devices only: on iOS a tap that reveals buttons through :hover counts as a hover, not a click. Touch: see the end. */
+@media (hover: hover) {
+  .row:is(:hover, :focus-within) .hover-swap,
+  .row:has(+ .menu:popover-open) .hover-swap {
+    display: inline-flex;
+  }
+  .row:is(:hover, :focus-within) .hover-swap ~ .status-mark,
+  .row:has(+ .menu:popover-open) .hover-swap ~ .status-mark {
+    display: none;
+  }
+}
+.menu {
+  inset: auto;
+  margin: 0;
+  min-width: 170px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg-elev);
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 4px;
+}
+.menu button:hover {
+  background: var(--bg-hover);
+}
+.menu button.danger {
+  color: var(--red);
+}

@@ -1,0 +1,79 @@
+/* Code */
+.code {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-panel);
+  font: 12.5px/1.55 var(--mono);
+  overflow-x: auto;
+}
+.code-line {
+  display: flex;
+  white-space: pre;
+}
+.code.numbered {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  padding: 8px 0;
+  margin: 0;
+}
+.code .ln,
+.dl .ln {
+  flex: none;
+  width: 5ch;
+  padding-right: 1.5ch;
+  text-align: right;
+  color: var(--text-faint);
+  user-select: none;
+}
+.code .lc {
+  padding-right: 16px;
+}
+.tk-keyword {
+  color: #b477cf;
+}
+.tk-comment,
+.tk-meta {
+  color: #5d636f;
+  font-style: italic;
+}
+.tk-string,
+.tk-regexp {
+  color: #a1c181;
+}
+.tk-number,
+.tk-literal {
+  color: #bf956a;
+}
+.tk-function,
+.tk-definition {
+  color: #73ade9;
+}
+.tk-class,
+.tk-type {
+  color: #6eb4bf;
+}
+.tk-tag,
+.tk-heading {
+  color: #e06c75;
+}
+.tk-attribute,
+.tk-property {
+  color: #d07277;
+}
+.tk-variable {
+  color: #dce0e5;
+}
+.tk-operator,
+.tk-escape {
+  color: #6eb4bf;
+}
+.tk-punctuation {
+  color: #acb2be;
+}
+.tk-link {
+  color: #74ade8;
+  text-decoration: underline;
+}

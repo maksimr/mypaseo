@@ -1,0 +1,24 @@
+/* Hosts */
+.host-menu {
+  min-width: 240px;
+  max-width: 340px;
+}
+/* The address takes what the name leaves and truncates first. */
+.host-addr {
+  flex: 1 1 0;
+  font-size: 12px;
+}
+.host-badge {
+  max-width: 40%;
+  font-size: 11px;
+}
+.host-password {
+  flex: 0 0 170px;
+}
+.setting-control:has([name='hostUrl']) {
+  flex: 1;
+}
+.settings-host {
+  margin: -4px 4px 8px;
+  font-size: 12px;
+}

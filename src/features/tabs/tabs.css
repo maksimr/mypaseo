@@ -1,0 +1,144 @@
+/* Center */
+.center {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+/* The tab views share one cell, so a hidden one keeps the shown one's size and lays out the same when it's back. */
+.views {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+}
+.view {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+/* Unlike display: none, this keeps the hidden view's rendering state, its scroll positions included. */
+.view[inert] {
+  content-visibility: hidden;
+}
+@supports not (content-visibility: hidden) {
+  .view[inert] {
+    display: none;
+  }
+}
+.tabbar {
+  padding: 0 8px 0 4px;
+}
+/* Only the tabs scroll, so the Open in Editor button stays at the bar's end. */
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  align-self: stretch; /* full bar height, as when the bar itself scrolled */
+  min-width: 0;
+  overflow-x: auto;
+  /* Also the phone tab list popover (see the end): undo the UA popover box everywhere else. */
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+}
+.tab-list-btn {
+  display: none;
+}
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  max-width: 260px;
+  padding: 0 10px;
+  border-radius: 5px;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex: none;
+}
+.tab .stat {
+  gap: 2px;
+  margin-left: 3px;
+  font-size: 10px;
+  line-height: 1;
+}
+.agent-tab {
+  max-width: none;
+  flex: 0 1 auto;
+  min-width: 80px;
+}
+.tab:hover {
+  background: var(--bg-hover);
+}
+.tab.on {
+  background: var(--bg-active);
+  color: var(--text);
+}
+/* The X glyph has ~3px of empty box around it: line its edge up with the 10px padding. */
+.tab:has(.tab-close) {
+  padding-right: 7px;
+}
+.tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px; /* the status mark's slot, so swapping them doesn't resize the tab */
+  height: 13px;
+  border-radius: 3px;
+  color: var(--text-faint);
+}
+/* Agent tabs: a running spinner holds the close button's slot until hover (like .row .hover-swap). Touch shows both. */
+@media (hover: hover) {
+  .tab:has(.status-mark):not(:hover, :focus-within) .hover-swap,
+  .tab:is(:hover, :focus-within) .hover-swap ~ .status-mark {
+    display: none;
+  }
+}
+.tab-close:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+.badge {
+  font-size: 11px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--bg-elev);
+  color: var(--text-muted);
+}
+.setup-cmd {
+  max-width: 100%;
+  margin: 6px 0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--bg-elev);
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: all;
+}
+.empty-chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 40px;
+}
+
+/* xterm fits its grid to this box, padding excluded. */
+.term-view {
+  flex: 1;
+  min-height: 0;
+  padding: 6px 0 0 12px;
+  overflow: hidden;
+}

@@ -1,0 +1,329 @@
+/* Settings */
+.settings {
+  position: relative;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  width: min(1000px, 92vw);
+  height: min(760px, 88vh);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 10px;
+  border-right: 1px solid var(--border);
+  background: var(--bg-panel);
+  overflow-y: auto;
+}
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  margin-bottom: 10px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-muted);
+}
+/* Header-strip inputs: a darker band with only a bottom border. */
+.settings-nav .search,
+.palette-head,
+.graph-toolbar {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--bg-input);
+}
+/* Like .sidebar-head, bleeding over the nav padding. */
+.settings-nav .search {
+  flex: none; /* a fixed-height flex item shrinks once the nav overflows */
+  height: 38px;
+  margin: -14px -10px 10px;
+  padding: 0 12px;
+}
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 4px;
+  border-radius: 5px;
+  font-size: 14px;
+}
+.nav-item:hover {
+  background: var(--bg-hover);
+}
+.nav-item.active {
+  background: var(--bg-active);
+}
+.nav-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+.nav-chevron:hover {
+  color: var(--text);
+}
+.nav-label {
+  flex: 1;
+  height: 100%;
+  padding-left: 6px;
+  text-align: left;
+}
+.nav-children {
+  display: flex;
+  flex-direction: column;
+  margin: 2px 0 6px 15px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border-strong);
+}
+.nav-child {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav-child:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.settings-group,
+.provider,
+.setting-row {
+  scroll-margin-top: 16px;
+}
+.settings-body {
+  position: relative;
+  overflow-y: auto;
+  /* h2 is as tall as .settings-nav .search, so search, title and close share a center line. */
+  padding: 0 40px 40px;
+}
+.close {
+  position: absolute;
+  top: 7px; /* (38 - 24) / 2 */
+  right: 14px;
+}
+.settings-section + .settings-section {
+  margin-top: 40px;
+}
+.settings-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  margin: 0 32px 16px 0;
+}
+.group-label {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--mono);
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 0;
+}
+.provider .setting-row {
+  gap: 10px;
+}
+.setting-title {
+  font-size: 14px;
+}
+.setting-desc {
+  margin-top: 2px;
+  color: var(--text-muted);
+  max-width: 560px;
+}
+.setting-control {
+  flex: none;
+  max-width: 50%;
+}
+.setting-selects {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+/* textarea goes under the text so it never overflows narrow/zoomed screens */
+.setting-row:has(textarea) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+.setting-row:has(textarea) .setting-control {
+  max-width: none;
+}
+.banner {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--del-bg);
+}
+.toggle {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--bg-active);
+  transition: background 0.15s;
+}
+.toggle span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 0.15s;
+}
+.toggle[aria-checked='true'] {
+  background: #3b5a85;
+}
+.toggle[aria-checked='true'] span {
+  transform: translateX(14px);
+  background: #e8eef6;
+}
+.pill {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 9px;
+  font-size: 11px;
+  vertical-align: 1px;
+  background: var(--bg-elev);
+  color: var(--text-muted);
+}
+.pill.ready {
+  color: var(--green);
+}
+.pill.error {
+  color: var(--red);
+}
+.pill.loading {
+  color: var(--yellow);
+}
+.provider-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* chevron 24 + gap 10 + icon 18 + gap 10: aligns with the provider name */
+  padding: 0 0 18px 62px;
+}
+.field-label {
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.chip {
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: var(--bg-elev);
+  font-size: 12px;
+}
+.env-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr auto;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.provider-actions {
+  display: flex;
+  gap: 6px;
+}
+.row:focus-within .hover-only {
+  visibility: visible;
+}
+.settings-group + .settings-group {
+  margin-top: 32px;
+}
+.keymap-hint {
+  margin: -12px 0 24px;
+}
+kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--bg-panel);
+  font: 12px var(--mono);
+}
+.shortcut {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn.recording {
+  border-color: var(--accent);
+  color: var(--text-muted);
+}
+/* Phones: Settings fills the screen, the nav becomes a strip of section tabs above the body,
+   and inputs go under their text like the textarea row. */
+@media (width < 600px) {
+  .settings {
+    width: 100%;
+    height: 100%;
+    grid-template-columns: none;
+    grid-template-rows: auto 1fr;
+    border: 0;
+    border-radius: 0;
+  }
+  .settings-nav {
+    flex-flow: row wrap;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-nav .search {
+    flex: 0 0 calc(100% + 20px); /* full width over the nav padding */
+    padding-right: 44px; /* clear of the close button */
+  }
+  .settings-host {
+    flex-basis: 100%;
+  }
+  .nav-chevron,
+  .nav-children {
+    display: none;
+  }
+  .nav-label {
+    padding: 0 8px;
+  }
+  .settings-body {
+    padding: 0 16px 24px;
+  }
+  .setting-row:has(.input) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .setting-row:has(.input) .setting-control {
+    max-width: none;
+  }
+  .setting-selects {
+    justify-content: flex-start;
+  }
+  .provider-body {
+    padding-left: 0;
+  }
+}

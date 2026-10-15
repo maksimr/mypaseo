@@ -1,0 +1,113 @@
+/* Add-to-chat button in the gutter beside the last selected line. */
+/* Review comments and their editor under a line of a diff or file view, like Paseo desktop's.
+   Sticky: a file view scrolls sideways, the thread stays in view. */
+/* The comment icon; hovering swaps it for the previous (top) and next (bottom) arrows. No hover: the arrows stay beside it. */
+.comment-nav {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.comment-arrows {
+  display: flex;
+  flex-direction: column;
+}
+.comment-nav .icon-btn {
+  width: 14px;
+  height: 12px;
+  margin: 0;
+}
+@media (hover: hover) {
+  .comment-arrows {
+    position: absolute;
+    visibility: hidden;
+  }
+  .comment-nav:hover > svg {
+    visibility: hidden;
+  }
+  .comment-nav:hover .comment-arrows {
+    visibility: visible;
+  }
+}
+.review-thread {
+  position: sticky;
+  left: 0;
+  border-top: 1px solid var(--border);
+  font: 13px/1.45 var(--sans);
+  white-space: normal;
+}
+/* Zed-like edge-to-edge rows: the comment or its input, then actions; the left bar continues the line's add/remove stripe. */
+.review-comment,
+.review-editor {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  background: var(--bg-input);
+}
+.dl.add + .review-thread > * {
+  border-left-color: var(--green);
+}
+.dl.remove + .review-thread > * {
+  border-left-color: var(--red);
+}
+.review-comment {
+  background: #2b3a4b;
+}
+.review-thread > * > svg {
+  flex: none;
+  margin-top: 3px; /* centers 13px in the first ~19px line */
+  color: var(--text-muted);
+}
+/* Actions sit on the first text line (24px button in a ~19px line); comment actions show on hover, touch: see the end. */
+.review-thread .icon-btn {
+  margin-block: -3px;
+}
+.review-comment .icon-btn {
+  visibility: hidden;
+}
+.review-thread .icon-btn + .icon-btn {
+  margin-left: -8px; /* cancels the row gap */
+}
+.review-comment:is(:hover, :focus-within) .icon-btn {
+  visibility: visible;
+}
+.review-comment .danger {
+  color: var(--red);
+}
+.review-editor textarea {
+  flex: 1;
+  min-width: 0;
+  field-sizing: content;
+  max-height: 40vh;
+  padding: 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+}
+.review-editor textarea::placeholder {
+  color: var(--text-faint);
+}
+
+.selection-action {
+  position: fixed;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  transform: translate(11.5px, -50%); /* icon centered over the thread's: 3px bar + 12px padding + 6.5px half icon - 10px half button */
+  border: 0;
+  border-radius: 5px;
+  background: var(--bg-hover);
+  color: var(--accent);
+  cursor: pointer;
+}
