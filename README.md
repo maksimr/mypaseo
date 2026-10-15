@@ -12,11 +12,12 @@ each gets a fresh folder in `~/.paseo/scratches`, which the daemon lists as one 
 npm install
 npm run daemon   # official daemon, foreground, uses ~/.paseo (skip if Paseo desktop is already running)
 npm run dev      # Vite on :5173, proxies /ws -> 127.0.0.1:6767
-npm test         # node:test unit tests (src/*.test.ts)
+npm test         # node:test unit tests (src/**/*.test.ts)
+npm run check    # tsc, oxlint and the tests: run before finishing a change
 ```
 
 Staging diff chunks, the Git Graph tab (top-right button of a git workspace) and a file's History button need the `mypaseo-git` daemon plugin in
-[paseo-plugin/](paseo-plugin/), since the daemon has no git index or log API. One-time setup per machine, no checkout
+[paseo-plugin/](paseo-plugin/) (its only client is `src/git.ts`), since the daemon has no git index or log API. One-time setup per machine, no checkout
 needed: the daemon clones it from GitHub (Stage stays hidden without it):
 
 ```bash

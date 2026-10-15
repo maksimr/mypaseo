@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "daemon": "paseo daemon run",
-    "test": "node --test src/*.test.ts"
+    "test": "node --test 'src/**/*.test.ts'",
+    "check": "tsc -b && oxlint && node --test 'src/**/*.test.ts'"
   },
   "dependencies": {
     "@getpaseo/client": "^0.11.2",
