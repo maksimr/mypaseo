@@ -3,72 +3,78 @@ import { useSyncExternalStore } from 'react'
 export const isMac = navigator.userAgent.includes('Mac')
 const mod = isMac ? 'Meta' : 'Ctrl'
 
+/** Settings lists shortcuts under these headings, in this order. */
+const GROUPS = ['General', 'Tabs', 'Workspaces', 'Chat', 'Git'] as const
+type Shortcut = { group: (typeof GROUPS)[number]; label: string; description: string; default: string }
+
 /** Remappable shortcuts. A combo is modifiers in Ctrl, Alt, Shift, Meta order plus a KeyboardEvent.code, e.g. "Meta+KeyB". */
 export const SHORTCUTS = {
-  commandPalette: { label: 'Command Palette', description: 'Search and run a command.', default: `${mod}+KeyK` },
-  toggleSidebar: { label: 'Toggle Sidebar', description: 'Show or hide the project sidebar.', default: `${mod}+KeyB` },
-  togglePanel: { label: 'Toggle File Panel', description: 'Show or hide the right panel with files and changes.', default: `${mod}+KeyE` },
-  nextTab: { label: 'Next Tab', description: 'Go to the next tab of the current workspace: agents, terminals, changes, git graph, open files.', default: 'Ctrl+Shift+BracketRight' },
-  prevTab: { label: 'Previous Tab', description: 'Go to the previous tab of the current workspace.', default: 'Ctrl+Shift+BracketLeft' },
-  // VS Code's Source Control binding; H for history.
-  openChanges: { label: 'Open Changes', description: 'Open the uncommitted changes of the current workspace.', default: 'Ctrl+Shift+KeyG' },
-  openGraph: { label: 'Open Git Graph', description: 'Open the commit graph of the current workspace.', default: 'Ctrl+Shift+KeyH' },
+  // General
+  commandPalette: { group: 'General', label: 'Command Palette', description: 'Search and run a command.', default: `${mod}+KeyK` },
+  // Ctrl on Mac too: Safari keeps ⌘, and ⇧⌘, for itself and never passes them to the page.
+  openSettings: { group: 'General', label: 'Open Settings', description: 'Open this settings window.', default: 'Ctrl+Comma' },
+  toggleSidebar: { group: 'General', label: 'Toggle Sidebar', description: 'Show or hide the project sidebar.', default: `${mod}+KeyB` },
+  togglePanel: { group: 'General', label: 'Toggle File Panel', description: 'Show or hide the right panel with files and changes.', default: `${mod}+KeyE` },
+  addProject: { group: 'General', label: 'Add Project', description: 'Add a project directory to the sidebar.', default: 'Ctrl+KeyO' },
+
+  // Tabs
+  nextTab: { group: 'Tabs', label: 'Next Tab', description: 'Go to the next tab of the current workspace: agents, terminals, changes, git graph, open files.', default: 'Ctrl+Shift+BracketRight' },
+  prevTab: { group: 'Tabs', label: 'Previous Tab', description: 'Go to the previous tab of the current workspace.', default: 'Ctrl+Shift+BracketLeft' },
   // Ctrl on Mac too: ⌘W closes the browser tab. Off Mac, Chrome keeps Ctrl+W for itself outside an installed app window.
   // Id kept as closeAgent so saved rebindings still apply.
-  closeAgent: { label: 'Close Tab', description: 'Close the open tab. On a chat tab, archive its agent.', default: 'Ctrl+KeyW' },
-  // Browsers keep ⌘N / Ctrl+N (new window) for themselves.
-  newWorkspace: { label: 'New Workspace', description: 'Start a new workspace in the current project.', default: isMac ? 'Ctrl+KeyN' : 'Alt+KeyN' },
-  newScratch: { label: 'New Scratch', description: 'Start a workspace in a fresh folder, outside your projects.', default: `${mod}+Semicolon` },
+  closeAgent: { group: 'Tabs', label: 'Close Tab', description: 'Close the open tab. On a chat tab, archive its agent.', default: 'Ctrl+KeyW' },
   // Ctrl on Mac too, as asked. Off Mac, Chrome keeps Ctrl+Shift+N (incognito) outside an installed app window.
-  newAgent: { label: 'New Agent', description: 'Open the new agent composer in the selected workspace.', default: 'Ctrl+Shift+KeyN' },
+  newAgent: { group: 'Tabs', label: 'New Agent', description: 'Open the new agent composer in the selected workspace.', default: 'Ctrl+Shift+KeyN' },
   // Paseo desktop's binding, Ctrl on Mac too: browsers keep ⌘⇧T (reopen tab). Off Mac, Chrome keeps Ctrl+Shift+T outside an installed app window.
-  newTerminal: { label: 'New Terminal', description: 'Open a terminal in the selected workspace.', default: 'Ctrl+Shift+KeyT' },
-  nextWorkspace: { label: 'Next Workspace', description: 'Go to the workspace below in the sidebar.', default: 'Ctrl+BracketRight' },
-  prevWorkspace: { label: 'Previous Workspace', description: 'Go to the workspace above in the sidebar.', default: 'Ctrl+BracketLeft' },
-  prevHunk: { label: 'Go to Previous Hunk', description: 'Scroll the diff view to the previous change.', default: 'Alt+Shift+ArrowUp' },
-  nextHunk: { label: 'Go to Next Hunk', description: 'Scroll the diff view to the next change.', default: 'Alt+Shift+ArrowDown' },
-  // VS Code's binding.
-  prevComment: { label: 'Go to Previous Comment', description: 'Scroll the diff or file view to the previous review comment.', default: 'Alt+Shift+F9' },
-  nextComment: { label: 'Go to Next Comment', description: 'Scroll the diff or file view to the next review comment.', default: 'Alt+F9' },
+  newTerminal: { group: 'Tabs', label: 'New Terminal', description: 'Open a terminal in the selected workspace.', default: 'Ctrl+Shift+KeyT' },
+
+  // Workspaces
+  // Browsers keep ⌘N / Ctrl+N (new window) for themselves.
+  newWorkspace: { group: 'Workspaces', label: 'New Workspace', description: 'Start a new workspace in the current project.', default: isMac ? 'Ctrl+KeyN' : 'Alt+KeyN' },
+  newScratch: { group: 'Workspaces', label: 'New Scratch', description: 'Start a workspace in a fresh folder, outside your projects.', default: `${mod}+Semicolon` },
+  nextWorkspace: { group: 'Workspaces', label: 'Next Workspace', description: 'Go to the workspace below in the sidebar.', default: 'Ctrl+BracketRight' },
+  prevWorkspace: { group: 'Workspaces', label: 'Previous Workspace', description: 'Go to the workspace above in the sidebar.', default: 'Ctrl+BracketLeft' },
   // Mac: Mail's Archive. Elsewhere Alt, like New Workspace.
-  archiveWorkspace: { label: 'Archive Workspace', description: 'Archive the selected workspace.', default: isMac ? 'Ctrl+Meta+KeyA' : 'Alt+KeyA' },
-  removeWorkspace: { label: 'Remove Workspace', description: 'Delete the agents of the selected workspace, then archive it.', default: isMac ? 'Ctrl+Meta+Backspace' : 'Alt+Delete' },
-  // Mac: Mail's Mark as Read/Unread. Elsewhere Alt, like Archive Workspace.
-  toggleRead: { label: 'Mark Read or Unread', description: 'Mark the open agent read, or unread when it is read. With no agent open, the selected workspace.', default: isMac ? 'Shift+Meta+KeyU' : 'Alt+KeyU' },
+  archiveWorkspace: { group: 'Workspaces', label: 'Archive Workspace', description: 'Archive the selected workspace.', default: isMac ? 'Ctrl+Meta+KeyA' : 'Alt+KeyA' },
+  removeWorkspace: { group: 'Workspaces', label: 'Remove Workspace', description: 'Delete the agents of the selected workspace, then archive it.', default: isMac ? 'Ctrl+Meta+Backspace' : 'Alt+Delete' },
   // Like Archive Workspace; Alt+P is taken by Choose Model.
-  togglePin: { label: 'Pin or Unpin Workspace', description: 'Pin the selected workspace, or unpin it when pinned. Pinned workspaces stay listed when the sidebar shows only active ones.', default: isMac ? 'Ctrl+Meta+KeyP' : 'Alt+Shift+KeyP' },
-  // Browsers keep ⌘L / Ctrl+L (address bar) for themselves.
-  addToChat: { label: 'Add Selection to Chat', description: 'Insert the selected lines of a file or diff into the chat composer as path:start-end.', default: isMac ? 'Ctrl+KeyL' : 'Alt+KeyL' },
+  togglePin: { group: 'Workspaces', label: 'Pin or Unpin Workspace', description: 'Pin the selected workspace, or unpin it when pinned. Pinned workspaces stay listed when the sidebar shows only active ones.', default: isMac ? 'Ctrl+Meta+KeyP' : 'Alt+Shift+KeyP' },
+  // Mac: Mail's Mark as Read/Unread. Elsewhere Alt, like Archive Workspace.
+  toggleRead: { group: 'Workspaces', label: 'Mark Read or Unread', description: 'Mark the open agent read, or unread when it is read. With no agent open, the selected workspace.', default: isMac ? 'Shift+Meta+KeyU' : 'Alt+KeyU' },
+  toggleActiveOnly: { group: 'Workspaces', label: 'Show Only Active Workspaces', description: 'Filter the sidebar and workspace navigation to running and unread workspaces.', default: 'Ctrl+KeyU' },
+
+  // Chat
   // Shift+Enter still inserts a newline since combos match exactly.
-  send: { label: 'Send', description: 'Send the message in the chat composer.', default: 'Enter' },
-  pull: { label: 'Pull', description: 'Pull the selected workspace from its remote.', default: 'Ctrl+Shift+KeyP' },
-  push: { label: 'Push', description: 'Push the selected workspace to its remote.', default: 'Ctrl+Shift+KeyK' },
-  stageAll: { label: 'Stage All', description: 'Stage every change from the diff view.', default: isMac ? 'Ctrl+Meta+KeyY' : 'Alt+KeyY' },
-  commit: { label: 'Commit', description: 'Open the commit dialog from the diff view, then commit the staged changes.', default: `${mod}+Enter` },
-  // Zed's binding. Shift sorts before Meta in a combo.
-  amend: { label: 'Amend Commit', description: 'Amend the last commit from the commit dialog. An empty message keeps its message.', default: isMac ? 'Shift+Meta+Enter' : 'Ctrl+Shift+Enter' },
-  cycleThinking: { label: 'Cycle Thinking Level', description: 'Switch to the next thinking level from the chat composer.', default: 'Shift+Tab' },
-  pickModel: { label: 'Choose Model', description: 'Open the model picker from the chat composer.', default: 'Alt+KeyP' },
+  send: { group: 'Chat', label: 'Send', description: 'Send the message in the chat composer.', default: 'Enter' },
+  cycleThinking: { group: 'Chat', label: 'Cycle Thinking Level', description: 'Switch to the next thinking level from the chat composer.', default: 'Shift+Tab' },
+  pickModel: { group: 'Chat', label: 'Choose Model', description: 'Open the model picker from the chat composer.', default: 'Alt+KeyP' },
   // Ctrl on Mac too, as asked: ⌘P is the browser's Print.
-  pickProject: { label: 'Choose Project', description: 'Open the project picker from the new agent composer.', default: 'Ctrl+KeyP' },
+  pickProject: { group: 'Chat', label: 'Choose Project', description: 'Open the project picker from the new agent composer.', default: 'Ctrl+KeyP' },
   // Ctrl+" (Shift+Quote on US layout), Ctrl on Mac too.
-  expandTools: { label: 'Expand Tool Output', description: 'Expand or collapse the output of every tool call in the chat.', default: 'Ctrl+Shift+Quote' },
-  jumpToLatest: { label: 'Jump to Latest Message', description: 'Scroll the chat to its newest message.', default: 'Ctrl+End' },
-  addProject: { label: 'Add Project', description: 'Add a project directory to the sidebar.', default: 'Ctrl+KeyO' },
-  toggleActiveOnly: { label: 'Show Only Active Workspaces', description: 'Filter the sidebar and workspace navigation to running and unread workspaces.', default: 'Ctrl+KeyU' },
-  // Ctrl on Mac too: Safari keeps ⌘, and ⇧⌘, for itself and never passes them to the page.
-  openSettings: { label: 'Open Settings', description: 'Open this settings window.', default: 'Ctrl+Comma' },
-}
+  expandTools: { group: 'Chat', label: 'Expand Tool Output', description: 'Expand or collapse the output of every tool call in the chat.', default: 'Ctrl+Shift+Quote' },
+  jumpToLatest: { group: 'Chat', label: 'Jump to Latest Message', description: 'Scroll the chat to its newest message.', default: 'Ctrl+End' },
+  // Browsers keep ⌘L / Ctrl+L (address bar) for themselves.
+  addToChat: { group: 'Chat', label: 'Add Selection to Chat', description: 'Insert the selected lines of a file or diff into the chat composer as path:start-end.', default: isMac ? 'Ctrl+KeyL' : 'Alt+KeyL' },
+
+  // Git
+  // VS Code's Source Control binding; H for history.
+  openChanges: { group: 'Git', label: 'Open Changes', description: 'Open the uncommitted changes of the current workspace.', default: 'Ctrl+Shift+KeyG' },
+  openGraph: { group: 'Git', label: 'Open Git Graph', description: 'Open the commit graph of the current workspace.', default: 'Ctrl+Shift+KeyH' },
+  prevHunk: { group: 'Git', label: 'Go to Previous Hunk', description: 'Scroll the diff view to the previous change.', default: 'Alt+Shift+ArrowUp' },
+  nextHunk: { group: 'Git', label: 'Go to Next Hunk', description: 'Scroll the diff view to the next change.', default: 'Alt+Shift+ArrowDown' },
+  // VS Code's binding.
+  prevComment: { group: 'Git', label: 'Go to Previous Comment', description: 'Scroll the diff or file view to the previous review comment.', default: 'Alt+Shift+F9' },
+  nextComment: { group: 'Git', label: 'Go to Next Comment', description: 'Scroll the diff or file view to the next review comment.', default: 'Alt+F9' },
+  stageAll: { group: 'Git', label: 'Stage All', description: 'Stage every change from the diff view.', default: isMac ? 'Ctrl+Meta+KeyY' : 'Alt+KeyY' },
+  commit: { group: 'Git', label: 'Commit', description: 'Open the commit dialog from the diff view, then commit the staged changes.', default: `${mod}+Enter` },
+  // Zed's binding. Shift sorts before Meta in a combo.
+  amend: { group: 'Git', label: 'Amend Commit', description: 'Amend the last commit from the commit dialog. An empty message keeps its message.', default: isMac ? 'Shift+Meta+Enter' : 'Ctrl+Shift+Enter' },
+  pull: { group: 'Git', label: 'Pull', description: 'Pull the selected workspace from its remote.', default: 'Ctrl+Shift+KeyP' },
+  push: { group: 'Git', label: 'Push', description: 'Push the selected workspace to its remote.', default: 'Ctrl+Shift+KeyK' },
+} satisfies Record<string, Shortcut>
 export type ShortcutId = keyof typeof SHORTCUTS
 export const SHORTCUT_IDS = Object.keys(SHORTCUTS) as ShortcutId[]
-/** Settings lists shortcuts under these headings; every id belongs to exactly one. */
-export const SHORTCUT_GROUPS: [string, ShortcutId[]][] = [
-  ['General', ['commandPalette', 'openSettings', 'toggleSidebar', 'togglePanel', 'addProject']],
-  ['Tabs', ['nextTab', 'prevTab', 'closeAgent', 'newAgent', 'newTerminal']],
-  ['Workspaces', ['newWorkspace', 'newScratch', 'nextWorkspace', 'prevWorkspace', 'archiveWorkspace', 'removeWorkspace', 'togglePin', 'toggleRead', 'toggleActiveOnly']],
-  ['Chat', ['send', 'cycleThinking', 'pickModel', 'pickProject', 'expandTools', 'jumpToLatest', 'addToChat']],
-  ['Git', ['openChanges', 'openGraph', 'prevHunk', 'nextHunk', 'prevComment', 'nextComment', 'stageAll', 'commit', 'amend', 'pull', 'push']],
-]
+export const SHORTCUT_GROUPS: [string, ShortcutId[]][] = GROUPS.map((g) => [g, SHORTCUT_IDS.filter((id) => SHORTCUTS[id].group === g)])
 
 type Keys = Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>
 // Physical key (code), not key: Cmd+B must still match on a Cyrillic layout, and Alt+B on Mac types "∫".
