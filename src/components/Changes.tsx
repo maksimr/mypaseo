@@ -1,28 +1,18 @@
-import {
-  Check,
-  ChevronDown,
-  ChevronRight,
-  ChevronUp,
-  ChevronsDownUp,
-  ChevronsUpDown,
-  FileCode,
-  GitBranch,
-  Loader2,
-  Minus,
-  Undo2,
-} from 'lucide-react'
-import { Fragment, useContext, useEffect, useRef, useState } from 'react'
-import { clickable, useEscape } from '../a11y'
+import { Check, ChevronDown, ChevronRight, ChevronUp, ChevronsDownUp, ChevronsUpDown, FileCode, Loader2, Minus, Undo2 } from 'lucide-react'
+import { useContext, useEffect, useRef, useState } from 'react'
+import { clickable } from '../a11y'
 import { ActiveViewContext } from '../activeView'
-import { chunkKey, chunkPatch, chunks, restoreChunk, stagedKeys, stagedState, type Chunk } from '../chunks'
+import { chunkPatch, chunks, restoreChunk, stagedKeys, stagedState, type Chunk } from '../chunks'
 import { errorText, type DiffFile } from '../daemon'
+import * as git from '../git'
 import { formatCombo, isShortcut, useShortcut } from '../keymap'
 import { useReview } from '../review'
 import { useDaemon } from '../store'
 import { split, totals, type DiffState } from '../useCheckoutDiff'
 import { Pick } from './Pick'
-import { Tokens } from './Code'
-import { CommentNav, ReviewThread } from './Review'
+import { CommentNav } from './Review'
+import { CommitDialog, type CommitInput } from './CommitDialog'
+import { FileHunks } from './FileHunks'
 
 // Toolbar 38px + .excerpt-head 34px (index.css): a chunk right under them is at the top of the view.
 const HEADERS = 72
@@ -39,7 +29,7 @@ function goToChunk(root: HTMLElement, dir: number) {
   el?.scrollIntoView({ block: 'start' })
 }
 
-type Filter = 'all' | 'staged' | 'unstaged'
+export type Filter = 'all' | 'staged' | 'unstaged'
 
 const fileStatus = (f: DiffFile) => (f.isNew ? 'A' : f.isDeleted ? 'D' : f.oldPath ? 'R' : 'M')
 
@@ -86,8 +76,6 @@ export function ChangesView({
   readOnly?: boolean
 }) {
   const daemon = useDaemon()
-  // RPCs of the mypaseo-git daemon plugin, see paseo-plugin/index.server.ts.
-  const git = (method: string, input: object) => daemon.invokePluginRpc('mypaseo-git', method, input)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const root = useRef<HTMLDivElement>(null)
   const t = totals(diff.files)
@@ -153,8 +141,8 @@ export function ChangesView({
   useEffect(() => {
     if (readOnly) return
     let live = true
-    daemon.invokePluginRpc('mypaseo-git', 'index.diff', { cwd }).then(
-      (r) => live && setIndex({ cwd, keys: stagedKeys((r as { files: Record<string, string> }).files) }),
+    git.indexDiff(daemon, { cwd }).then(
+      (r) => live && setIndex({ cwd, keys: stagedKeys(r.files) }),
       () => live && setIndex(null),
     )
     return () => {
@@ -207,13 +195,13 @@ export function ChangesView({
   }
 
   const setFileStaged = (f: DiffFile, stage: boolean) =>
-    git(stage ? 'index.add' : 'index.reset', { cwd, paths: [f.path] })
+    (stage ? git.indexAdd : git.indexReset)(daemon, { cwd, paths: [f.path] })
 
   // A new or deleted file is one chunk, so it's staged as a whole file.
   const setStaged = (f: DiffFile, cs: Chunk[], i: number, stage: boolean) =>
     f.isNew || f.isDeleted
       ? setFileStaged(f, stage)
-      : git('index.apply', { cwd, patch: chunkPatch(f.path, cs, i), reverse: !stage })
+      : git.indexApply(daemon, { cwd, patch: chunkPatch(f.path, cs, i), reverse: !stage })
 
   const runIndex = async (op: Promise<unknown>) => {
     try {
@@ -239,7 +227,7 @@ export function ChangesView({
     setCommitBusy(true)
     try {
       // The daemon's commit is the one that generates a message, so it handles the plain case.
-      if (input.amend || input.signoff || input.noVerify) await git('commit', { cwd, ...input })
+      if (input.amend || input.signoff || input.noVerify) await git.commit(daemon, { cwd, ...input })
       else {
         const r = await daemon.checkoutCommit(cwd, { message: input.message, addAll: false })
         if (r.error) throw new Error(r.error.message)
@@ -254,7 +242,7 @@ export function ChangesView({
   }
 
   const allPaths = () => diff.files.flatMap((f) => (f.oldPath ? [f.path, f.oldPath] : [f.path]))
-  const stageAll = () => void runIndex(git('index.add', { cwd, paths: allPaths() }))
+  const stageAll = () => void runIndex(git.indexAdd(daemon, { cwd, paths: allPaths() }))
   const canStageAll = !!keys && diff.files.length > 0 && !allStaged
 
   useEffect(() => {
@@ -361,7 +349,7 @@ export function ChangesView({
             </button>
             <span className="sep" />
             {allStaged ? (
-              <button className="text-btn" onClick={() => void runIndex(git('index.reset', { cwd, paths: allPaths() }))}>
+              <button className="text-btn" onClick={() => void runIndex(git.indexReset(daemon, { cwd, paths: allPaths() }))}>
                 Unstage All
               </button>
             ) : (
@@ -469,188 +457,6 @@ export function ChangesView({
           </section>
         )
       })}
-    </div>
-  )
-}
-
-/** Zed-style commit modal: an empty message makes the daemon generate one, an empty amend keeps the last one. */
-type CommitInput = { message: string; amend: boolean; signoff: boolean; noVerify: boolean }
-
-function CommitDialog({
-  cwd,
-  failed,
-  onClose,
-  onCommit,
-}: {
-  cwd: string
-  failed: { input: CommitInput; error: string } | null
-  onClose: () => void
-  onCommit: (input: CommitInput) => void
-}) {
-  const [message, setMessage] = useState(failed?.input.message ?? '')
-  const [signoff, setSignoff] = useState(failed?.input.signoff ?? false)
-  const [noVerify, setNoVerify] = useState(failed?.input.noVerify ?? false)
-  const daemon = useDaemon()
-  const [branch, setBranch] = useState<string | null>(null)
-  const menu = useRef<HTMLDivElement>(null)
-  const commitKey = useShortcut('commit')
-  const amendKey = useShortcut('amend')
-  // Esc with the menu open closes just the menu, not the dialog and its message.
-  useEscape(() => !menu.current?.matches(':popover-open') && onClose())
-
-  useEffect(() => {
-    let live = true
-    daemon.getCheckoutStatus(cwd).then(
-      (s) => live && setBranch(s.currentBranch ?? null),
-      () => {},
-    )
-    return () => {
-      live = false
-    }
-  }, [daemon, cwd])
-
-  const commit = (amend: boolean) => onCommit({ message, amend, signoff, noVerify })
-
-  const toggle = (label: string, on: boolean, set: (on: boolean) => void) => (
-    <button role="menuitemcheckbox" aria-checked={on} popoverTarget="commit-menu" popoverTargetAction="hide" onClick={() => set(!on)}>
-      <Check size={14} style={{ visibility: on ? 'visible' : 'hidden' }} /> {label}
-    </button>
-  )
-
-  return (
-    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div
-        className="commit-dialog"
-        role="dialog"
-        aria-label="Commit"
-        onKeyDown={(e) => {
-          const amend = isShortcut(e, 'amend')
-          if (!amend && !isShortcut(e, 'commit')) return
-          e.preventDefault()
-          commit(amend)
-        }}
-      >
-        <textarea
-          autoFocus
-          className="commit-message"
-          rows={2}
-          aria-label="Commit Message"
-          placeholder="Enter commit message (leave empty to generate one)"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-        />
-        {failed && <div className="commit-error err pre-wrap">{failed.error}</div>}
-        <footer className="commit-foot">
-          {branch && (
-            <span className="commit-branch muted truncate">
-              <GitBranch size={14} /> {branch}
-            </span>
-          )}
-          <span className="grow" />
-          <button className="text-btn muted" onClick={onClose}>
-            <kbd>Esc</kbd> Cancel
-          </button>
-          <div className="split-btn">
-            <button title={`Commit (${formatCombo(commitKey)})`} onClick={() => commit(false)}>
-              Commit
-            </button>
-            <button
-              title="Commit Options"
-              popoverTarget="commit-menu"
-              onClick={(e) => {
-                // shortcut: fixed placement under the trigger, like Sidebar's menus; switch to CSS anchor positioning once Baseline.
-                const r = e.currentTarget.getBoundingClientRect()
-                menu.current!.style.top = `${r.bottom + 4}px`
-                menu.current!.style.right = `${innerWidth - r.right}px`
-              }}
-            >
-              <ChevronDown size={14} />
-            </button>
-          </div>
-        </footer>
-        <div id="commit-menu" ref={menu} popover="auto" className="menu" role="menu">
-          <button role="menuitem" popoverTarget="commit-menu" popoverTargetAction="hide" onClick={() => commit(true)}>
-            <Check size={14} style={{ visibility: 'hidden' }} />
-            <span className="grow">Amend</span>
-            <kbd>{formatCombo(amendKey)}</kbd>
-          </button>
-          {toggle('Signoff', signoff, setSignoff)}
-          {toggle('Skip Hooks', noVerify, setNoVerify)}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-type ChunkAction = (cs: Chunk[], i: number, flag: boolean) => void
-
-/** A file's hunks; without onRestore they are read-only. */
-function FileHunks({
-  cwd,
-  file,
-  staged,
-  filter,
-  onStage,
-  onRestore,
-}: {
-  cwd: string
-  file: DiffFile
-  staged?: Set<string>
-  filter: Filter
-  onStage: ChunkAction
-  onRestore?: ChunkAction
-}) {
-  const review = useReview(cwd)
-  if (file.status === 'binary') return <div className="empty">Binary file</div>
-  if (file.status === 'too_large') return <div className="empty">File diff is too large to display</div>
-  const isStagedChunk = (c: Chunk) => c.change && !!staged?.has(chunkKey(c))
-  // Context always shows; a hunk shows when one of its changes does.
-  const shows = (c: Chunk) => !c.change || filter === 'all' || isStagedChunk(c) === (filter === 'staged')
-  return (
-    <div className="hunks">
-      {file.hunks
-        .map((h, i) => [i, chunks(h)] as const)
-        .filter(([, cs]) => cs.some((c) => c.change && shows(c)))
-        .map(([i, cs], n) => (
-          <div key={i}>
-            {n > 0 && <div className="hunk-sep" />}
-            {cs.map((c, j) => {
-              if (!shows(c)) return null
-              const isStaged = isStagedChunk(c)
-              return (
-                <div
-                  key={j}
-                  className={c.change ? (isStaged ? 'chunk staged' : 'chunk') : undefined}
-                  data-hunk={i}
-                  data-chunk={j}
-                >
-                  {c.change && onRestore && (
-                    <div className="chunk-actions">
-                      {staged && (
-                        <button className="text-btn" onClick={() => onStage(cs, j, !isStaged)}>
-                          {isStaged ? 'Unstage' : 'Stage'}
-                        </button>
-                      )}
-                      <button className="text-btn" onClick={() => onRestore(cs, j, isStaged)}>
-                        Restore
-                      </button>
-                    </div>
-                  )}
-                  {c.rows.map((l, k) => (
-                    <Fragment key={k}>
-                      <div className={`dl ${l.type}`}>
-                        <span className="ln">{l.o}</span>
-                        <span className="ln">{l.n}</span>
-                        <span className="dc">{l.tokens ? <Tokens tokens={l.tokens} /> : l.content || ' '}</span>
-                      </div>
-                      <ReviewThread review={review} path={file.path} side={l.type === 'remove' ? 'old' : 'new'} line={(l.type === 'remove' ? l.o : l.n) as number} />
-                    </Fragment>
-                  ))}
-                </div>
-              )
-            })}
-          </div>
-        ))}
     </div>
   )
 }

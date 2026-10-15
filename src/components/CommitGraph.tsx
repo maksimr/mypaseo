@@ -2,13 +2,11 @@ import { CaseSensitive, Check, ChevronDown, ChevronUp, Hash, Mail, Tag } from 'l
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { clickable } from '../a11y'
 import { errorText, type DiffFile, type Workspace } from '../daemon'
+import * as git from '../git'
 import { layout, type GraphLine } from '../graph'
 import { useDaemon } from '../store'
-import { split, type CommitInfo } from '../useCheckoutDiff'
+import { split } from '../useCheckoutDiff'
 import { Stat } from './Changes'
-
-/** A commit from the mypaseo-git plugin's `log` RPC, see paseo-plugin/index.server.ts. */
-type Commit = { sha: string; parents: string[]; refs: string[]; author: string; date: string; subject: string }
 
 // shortcut: only the newest LIMIT commits load, add paging when someone needs older history.
 const LIMIT = 1000
@@ -97,16 +95,16 @@ export function CommitGraph({
 }) {
   const daemon = useDaemon()
   const cwd = workspace.workspaceDirectory
-  const [log, setLog] = useState<{ cwd: string; commits: Commit[] } | null>(null)
+  const [log, setLog] = useState<{ cwd: string; commits: git.Commit[] } | null>(null)
   const [error, setError] = useState<string | null>(null)
   // Commits, pulls and branch switches change the branch status or the diff, so re-read on either.
   const runtime = JSON.stringify(workspace.gitRuntime)
   useEffect(() => {
     let live = true
-    daemon.invokePluginRpc('mypaseo-git', 'log', { cwd, limit: LIMIT, path }).then(
+    git.log(daemon, { cwd, limit: LIMIT, path }).then(
       (r) => {
         if (!live) return
-        setLog({ cwd, commits: (r as { commits: Commit[] }).commits })
+        setLog({ cwd, commits: r.commits })
         setError(null)
       },
       (e) => live && setError(errorText(e)),
@@ -250,12 +248,12 @@ export function CommitDetails({
   onPick: (path: string) => void
 }) {
   const daemon = useDaemon()
-  const [details, setDetails] = useState<CommitInfo | null>(null)
+  const [details, setDetails] = useState<git.CommitInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     let live = true
-    daemon.invokePluginRpc('mypaseo-git', 'show', { cwd, sha }).then(
-      (r) => live && setDetails(r as CommitInfo),
+    git.show(daemon, { cwd, sha }).then(
+      (r) => live && setDetails(r),
       (e) => live && setError(errorText(e)),
     )
     return () => {

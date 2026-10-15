@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { errorText, type DiffFile } from './daemon'
+import * as git from './git'
 import { useDaemon } from './store'
 
 export type DiffState = { files: DiffFile[]; error: string | null; loading: boolean; tooLarge?: boolean }
@@ -24,15 +25,6 @@ export function useCheckoutDiff(hostId: string, cwd: string | undefined): DiffSt
   return state.key === key ? state : { files: [], error: null, loading: !!cwd }
 }
 
-/** The mypaseo-git plugin's `show` RPC, see paseo-plugin/index.server.ts. */
-export type CommitInfo = {
-  author: string
-  email: string
-  date: string
-  message: string
-  files: { path: string; status: string; additions: number; deletions: number }[]
-}
-
 /** A commit's diff (merges against their first parent): the plugin lists its files, the daemon diffs each one. */
 export function useCommitDiff(hostId: string, cwd: string | undefined, sha: string | undefined): DiffState {
   const daemon = useDaemon(hostId)
@@ -42,7 +34,7 @@ export function useCommitDiff(hostId: string, cwd: string | undefined, sha: stri
     if (!cwd || !sha) return
     let live = true
     const load = async () => {
-      const { files } = (await daemon.invokePluginRpc('mypaseo-git', 'show', { cwd, sha })) as CommitInfo
+      const { files } = await git.show(daemon, { cwd, sha })
       const out: DiffFile[] = []
       let next = 0
       // A few at a time: each file is a git show plus highlighting in the daemon.

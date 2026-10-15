@@ -1,5 +1,5 @@
 // Git index RPCs for mypaseo's diff view and the log for its git graph; the daemon's own API can't stage or list every
-// branch. Called from src/components/Changes.tsx and src/components/CommitGraph.tsx.
+// branch. Its only client is src/git.ts.
 import { defineRpc } from '@getpaseo/plugin'
 import type { PluginServerContext } from '@getpaseo/plugin/server'
 import { execFile } from 'node:child_process'
