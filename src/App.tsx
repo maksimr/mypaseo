@@ -1,34 +1,31 @@
-import { ChevronDown, FileCode, FileDiff, Files, GitCommitHorizontal, History, Loader2, PanelLeft, PanelRight, SquareTerminal, X } from 'lucide-react'
+import { PanelLeft, PanelRight, X } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { ActiveViewContext } from './activeView'
-import { ChangesList, ChangesView } from './components/Changes'
+import { ChangesView } from './components/Changes'
 import { Chat } from './components/Chat'
 import type { Target } from './components/target'
 import { CommandPalette } from './components/CommandPalette'
-import { CommitDetails, CommitGraph } from './components/CommitGraph'
-import { FileTree, FileView } from './components/Files'
+import { CommitGraph } from './components/CommitGraph'
+import { FileView } from './components/Files'
 import { ImportSession } from './components/ImportSession'
-import { OpenInEditor } from './components/OpenInEditor'
-import { GitGraphIcon } from './components/icons'
-import { ProviderIcon } from './components/ProviderIcon'
 import { Settings, type Section } from './components/Settings'
 import { Sidebar, type Selection } from './components/Sidebar'
-import { TerminalList, TerminalView } from './components/Terminal'
+import { TerminalView } from './components/Terminal'
 import { errorText, type Agent, type Workspace } from './daemon'
 import { formatCombo, isShortcut, useShortcut } from './keymap'
 import { useAttentionNotifications } from './notifications'
 import { OpenFileContext } from './openFile'
 import { selectionRef } from './selection'
 import { SelectionAction } from './components/SelectionAction'
-import { revealComment, reviewKey, startComment, type ReviewComment } from './review'
-import { clickable } from './a11y'
+import { reviewKey, startComment } from './review'
 import { archiveAgent, archiveWorkspace, byRecent, HostContext, projectName, sidebarWorkspaces, startSync, useStore } from './store'
 import { useEdgeSwipe } from './swipe'
 import { useTabStatus } from './tabStatus'
-import { totals, useCheckoutDiff, useCommitDiff } from './useCheckoutDiff'
+import { useCheckoutDiff, useCommitDiff } from './useCheckoutDiff'
 import { useTerminals } from './useTerminals'
-
-type Tab = 'chat' | 'changes' | 'graph' | 'commit' | `file:${string}` | `term:${string}`
+import { Panel, type PanelView } from './features/tabs/Panel'
+import { TabBar } from './features/tabs/TabBar'
+import { useTabs, type Tab } from './features/tabs/useTabs'
 
 const MIN_W = 180
 const MAX_W = 600
@@ -134,19 +131,8 @@ export default function App() {
   const cwd = workspace?.workspaceDirectory
   const isGit = workspace?.projectKind === 'git'
 
-  const [tab, setTab] = useState<Tab>('chat')
-  const [visited, setVisited] = useState<string[]>([]) // views shown since the workspace opened, in that order
-  const [files, setFiles] = useState<string[]>([])
-  // undefined: shown while the workspace has changes; true/false: the user opened or closed it.
-  const [changesPick, setChangesPick] = useState<boolean>()
-  const [graphTab, setGraphTab] = useState(false)
-  const [graphPath, setGraphPath] = useState<string>() // set: the graph tab shows this file's history
-  const [commit, setCommit] = useState<string>() // picked in the git graph, shown in the panel
-  const [commitTab, setCommitTab] = useState<string>() // the commit whose diff the 'commit' tab shows
-  const [commitFocus, setCommitFocus] = useState<{ path: string; n: number } | null>(null)
-  const [panel, setPanel] = useState<'files' | 'changes' | 'graph' | 'terminals' | null>(() => JSON.parse(localStorage.mypaseoPanel ?? 'null'))
+  const [panel, setPanel] = useState<PanelView | null>(() => JSON.parse(localStorage.mypaseoPanel ?? 'null'))
   const panelView = isGit || panel === 'terminals' ? (panel ?? 'changes') : 'files' // closed: what a swipe slides in
-  const [focus, setFocus] = useState<{ path: string; n: number } | null>(null)
   const [settings, setSettings] = useState<{ hostId: string; section?: Section } | null>(null)
   const [palette, setPalette] = useState(false)
   const [chatText, setChatText] = useState('') // handed to the composer when the chat tab mounts
@@ -162,6 +148,12 @@ export default function App() {
     setSidebar(false)
     setPanel(null)
   }
+  const diff = useCheckoutDiff(hostId, isGit ? cwd : undefined)
+  const terms = useTerminals(hostId, workspace)
+  const tabs = useTabs({ workspaceId: sel.workspaceId, isGit, diff, terms, setPanel, dismiss })
+  const { tab, setTab, files, changesTab, graphTab, graphPath, commit, setCommit, commitTab, commitFocus, focus } = tabs
+  const { openFile, openChanges, openGraph, closeChanges, closeGraph, closeCommit, closeFile, showComment } = tabs
+  const commitDiff = useCommitDiff(hostId, isGit ? cwd : undefined, commitTab)
   // Touch: dragging in from the left edge slides out the sidebar, from the right edge the file panel;
   // on narrow windows, dragging an open one toward its edge slides it back.
   const appRef = useRef<HTMLDivElement>(null)
@@ -175,7 +167,6 @@ export default function App() {
   const [panelW, setPanelW] = useWidth('mypaseoPanelWidth', 320) // room for the Changes, Files and Git Graph tabs
   const sidebarKey = useShortcut('toggleSidebar')
   const panelKey = useShortcut('togglePanel')
-  const closeAgentKey = useShortcut('closeAgent')
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isShortcut(e, 'commandPalette')) {
@@ -205,7 +196,7 @@ export default function App() {
       const tabStep = isShortcut(e, 'nextTab') ? 1 : isShortcut(e, 'prevTab') ? -1 : 0
       if (target && tabStep) {
         e.preventDefault()
-        const tabs: (Tab | Agent | undefined)[] = [
+        const order: (Tab | Agent | undefined)[] = [
           ...chatTabs,
           ...terms.terminals.map((t) => `term:${t.id}` as const),
           ...(changesTab ? ['changes' as const] : []),
@@ -213,7 +204,7 @@ export default function App() {
           ...(commitTab ? ['commit' as const] : []),
           ...files.map((p) => `file:${p}` as const),
         ]
-        const next = tabs[(tabs.indexOf(tab === 'chat' ? agent : tab) + tabStep + tabs.length) % tabs.length]
+        const next = order[(order.indexOf(tab === 'chat' ? agent : tab) + tabStep + order.length) % order.length]
         if (typeof next === 'string') setTab(next)
         else openChat(next)
       }
@@ -274,69 +265,6 @@ export default function App() {
   const [importTarget, setImportTarget] = useState<Target | null>(null)
   // Provider the "New agent" composer will use, for its tab icon.
   const [draftProvider, setDraftProvider] = useState<string>()
-  const diff = useCheckoutDiff(hostId, isGit ? cwd : undefined)
-  const commitDiff = useCommitDiff(hostId, isGit ? cwd : undefined, commitTab)
-  const t = totals(diff.files)
-  // Loading keeps it open while the diff arrives; an empty diff (all committed) closes it.
-  const changesTab = changesPick ?? (isGit && (diff.files.length > 0 || (diff.loading && tab === 'changes')))
-  if (tab === 'changes' && !changesTab) setTab('chat')
-  const terms = useTerminals(hostId, workspace)
-  // A terminal whose shell exited leaves the list.
-  if (tab.startsWith('term:') && terms.loaded && !terms.terminals.some((x) => `term:${x.id}` === tab)) setTab('chat')
-
-  // Tabs belong to a workspace: while rendering, stash the old one's and restore the new one's when the workspace changes.
-  // Keyed by id, not directory: workspaces can share a checkout.
-  const [tabsWs, setTabsWs] = useState(sel.workspaceId)
-  const [savedTabs, setSavedTabs] = useState(
-    new Map<string | undefined, { tab: Tab; files: string[]; changesPick?: boolean; graphTab: boolean; graphPath?: string; commit?: string; commitTab?: string }>(),
-  )
-  if (tabsWs !== sel.workspaceId) {
-    setSavedTabs(new Map(savedTabs).set(tabsWs, { tab, files, changesPick, graphTab, graphPath, commit, commitTab }))
-    const s = savedTabs.get(sel.workspaceId)
-    setTabsWs(sel.workspaceId)
-    setFiles(s?.files ?? [])
-    setChangesPick(s?.changesPick)
-    setGraphTab(s?.graphTab ?? false)
-    setGraphPath(s?.graphPath)
-    setCommit(s?.commit)
-    setCommitTab(s?.commitTab)
-    setTab(s?.tab ?? 'chat')
-    setVisited([])
-  }
-
-  const openFile = (path: string) => {
-    setFiles((f) => (f.includes(path) ? f : [...f, path]))
-    setTab(`file:${path}`)
-    dismiss()
-  }
-  // A panel section also opens its center tab: the diff for Changes, the graph for Git Graph (whose section shows the picked commit).
-  const openChanges = () => {
-    setPanel('changes')
-    setChangesPick(true)
-    setTab('changes')
-  }
-  const openGraph = (path?: string) => {
-    setPanel('graph')
-    setGraphTab(true)
-    setGraphPath(path)
-    setTab('graph')
-  }
-  const closeChanges = () => {
-    setChangesPick(false)
-    if (tab === 'changes') setTab('chat')
-  }
-  const closeGraph = () => {
-    setGraphTab(false)
-    if (tab === 'graph') setTab('chat')
-  }
-  const closeCommit = () => {
-    setCommitTab(undefined)
-    if (tab === 'commit') setTab(graphTab ? 'graph' : 'chat')
-  }
-  const closeFile = (path: string) => {
-    setFiles((f) => f.filter((p) => p !== path))
-    if (tab === `file:${path}`) setTab('chat')
-  }
   const newTerminal = async () => {
     try {
       setTab(`term:${(await terms.create()).id}`)
@@ -359,24 +287,6 @@ export default function App() {
   const addToChat = (ref: string) => {
     setChatText((t) => `${t}${t ? ' ' : ''}${ref} `)
     setTab('chat')
-  }
-  const showChange = (path: string) => {
-    setChangesPick(true)
-    setTab('changes')
-    setFocus((f) => ({ path, n: (f?.n ?? 0) + 1 }))
-    dismiss()
-  }
-  // The diff when it shows the comment's line, else the file.
-  const showComment = (c: ReviewComment) => {
-    revealComment(c.id)
-    const inDiff = diff.files
-      .find((f) => f.path === c.path)
-      ?.hunks.some((h) => (c.side === 'old' ? c.line >= h.oldStart && c.line < h.oldStart + h.oldCount : c.line >= h.newStart && c.line < h.newStart + h.newCount))
-    if (!inDiff) return openFile(c.path)
-    setFocus(null) // its scroll to the file's top would undo the one to the comment
-    setChangesPick(true)
-    setTab('changes')
-    dismiss()
   }
 
   const chatKey = (a?: Agent) => `chat:${a?.id ?? `${target?.projectId}/${workspace?.id}`}`
@@ -424,8 +334,7 @@ export default function App() {
   }
   // A tab that can't show (its workspace is gone) falls back to the chat.
   const viewKey = tab !== 'chat' && view(tab) ? tab : chatKey(agent)
-  // Not during the workspace switch above: it reset them.
-  if (tabsWs === sel.workspaceId && !visited.includes(viewKey)) setVisited([...visited, viewKey])
+  tabs.visit(viewKey)
 
   return (
     <HostContext value={hostId}>
@@ -465,131 +374,18 @@ export default function App() {
         )}
 
         <main className="center">
-          <div className="tabbar">
-            {/* On phones, a popover listing every tab (the bar shows only the open one); picking one closes it. */}
-            <div className="tabs" id="tab-list" popover="auto" onClick={(e) => e.currentTarget.hidePopover()}>
-              {target &&
-                chatTabs.map((a) => (
-                  <div key={a?.id ?? 'new'} className={`tab agent-tab ${tab === 'chat' && a === agent ? 'on' : ''}`} {...clickable(() => openChat(a))}>
-                    <ProviderIcon provider={a ? a.provider : draftProvider} size={13} />
-                    <span className="truncate">{a ? a.title || 'Agent' : 'New agent'}</span>
-                    {a && (
-                      <button
-                        className="tab-close hover-swap"
-                        title={`Close (${formatCombo(closeAgentKey)})`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          void closeAgent(a)
-                        }}
-                      >
-                        <X size={12} />
-                      </button>
-                    )}
-                    {a?.status === 'running' && <Loader2 size={13} className="spin muted status-mark" aria-label="Working" />}
-                  </div>
-                ))}
-              {terms.terminals.map((x) => (
-                <div key={x.id} className={`tab ${tab === `term:${x.id}` ? 'on' : ''}`} {...clickable(() => setTab(`term:${x.id}`))}>
-                  <SquareTerminal size={13} />
-                  <span className="truncate">{x.title || x.name}</span>
-                  <button
-                    className="tab-close hover-swap"
-                    title={`Close (${formatCombo(closeAgentKey)})`}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      closeTerminal(x.id)
-                    }}
-                  >
-                    <X size={12} />
-                  </button>
-                  {x.activity?.state === 'working' && <Loader2 size={13} className="spin muted status-mark" aria-label="Working" />}
-                </div>
-              ))}
-              {changesTab && (
-                <div className={`tab ${tab === 'changes' ? 'on' : ''}`} {...clickable(() => setTab('changes'))}>
-                  <FileDiff size={13} />
-                  {/* one inline run so the smaller counters sit on the label's baseline */}
-                  <span>
-                    Changes{' '}
-                    <span className="stat">
-                      <span className="add">+{t.add}</span>
-                      <span className="del">−{t.del}</span>
-                    </span>
-                  </span>
-                  <button
-                    className="tab-close"
-                    title="Close"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      closeChanges()
-                    }}
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              )}
-              {graphTab && (
-                <div className={`tab ${tab === 'graph' ? 'on' : ''}`} {...clickable(() => setTab('graph'))} title={graphPath}>
-                  {graphPath ? <History size={13} /> : <GitGraphIcon size={13} />}
-                  {graphPath ? (
-                    <span className="truncate">
-                      History <span className="faint">{graphPath.split('/').pop()}</span>
-                    </span>
-                  ) : (
-                    <span>Git Graph</span>
-                  )}
-                  <button
-                    className="tab-close"
-                    title="Close"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      closeGraph()
-                    }}
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              )}
-              {commitTab && (
-                <div className={`tab ${tab === 'commit' ? 'on' : ''}`} {...clickable(() => setTab('commit'))}>
-                  <GitCommitHorizontal size={13} />
-                  <span>
-                    Commit <span className="faint mono">{commitTab.slice(0, 7)}</span>
-                  </span>
-                  <button
-                    className="tab-close"
-                    title="Close"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      closeCommit()
-                    }}
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              )}
-              {files.map((path) => (
-                <div key={path} className={`tab ${tab === `file:${path}` ? 'on' : ''}`} onClick={() => setTab(`file:${path}`)} title={path}>
-                  <FileCode size={13} />
-                  <span className="truncate">{path.split('/').pop()}</span>
-                  <button
-                    className="tab-close"
-                    title="Close"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      closeFile(path)
-                    }}
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <button className="icon-btn tab-list-btn" title="All Tabs" popoverTarget="tab-list">
-              <ChevronDown size={15} />
-            </button>
-            {cwd && <OpenInEditor path={cwd} />}
-          </div>
+          <TabBar
+            tabs={tabs}
+            chatTabs={target ? chatTabs : []}
+            agent={agent}
+            draftProvider={draftProvider}
+            terms={terms}
+            diff={diff}
+            cwd={cwd}
+            onOpenChat={openChat}
+            onCloseAgent={(a) => void closeAgent(a)}
+            onCloseTerminal={closeTerminal}
+          />
 
           {!target ? (
             <div className="empty-chat">
@@ -610,7 +406,7 @@ export default function App() {
             // Every view shown since the workspace opened stays mounted, so each tab keeps its scroll and state.
             // In mount order, never reordered: moving a node would reset its scroll. Inert keeps hidden ones out of focus and clicks.
             <div className="views">
-              {visited.map((k) => {
+              {tabs.visited.map((k) => {
                 const v = view(k)
                 return (
                   v && (
@@ -627,58 +423,18 @@ export default function App() {
 
         {panel && cwd && <Resizer side="right" label="Resize File Panel" width={panelW} onResize={setPanelW} />}
         {(panel || swipe?.side === 'right') && cwd && workspace && (
-          <aside className="panel">
-            <div className="panel-tabs">
-              {isGit && (
-                <button className={`panel-tab ${panelView === 'changes' ? 'on' : ''}`} title="Changes" onClick={openChanges}>
-                  <FileDiff size={14} /> <span className="truncate">Changes</span>
-                </button>
-              )}
-              <button className={`panel-tab ${panelView === 'files' ? 'on' : ''}`} title="Files" onClick={() => setPanel('files')}>
-                <Files size={14} /> <span className="truncate">Files</span>
-              </button>
-              {isGit && (
-                <button className={`panel-tab ${panelView === 'graph' ? 'on' : ''}`} title="Git Graph" onClick={() => openGraph()}>
-                  <GitGraphIcon size={14} /> <span className="truncate">Git Graph</span>
-                </button>
-              )}
-              <button className={`panel-tab ${panelView === 'terminals' ? 'on' : ''}`} title="Terminals" onClick={openTerminals}>
-                <SquareTerminal size={14} /> <span className="truncate">Terminals</span>
-              </button>
-            </div>
-            {panelView === 'terminals' ? (
-              <TerminalList
-                terminals={terms.terminals}
-                activeId={tab.startsWith('term:') ? tab.slice('term:'.length) : undefined}
-                onOpen={(id) => {
-                  setTab(`term:${id}`)
-                  dismiss()
-                }}
-                onNew={() => {
-                  void newTerminal()
-                  dismiss()
-                }}
-              />
-            ) : panelView === 'files' ? (
-              <FileTree key={cwd} cwd={cwd} rootName={workspace.projectDisplayName} onOpen={openFile} activePath={tab.startsWith('file:') ? tab.slice(5) : undefined} />
-            ) : panelView === 'graph' && !commit ? (
-              <div className="empty">Pick a commit in the graph to see its changes.</div>
-            ) : panelView === 'graph' && commit ? (
-              <CommitDetails
-                key={commit}
-                cwd={cwd}
-                sha={commit}
-                onPick={(path) => {
-                  setCommitTab(commit)
-                  setCommitFocus((f) => ({ path, n: (f?.n ?? 0) + 1 }))
-                  setTab('commit')
-                  dismiss()
-                }}
-              />
-            ) : (
-              <ChangesList diff={diff} onPick={showChange} />
-            )}
-          </aside>
+          <Panel
+            tabs={tabs}
+            workspace={workspace}
+            isGit={isGit}
+            view={panelView}
+            onView={setPanel}
+            terms={terms}
+            diff={diff}
+            onOpenTerminals={openTerminals}
+            onNewTerminal={() => void newTerminal()}
+            dismiss={dismiss}
+          />
         )}
 
         {cwd && tab !== 'chat' && (
