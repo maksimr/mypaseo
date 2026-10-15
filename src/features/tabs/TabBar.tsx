@@ -1,12 +1,12 @@
 import { ChevronDown, FileCode, FileDiff, GitCommitHorizontal, History, Loader2, SquareTerminal, X } from 'lucide-react'
 import { clickable } from '../../a11y'
 import { GitGraphIcon } from '../../components/icons'
-import { OpenInEditor } from '../../components/OpenInEditor'
+import { OpenInEditor } from '../files/OpenInEditor'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import type { Agent } from '../../daemon'
 import { formatCombo, useShortcut } from '../../keymap'
-import { totals, type DiffState } from '../../useCheckoutDiff'
-import type { useTerminals } from '../../useTerminals'
+import { totals, type DiffState } from '../changes/useCheckoutDiff'
+import type { useTerminals } from '../terminal/useTerminals'
 import type { Tabs } from './useTabs'
 
 export function TabBar({

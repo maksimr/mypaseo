@@ -10,4 +10,4 @@ Every icon action in the app sits on the same grid:
 Touch: with a coarse pointer the hit area grows to 26px on the same grid; with no hover, the selected row and expanded
 projects always show their actions, beside the mark.
 
-Inside a `.row`, `.row .icon-btn` in `src/index.css` already applies this grid. Don't override button size, margins or gaps in components; pass `size={13}` to the icon and let the CSS place it.
+Inside a `.row`, `.row .icon-btn` in `src/styles/base.css` already applies this grid. Don't override button size, margins or gaps in components; pass `size={13}` to the icon and let the CSS place it.

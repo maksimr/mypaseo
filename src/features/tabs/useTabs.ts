@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { revealComment, type ReviewComment } from '../../review'
-import type { DiffState } from '../../useCheckoutDiff'
-import type { useTerminals } from '../../useTerminals'
+import { revealComment, type ReviewComment } from '../review/review'
+import type { DiffState } from '../changes/useCheckoutDiff'
+import type { useTerminals } from '../terminal/useTerminals'
 import type { PanelView } from './Panel'
 
 export type Tab = 'chat' | 'changes' | 'graph' | 'commit' | `file:${string}` | `term:${string}`

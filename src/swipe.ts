@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 
 export type Side = 'left' | 'right'
-/** A side pane following the finger in, then settling open or closed (classes in index.css). */
+/** A side pane following the finger in, then settling open or closed (classes in styles/tablet.css). */
 export type Swipe = { side: Side; settle?: 'open' | 'closed' }
 
 const EDGE = 30 // px from the window edge where a drag has to start
 const SLOP = 10 // px the finger moves before a drag is told apart from a scroll
 const MIN = 60 // px of inward travel that opens the pane on release
-const SETTLE_MS = 200 // the settle transition in index.css
+const SETTLE_MS = 200 // the settle transition in styles/tablet.css
 
 /** The window edge a touch at x starts on, if any. */
 export const edgeAt = (x: number, width: number): Side | null => (x < EDGE ? 'left' : x > width - EDGE ? 'right' : null)
