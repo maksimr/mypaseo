@@ -3,7 +3,8 @@
   // The vite and node test plugins find src/main.tsx and src/**/*.test.ts; the daemon loads the plugin.
   "entry": ["paseo-plugin/index.server.ts"],
   // The daemon (@getpaseo/server) provides these to the plugin at runtime.
-  "ignoreDependencies": ["@getpaseo/plugin", "zod"],
+  // depcruise loads @swc/core by name (`parser: 'swc'` in .dependency-cruiser.cjs).
+  "ignoreDependencies": ["@getpaseo/plugin", "zod", "@swc/core"],
   // Every issue type, including the opt-in ones: circular imports (cycles) and unused members of namespace imports
   // (`import * as git from './git'`).
   "include": [

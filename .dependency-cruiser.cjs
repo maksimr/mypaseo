@@ -58,9 +58,9 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: ['node_modules'] },
-    // Type-only imports couple features too.
-    tsPreCompilationDeps: true,
-    tsConfig: { fileName: 'tsconfig.app.json' },
+    // typescript@7 has no JS API for dependency-cruiser yet: it would parse no .ts and pass silently. swc keeps
+    // type-only imports (they couple features too), so tsPreCompilationDeps and tsConfig, which need that API, are gone.
+    parser: 'swc',
     enhancedResolveOptions: {
       exportsFields: ['exports'],
       conditionNames: ['import', 'require', 'node', 'default', 'types'],
