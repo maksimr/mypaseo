@@ -34,6 +34,7 @@ export function useTabs({
   const [commitTab, setCommitTab] = useState<string>() // the commit whose diff the 'commit' tab shows
   const [commitFocus, setCommitFocus] = useState<{ path: string; n: number } | null>(null)
   const [focus, setFocus] = useState<{ path: string; n: number } | null>(null)
+  const [fileLine, setFileLine] = useState<{ path: string; line: number } | null>(null) // a new object per open, so the same line scrolls again
 
   // Loading keeps it open while the diff arrives; an empty diff (all committed) closes it.
   const changesTab = changesPick ?? (isGit && (diff.files.length > 0 || (diff.loading && tab === 'changes')))
@@ -58,6 +59,7 @@ export function useTabs({
     setCommit(s?.commit)
     setCommitTab(s?.commitTab)
     setTab(s?.tab ?? 'chat')
+    setFileLine(null)
     setVisited([])
   }
   /** Keeps a shown view mounted. Not during the workspace switch above: it reset them. */
@@ -65,8 +67,9 @@ export function useTabs({
     if (tabsWs === workspaceId && !visited.includes(k)) setVisited([...visited, k])
   }
 
-  const openFile = (path: string) => {
+  const openFile = (path: string, line?: number) => {
     setFiles((f) => (f.includes(path) ? f : [...f, path]))
+    setFileLine(line ? { path, line } : null)
     setTab(`file:${path}`)
     dismiss()
   }
@@ -133,6 +136,7 @@ export function useTabs({
     commitFocus,
     setCommitFocus,
     focus,
+    fileLine,
     openFile,
     openChanges,
     openGraph,

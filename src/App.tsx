@@ -151,7 +151,7 @@ export default function App() {
   const diff = useCheckoutDiff(hostId, isGit ? cwd : undefined)
   const terms = useTerminals(hostId, workspace)
   const tabs = useTabs({ workspaceId: sel.workspaceId, isGit, diff, terms, setPanel, dismiss })
-  const { tab, setTab, files, changesTab, graphTab, graphPath, commit, setCommit, commitTab, commitFocus, focus } = tabs
+  const { tab, setTab, files, changesTab, graphTab, graphPath, commit, setCommit, commitTab, commitFocus, focus, fileLine } = tabs
   const { openFile, openChanges, openGraph, closeChanges, closeGraph, closeCommit, closeFile, showComment } = tabs
   const commitDiff = useCommitDiff(hostId, isGit ? cwd : undefined, commitTab)
   // Touch: dragging in from the left edge slides out the sidebar, from the right edge the file panel;
@@ -313,7 +313,7 @@ export default function App() {
       return k === tab || terms.terminals.some((x) => `term:${x.id}` === k) ? <TerminalView terminalId={k.slice('term:'.length)} /> : null
     if (k.startsWith('file:')) {
       const path = k.slice('file:'.length)
-      return files.includes(path) && cwd ? <FileView cwd={cwd} path={path} onHistory={isGit ? () => openGraph(path) : undefined} /> : null
+      return files.includes(path) && cwd ? <FileView cwd={cwd} path={path} reveal={fileLine?.path === path ? fileLine : undefined} onHistory={isGit ? () => openGraph(path) : undefined} /> : null
     }
     const i = chatTabs.findIndex((a) => chatKey(a) === k)
     if (i < 0) return null

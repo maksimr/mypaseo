@@ -83,8 +83,8 @@ export function FileTree({ cwd, rootName, onOpen, activePath }: { cwd: string; r
 
 type Loaded = { kind: 'text'; text: string } | { kind: 'image'; url: string } | { kind: 'binary' } | { kind: 'error'; message: string }
 
-/** `onHistory` shows the file's commits; pass it only in git workspaces. */
-export function FileView({ cwd, path, onHistory }: { cwd: string; path: string; onHistory?: () => void }) {
+/** `onHistory` shows the file's commits; pass it only in git workspaces. `reveal`: the line to scroll to, once loaded. */
+export function FileView({ cwd, path, reveal, onHistory }: { cwd: string; path: string; reveal?: { line: number }; onHistory?: () => void }) {
   const daemon = useDaemon()
   const [file, setFile] = useState<Loaded | null>(null)
   const review = useReview(cwd)
@@ -106,6 +106,9 @@ export function FileView({ cwd, path, onHistory }: { cwd: string; path: string; 
       if (url) URL.revokeObjectURL(url)
     }
   }, [daemon, cwd, path])
+  useEffect(() => {
+    if (reveal && file?.kind === 'text') root.current?.querySelectorAll(':scope > pre > .code-line')[reveal.line - 1]?.scrollIntoView({ block: 'center' })
+  }, [reveal, file])
 
   return (
     <div className="file-view" data-path={path} ref={root}>

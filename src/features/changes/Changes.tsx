@@ -17,10 +17,10 @@ import { FileHunks } from './FileHunks'
 // Toolbar 38px + .excerpt-head 34px (changes.css): a chunk right under them is at the top of the view.
 const HEADERS = 72
 const topOf = (el: Element) => el.getBoundingClientRect().top
-const chunkEls = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('.chunk')]
-/** The chunk at the top of the view, else the next one below it. The toolbar's Stage/Unstage act on it. */
-const currentChunk = (root: HTMLElement) =>
-  chunkEls(root).find((el) => el.getBoundingClientRect().bottom > topOf(root) + HEADERS + 1)
+const chunkEls = (root: Element) => [...root.querySelectorAll<HTMLElement>('.chunk')]
+/** The chunk at the top of the view, else the next one below it; `scope` limits it to one file. The toolbar's Stage/Unstage act on it. */
+const currentChunk = (root: HTMLElement, scope: Element = root) =>
+  chunkEls(scope).find((el) => el.getBoundingClientRect().bottom > topOf(root) + HEADERS + 1)
 
 function goToChunk(root: HTMLElement, dir: number) {
   const y = topOf(root) + HEADERS
@@ -72,7 +72,7 @@ export function ChangesView({
   cwd: string
   diff: DiffState
   focus: { path: string; n: number } | null
-  onOpenFile: (path: string) => void
+  onOpenFile: (path: string, line?: number) => void
   readOnly?: boolean
 }) {
   const daemon = useDaemon()
@@ -425,7 +425,10 @@ export function ChangesView({
                   title="Open File"
                   onClick={(e) => {
                     e.stopPropagation()
-                    onOpenFile(f.path)
+                    // The file's chunk in focus, else (collapsed, or scrolled past) its first one.
+                    const el = currentChunk(root.current!, e.currentTarget.closest('.excerpt')!)
+                    const c = el ? chunks(f.hunks[Number(el.dataset.hunk)])[Number(el.dataset.chunk)] : f.hunks.flatMap(chunks).find((c) => c.change)
+                    onOpenFile(f.path, c && c.at + 1)
                   }}
                 >
                   <FileCode size={14} />
