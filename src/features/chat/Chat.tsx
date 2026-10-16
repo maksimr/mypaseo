@@ -83,6 +83,7 @@ export function Chat({
     ro.observe(el)
     const content = el.querySelector('.timeline')
     if (content) ro.observe(content)
+    ro.observe(el.querySelector('.chat-foot')!)
     return () => ro.disconnect()
   }, [])
   // Viewing an agent acknowledges its "finished" / "error" attention flag, except a Mark Unread made while it's open.
@@ -123,11 +124,6 @@ export function Chat({
             {tl.error && <div className="empty err">{tl.error}</div>}
             <Timeline items={tl.items} running={running} />
             {agent.lastError && agent.status === 'error' && <div className="msg error pre-wrap">{agent.lastError}</div>}
-            {away && (
-              <button className="jump-latest" onClick={jumpToLatest}>
-                <ArrowDown size={13} /> Jump to Latest Message ({formatCombo(jumpKey)})
-              </button>
-            )}
           </>
         ) : (
           <div className="empty-chat">
@@ -144,34 +140,42 @@ export function Chat({
             </button>
           </div>
         )}
+        {/* Measured here, not on the composer's div: its bottom margin collapses out of that one. */}
+        <div className="chat-foot" ref={foot}>
+          {agent && away && (
+            <button className="jump-latest" onClick={jumpToLatest}>
+              <ArrowDown size={13} /> Jump to Latest Message ({formatCombo(jumpKey)})
+            </button>
+          )}
+          {agent?.pendingPermissions.map((p) => <PermissionCard key={p.id} agentId={agent.id} request={p} />)}
+          {/* Hidden, not unmounted: the draft and attachments stay. */}
+          <div hidden={composerHidden}>
+            <Composer
+              agent={agent}
+              target={target}
+              onCreated={onCreated}
+              initialText={initialText}
+              onInitialTextUsed={onInitialTextUsed}
+              onProjectChange={onProjectChange}
+              onDraftProvider={onDraftProvider}
+              onShowComment={onShowComment}
+            />
+          </div>
+          {composerHidden && (
+            <button
+              className="show-composer"
+              title="Write Message"
+              aria-label="Write Message"
+              onClick={() => {
+                flushSync(() => setHide(false))
+                foot.current?.querySelector('textarea')?.focus({ preventScroll: true }) // within the tap, so touch keyboards open
+              }}
+            >
+              <SquarePen size={14} />
+            </button>
+          )}
+        </div>
       </div>
-      {agent?.pendingPermissions.map((p) => <PermissionCard key={p.id} agentId={agent.id} request={p} />)}
-      {/* Hidden, not unmounted: the draft and attachments stay. */}
-      <div ref={foot} hidden={composerHidden}>
-        <Composer
-          agent={agent}
-          target={target}
-          onCreated={onCreated}
-          initialText={initialText}
-          onInitialTextUsed={onInitialTextUsed}
-          onProjectChange={onProjectChange}
-          onDraftProvider={onDraftProvider}
-          onShowComment={onShowComment}
-        />
-      </div>
-      {composerHidden && (
-        <button
-          className="show-composer"
-          title="Write Message"
-          aria-label="Write Message"
-          onClick={() => {
-            flushSync(() => setHide(false))
-            foot.current?.querySelector('textarea')?.focus({ preventScroll: true }) // within the tap, so touch keyboards open
-          }}
-        >
-          <SquarePen size={14} />
-        </button>
-      )}
     </div>
   )
 }
