@@ -1,4 +1,4 @@
-/* Git graph: one svg draws every lane under the rows' empty first column. */
+/* Git graph: one svg draws every lane in the rows' first column, right of the refs (--refs-w). */
 .graph {
   flex: 1;
   overflow: auto;
@@ -67,31 +67,82 @@
 .graph-lines {
   position: absolute;
   top: 0;
-  left: 0;
-  width: var(--graph-w);
+  left: var(--refs-w);
+  width: calc(var(--graph-w) - var(--refs-w));
   pointer-events: none;
 }
 .graph-lines path {
   fill: none;
   stroke-width: 2;
 }
-.graph-desc {
+.graph-lines circle {
+  fill: var(--bg);
+  stroke-width: 2;
+}
+/* Ends 6px left of the commit's dot (--x into the lanes; the dot's r 4 + half its stroke). */
+.graph-refs {
   display: flex;
   align-items: center;
-  gap: 5px;
+  width: calc(var(--refs-w) + var(--x) - 6px);
+  max-width: 100%;
+  padding-left: 8px;
+}
+.graph-labels {
+  display: flex;
+  gap: 4px;
   min-width: 0;
-  overflow: hidden; /* long refs stop at the column edge */
+  max-width: calc(var(--refs-w) - 16px);
+}
+.graph-ref,
+.graph-more {
+  border-radius: 4px;
+  font: 12px/18px var(--mono);
 }
 .graph-ref {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
+  min-width: 0;
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, var(--c) 50%, transparent);
+  background: color-mix(in srgb, var(--c) 12%, transparent);
+}
+.graph-ref svg {
   flex: none;
-  padding: 0 5px;
-  border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--c) 14%, transparent);
-  font: 12px/18px var(--mono);
+  color: var(--c);
+}
+.graph-more {
+  position: relative;
+  flex: none;
+  padding: 1px 6px;
+  background: #3a7bd5;
+  color: #fff;
+}
+.graph-more-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 1;
+  display: none;
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--bg-active);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  color: var(--text);
+  font: 13px/1.6 var(--sans);
+}
+.graph-more:hover .graph-more-list,
+.graph-row:focus-visible .graph-more-list {
+  display: block;
+}
+.graph-dash {
+  flex: 1;
+  min-width: 0;
+  height: 1px;
+  margin-left: 6px;
+  background: repeating-linear-gradient(90deg, var(--c) 0 4px, transparent 4px 8px);
+  opacity: 0.7;
 }
 .graph-body .graph-row {
   cursor: pointer;

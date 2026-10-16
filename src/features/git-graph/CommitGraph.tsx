@@ -1,4 +1,4 @@
-import { CaseSensitive, Check, ChevronDown, ChevronUp, Hash, Mail, Tag } from 'lucide-react'
+import { CaseSensitive, Check, ChevronDown, ChevronUp, GitBranch, Hash, Mail, Tag } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { clickable } from '../../a11y'
 import { errorText, type DiffFile, type Workspace } from '../../daemon'
@@ -13,6 +13,9 @@ const LIMIT = 1000
 const ROW = 28 // .graph-row height in graph.css
 const LANE = 16
 const R = 6 // corner radius where a line turns between lanes
+const REFS_W = 200 // default room left of the lanes for a commit's first ref and its +N badge
+const MIN_REFS = 72 // narrower, a ref pill shows no text, so refs hide
+const PHONE = '(width < 600px)' // the phone media query in graph.css, which hides date, author and sha
 const COLORS = ['#74ade8', '#e5894a', '#a1c181', '#c678dd', '#dec184', '#56b6c2', '#e06c75']
 const color = (lane: number) => COLORS[lane % COLORS.length]
 const x = (lane: number) => 12 + lane * LANE
@@ -71,10 +74,31 @@ function ColResizer({ col, dir, label, width, onResize }: { col: number; dir: 1 
 function Ref({ name }: { name: string }) {
   const tag = name.startsWith('tag: ')
   return (
-    <span className="graph-ref">
-      {name.startsWith('HEAD') && <Check size={11} />}
-      {tag && <Tag size={11} />}
-      {tag ? name.slice(5) : name.replace(' -> ', ' → ')}
+    <span className="graph-ref" title={name}>
+      {name.startsWith('HEAD') ? <Check size={12} /> : tag ? <Tag size={12} /> : <GitBranch size={12} />}
+      <span className="truncate">{tag ? name.slice(5) : name.replace(' -> ', ' → ')}</span>
+    </span>
+  )
+}
+
+/** A commit's first ref, a +N badge listing the rest on hover, and a dashed line over to the commit's dot. */
+function Refs({ refs: [first, ...rest] }: { refs: string[] }) {
+  return (
+    <span className="graph-refs">
+      <span className="graph-labels">
+        <Ref name={first} />
+        {rest.length > 0 && (
+          <span className="graph-more">
+            +{rest.length}
+            <span role="tooltip" className="graph-more-list">
+              {rest.map((r) => (
+                <div key={r}>- {r}</div>
+              ))}
+            </span>
+          </span>
+        )}
+      </span>
+      <span className="graph-dash" />
     </span>
   )
 }
@@ -122,14 +146,30 @@ export function CommitGraph({
     setCols(next)
     localStorage.mypaseoGraphColumns = JSON.stringify(next)
   }
-  // Until dragged, the graph column fits up to 7 lanes so the description keeps the room; wider lanes clip (the svg's css width is --graph-w).
-  const graphW = cols.graph ?? Math.min(Math.max(64, x(width) + 4), x(6) + 12)
+  const pane = useRef<HTMLDivElement>(null)
+  const [paneW, setPaneW] = useState(0)
+  useEffect(() => {
+    const el = pane.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setPaneW(el.clientWidth))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  // Lanes sit at the column's right and fit up to 7; wider lanes clip. Refs get the rest of the column.
+  const lanesW = Math.min(x(width) + 4, x(6) + 12)
+  // Until dragged, the graph column takes at most 2/5 of the width it shares with the description, which matters more.
+  // matchMedia in render is enough: a viewport resize also resizes the pane, which re-renders.
+  const others = matchMedia(PHONE).matches ? 0 : cols.date + cols.author + cols.sha + 36 // + their 3 gaps
+  const shared = paneW - 24 // the row's right padding and the graph-description gap
+  const fit = commits.some((c) => c.refs.length) ? Math.min(REFS_W, Math.round(((shared - others) * 2) / 5 - lanesW)) : 0
+  const graphW = cols.graph ?? Math.max(64, (fit < MIN_REFS ? 0 : fit) + lanesW)
+  const refsW = Math.max(0, graphW - lanesW)
   const lines = useMemo(
     () => (
       <svg className="graph-lines" height={rows.length * ROW} aria-hidden>
         {rows.flatMap((r, i) => r.lines.map((l, j) => <path key={`${i}.${j}`} d={linePath(l, i)} stroke={color(l.lane)} />))}
         {rows.map((r, i) => (
-          <circle key={i} cx={x(r.lane)} cy={y(i)} r={3.5} fill={color(r.lane)} />
+          <circle key={i} cx={x(r.lane)} cy={y(i)} r={4} stroke={color(r.lane)} />
         ))}
       </svg>
     ),
@@ -154,7 +194,8 @@ export function CommitGraph({
   return (
     <div
       className="graph"
-      style={{ '--graph-w': `${graphW}px`, '--date-w': `${cols.date}px`, '--author-w': `${cols.author}px`, '--sha-w': `${cols.sha}px` } as CSSProperties}
+      ref={pane}
+      style={{ '--graph-w': `${graphW}px`, '--refs-w': `${refsW}px`, '--date-w': `${cols.date}px`, '--author-w': `${cols.author}px`, '--sha-w': `${cols.sha}px` } as CSSProperties}
     >
       <div className="graph-toolbar">
         <input
@@ -209,17 +250,12 @@ export function CommitGraph({
               <div
                 key={c.sha}
                 className={`graph-row ${matched.has(i) ? 'match' : ''} ${i === current ? 'current' : ''} ${c.sha === selected ? 'selected' : ''}`}
-                style={{ '--c': color(rows[i].lane) } as CSSProperties}
+                style={{ '--c': color(rows[i].lane), '--x': `${x(rows[i].lane)}px` } as CSSProperties}
                 {...clickable(() => onSelect(c.sha))}
               >
-                <span />
-                <span className="graph-desc">
-                  {c.refs.map((r) => (
-                    <Ref key={r} name={r} />
-                  ))}
-                  <span className="truncate" title={c.subject}>
-                    {c.subject}
-                  </span>
+                {c.refs.length && refsW >= MIN_REFS ? <Refs refs={c.refs} /> : <span />}
+                <span className="truncate" title={c.subject}>
+                  {c.subject}
                 </span>
                 <span className="truncate muted">{formatDate(c.date)}</span>
                 <span className="truncate muted" title={c.author}>
