@@ -1,4 +1,4 @@
-import { Archive, ChevronDown, ChevronRight, Copy, Ellipsis, GitBranch, Loader2, Mail, MailOpen, Pencil, Pin, PinOff, Plus, Trash2, X } from 'lucide-react'
+import { Archive, Check, ChevronDown, ChevronRight, Copy, Ellipsis, GitBranch, Loader2, Mail, MailOpen, Pencil, Pin, PinOff, Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import { errorText, type Agent, type Workspace } from '../../daemon'
 import { clickable } from '../../a11y'
@@ -57,6 +57,7 @@ export function WorkspaceRow({
   // A branch without an upstream was never pushed: its commits ahead of the base are unpushed.
   const unpushed = git?.aheadOfOrigin ?? (git?.remoteUrl ? git.aheadBehind?.ahead : 0) ?? 0
   const [editing, setEditing] = useState(false)
+  const [copied, setCopied] = useState(false)
   const saveName = (value: string) => {
     setEditing(false)
     // The daemon trims it, and an empty title clears the override.
@@ -111,14 +112,20 @@ export function WorkspaceRow({
           {branch && (
             <span className="workspace-branch muted">
               <button
-                className="icon-btn hover-swap"
+                className={`icon-btn hover-swap${copied ? ' copied' : ''}`}
                 title="Copy Path"
                 onClick={(e) => {
                   e.stopPropagation()
-                  navigator.clipboard.writeText(w.workspaceDirectory).catch((err) => alert(`Could not copy: ${errorText(err)}`))
+                  navigator.clipboard.writeText(w.workspaceDirectory).then(
+                    () => {
+                      setCopied(true)
+                      setTimeout(() => setCopied(false), 1200)
+                    },
+                    (err) => alert(`Could not copy: ${errorText(err)}`),
+                  )
                 }}
               >
-                <Copy size={11} />
+                {copied ? <Check size={11} /> : <Copy size={11} />}
               </button>
               <GitBranch size={11} className="status-mark" aria-label="Branch" />
               <span className="truncate">{branch}</span>
