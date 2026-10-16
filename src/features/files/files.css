@@ -23,3 +23,12 @@
   max-width: 100%;
   margin: 16px;
 }
+.crumb:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+.crumb-menu {
+  min-width: 240px;
+  max-height: 50vh;
+  overflow: auto;
+}
