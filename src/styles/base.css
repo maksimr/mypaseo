@@ -365,8 +365,9 @@ code.inline {
 .sidebar-head .hover-only {
   visibility: hidden;
 }
+/* With the focus anywhere in the sidebar: hidden buttons can't take it, and Move Focus Up goes from the rows to these. */
 .sidebar:hover .sidebar-head .hover-only,
-.sidebar-head:focus-within .hover-only {
+.sidebar:focus-within .sidebar-head .hover-only {
   visibility: visible;
 }
 .row:hover .hover-only {

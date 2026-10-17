@@ -283,7 +283,7 @@ export function ChangesView({
   return (
     // tabIndex: App focuses the shown view when a side pane closes, so arrow keys scroll it.
     <div className="changes" ref={root} tabIndex={-1} onScroll={syncCurrent}>
-      <div className="changes-toolbar">
+      <div className="changes-toolbar" role="toolbar" aria-label="Changes">
         {commented && <CommentNav root={root} />}
         <button
           className="icon-btn"

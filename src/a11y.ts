@@ -41,6 +41,33 @@ export function navigateRows(e: KeyboardEvent<HTMLElement>) {
   }
 }
 
+const CONTROL = ':is(button, input, select, a[href], [tabindex="0"]):not(:disabled)'
+/** A toolbar's arrow-key stops: its shown controls, minus those inside another (a tab's close button) or in a menu. */
+const barControls = (bar: Element) =>
+  [...bar.querySelectorAll<HTMLElement>(CONTROL)].filter(
+    (el) => !el.parentElement?.closest(`${CONTROL}, .menu`) && el.checkVisibility() && getComputedStyle(el).visibility === 'visible',
+  )
+
+/** Focuses a toolbar's open tab, else its first control. */
+export function focusBar(bar: Element) {
+  const controls = barControls(bar)
+  ;(controls.find((el) => el.matches('.tab.on, .panel-tab.on')) ?? controls[0])?.focus()
+}
+
+/** The app's onKeyDown: ←/→ in a `role="toolbar"` move the focus to the previous or next control; in a text field, the caret. */
+export function navigateBars(e: KeyboardEvent<HTMLElement>) {
+  const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
+  const t = e.target instanceof HTMLElement ? e.target : null
+  const bar = t && !t.matches('input, textarea') && !t.closest('.menu') ? t.closest('[role="toolbar"]') : null
+  if (!step || !t || !bar || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
+  const controls = barControls(bar)
+  const i = controls.findIndex((el) => el.contains(t))
+  const next = i < 0 ? undefined : controls[i + step]
+  if (!next) return
+  e.preventDefault() // a select would change its value
+  next.focus()
+}
+
 /** Close a modal on Escape. */
 export function useEscape(onClose: () => void) {
   useEffect(() => {

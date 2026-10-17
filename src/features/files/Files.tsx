@@ -135,7 +135,7 @@ export function FileView({ cwd, path, reveal, onHistory }: { cwd: string; path: 
   return (
     // tabIndex: App focuses the shown view when a side pane closes, so arrow keys scroll it.
     <div className="file-view" data-path={path} ref={root} tabIndex={-1}>
-      <div className="file-path">
+      <div className="file-path" role="toolbar" aria-label="Path">
         {review.comments.some((c) => c.path === path) && <CommentNav root={root} />}
         <span className="grow truncate">
           {parts.map(

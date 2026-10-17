@@ -1,7 +1,8 @@
 import { PanelLeft, PanelRight, X } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
-import { focusRow } from './a11y'
+import { focusRow, navigateBars } from './a11y'
+import { focusView, moveFocus } from './focus'
 import { ActiveViewContext } from './activeView'
 import { ArtifactView } from './features/artifacts/Artifacts'
 import { ChangesView } from './features/changes/Changes'
@@ -173,23 +174,17 @@ export default function App() {
   const [panelW, setPanelW] = useWidth('mypaseoPanelWidth', 320) // room for the Changes, Files and Git Graph tabs
   const sidebarKey = useShortcut('toggleSidebar')
   const panelKey = useShortcut('togglePanel')
-  /** The open tab takes the focus: its composer or terminal when shown, else its focusable view, so keys type or scroll there. */
-  const focusView = () => {
-    const view = appRef.current?.querySelector('.view:not([inert])')
-    const input = [...(view?.querySelectorAll<HTMLElement>('.chat-foot textarea, .term-view textarea') ?? [])].find((el) => el.checkVisibility())
-    ;(input ?? view?.querySelector<HTMLElement>('[tabindex="-1"]'))?.focus()
-  }
   // Like Zed's docks: a pane the toggle opens takes the focus on its current row, so arrow keys and Enter work there;
   // one it closes hands the focus to the open tab, unless the focus is already there or in the other pane.
   const toggleSidebar = () => {
     flushSync(() => setSidebar(!sidebar))
     if (!sidebar) focusRow(appRef.current?.querySelector<HTMLElement>('.sidebar'))
-    else if (!document.activeElement?.closest('.center, .panel')) focusView()
+    else if (!document.activeElement?.closest('.center, .panel')) focusView(appRef.current)
   }
   const togglePanel = () => {
     flushSync(() => setPanel(panel ? null : 'changes'))
     if (!panel) focusRow(appRef.current?.querySelector<HTMLElement>('.panel'))
-    else if (!document.activeElement?.closest('.center, .sidebar')) focusView()
+    else if (!document.activeElement?.closest('.center, .sidebar')) focusView(appRef.current)
   }
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -201,17 +196,11 @@ export default function App() {
         e.preventDefault()
         toggleSidebar()
       }
-      const move = isShortcut(e, 'focusRight') ? 1 : isShortcut(e, 'focusLeft') ? -1 : 0
-      if (move && appRef.current) {
+      const dir = isShortcut(e, 'focusLeft') ? 'left' : isShortcut(e, 'focusRight') ? 'right' : isShortcut(e, 'focusUp') ? 'up' : isShortcut(e, 'focusDown') ? 'down' : undefined
+      if (dir && appRef.current) {
         e.preventDefault()
         flushSync(() => {}) // run from the command palette: it closes first, handing the focus back to where it was
-        // The shown panes, left to right; from outside them (a corner button, nothing), the focus counts as in the main area.
-        const panes = [...appRef.current.querySelectorAll<HTMLElement>('.sidebar, .center, .panel')].filter((p) => p.checkVisibility())
-        const center = panes.findIndex((p) => p.matches('.center'))
-        const at = panes.findIndex((p) => p.contains(document.activeElement))
-        const to = panes[(at < 0 ? center : at) + move]
-        if (to?.matches('.center')) focusView()
-        else if (to) focusRow(to)
+        moveFocus(appRef.current, dir)
       }
       if (isShortcut(e, 'toggleActiveOnly')) {
         e.preventDefault()
@@ -385,6 +374,7 @@ export default function App() {
     <OpenArtifactContext value={openArtifact}>
       <div
         ref={appRef}
+        onKeyDown={navigateBars}
         className={`app ${panel && cwd ? 'with-panel' : ''} ${sidebar ? '' : 'no-sidebar'} ${swipe ? `swipe-${swipe.side} swipe-${swipe.settle ?? 'drag'}` : ''}`}
         style={{ '--sidebar-w': `${sidebarW}px`, '--panel-w': `${panelW}px` } as CSSProperties}
       >

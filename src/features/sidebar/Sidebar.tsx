@@ -129,7 +129,7 @@ export function Sidebar({
     <>
       {/* Focusable: with no rows, the pane itself takes the focus when it opens. Arrow keys browse the rows like a tree. */}
       <aside className="sidebar" tabIndex={-1} onKeyDown={navigateRows}>
-        <div className="sidebar-head">
+        <div className="sidebar-head" role="toolbar" aria-label="Projects">
           <span className="section-label">Projects</span>
           <button className="icon-btn hover-only" title={`Add Project (${formatCombo(addProjectKey)})`} onClick={() => setAdding(true)}>
             <FolderAdd />
@@ -169,7 +169,7 @@ export function Sidebar({
             />
           ))}
         </nav>
-        <div className="sidebar-foot">
+        <div className="sidebar-foot" role="toolbar" aria-label="Status">
           <button className="icon-btn" title="Hosts" popoverTarget="host-menu" onClick={placeMenu('host-menu', true)}>
             <Server size={15} />
           </button>

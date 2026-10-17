@@ -18,6 +18,8 @@ export const SHORTCUTS = {
   // Ctrl on Mac too: Chrome there keeps Cmd+Alt+Left/Right for switching browser tabs.
   focusLeft: { group: 'General', label: 'Move Focus Left', description: 'Move the focus from the file panel to the main area, or from the main area to the sidebar. Hidden panes are skipped.', default: 'Ctrl+Alt+ArrowLeft' },
   focusRight: { group: 'General', label: 'Move Focus Right', description: 'Move the focus from the sidebar to the main area, or from the main area to the file panel. Hidden panes are skipped.', default: 'Ctrl+Alt+ArrowRight' },
+  focusUp: { group: 'General', label: 'Move Focus Up', description: 'Move the focus up within the sidebar, main area or file panel: from the content to the toolbar or tabs above it. There Left and Right go through the controls.', default: 'Ctrl+Alt+ArrowUp' },
+  focusDown: { group: 'General', label: 'Move Focus Down', description: 'Move the focus down within the sidebar, main area or file panel: from the tabs or a toolbar to what is below it.', default: 'Ctrl+Alt+ArrowDown' },
   addProject: { group: 'General', label: 'Add Project', description: 'Add a project directory to the sidebar.', default: 'Ctrl+KeyO' },
 
   // Tabs

@@ -36,7 +36,7 @@ export function TabBar({
   const closeAgentKey = useShortcut('closeAgent')
   const t = totals(diff.files)
   return (
-    <div className="tabbar">
+    <div className="tabbar" role="toolbar" aria-label="Tabs">
       {/* On phones, a popover listing every tab (the bar shows only the open one); picking one closes it. */}
       <div className="tabs" id="tab-list" popover="auto" onClick={(e) => e.currentTarget.hidePopover()}>
         {chatTabs.map((a) => (
@@ -139,7 +139,7 @@ export function TabBar({
           </div>
         )}
         {files.map((path) => (
-          <div key={path} className={`tab ${tab === `file:${path}` ? 'on' : ''}`} onClick={() => setTab(`file:${path}`)} title={path}>
+          <div key={path} className={`tab ${tab === `file:${path}` ? 'on' : ''}`} {...clickable(() => setTab(`file:${path}`))} title={path}>
             <FileCode size={13} />
             <span className="truncate">{path.split('/').pop()}</span>
             <button

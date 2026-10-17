@@ -198,7 +198,7 @@ export function CommitGraph({
       tabIndex={-1} // App focuses the shown view when a side pane closes, so arrow keys scroll it
       style={{ '--graph-w': `${graphW}px`, '--refs-w': `${refsW}px`, '--date-w': `${cols.date}px`, '--author-w': `${cols.author}px`, '--sha-w': `${cols.sha}px` } as CSSProperties}
     >
-      <div className="graph-toolbar">
+      <div className="graph-toolbar" role="toolbar" aria-label="Git Graph">
         <input
           className="input grow"
           placeholder="Search commits…"
