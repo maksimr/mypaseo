@@ -1,11 +1,12 @@
-import { ChevronDown, ChevronRight, Ellipsis, Folder, Import, Plus, Trash2 } from 'lucide-react'
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { ChevronDown, ChevronRight, Ellipsis, Eye, EyeOff, Folder, Import, Plus, Trash2 } from 'lucide-react'
+import { useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { errorText, type Agent, type Project, type Workspace } from '../../daemon'
 import { clickable } from '../../a11y'
 import { formatCombo, useShortcut } from '../../keymap'
 import { byRecent, client, hostLabel, isScratch, moveProject, projectName, projectWorkspaces as sortedWorkspaces, useStore } from '../../store'
 import { FolderExpanded, Scratches } from '../../components/icons'
 import { placeMenu } from '../../components/menu'
+import { ArchivedWorkspaces } from './ArchivedWorkspaces'
 import { StatusMark } from './StatusMark'
 import { WorkspaceRow } from './WorkspaceRow'
 import type { Selection } from './Sidebar'
@@ -60,6 +61,7 @@ export function ProjectRow({
   const name = projectName(p)
   const menuId = `project-menu-${p.projectId}`
   const row = clickable(() => onToggle(p.projectId))
+  const [showArchived, setShowArchived] = useState(false)
   return (
     <div
       className={dragged === p.projectId ? 'dragging' : undefined}
@@ -119,6 +121,17 @@ export function ProjectRow({
           <Import size={14} /> Import Session
         </button>
         <button
+          popoverTarget={menuId}
+          popoverTargetAction="hide"
+          aria-pressed={showArchived}
+          onClick={() => {
+            setShowArchived(!showArchived)
+            if (!showArchived && !open) onToggle(p.projectId)
+          }}
+        >
+          {showArchived ? <Eye size={14} /> : <EyeOff size={14} />} Archived
+        </button>
+        <button
           className="danger"
           popoverTarget={menuId}
           popoverTargetAction="hide"
@@ -145,6 +158,7 @@ export function ProjectRow({
             onSync={(op) => onSync(w, op)}
           />
         ))}
+      {open && showArchived && <ArchivedWorkspaces hostId={p.hostId} projectId={p.projectId} activeIds={projectWorkspaces.map((w) => w.id)} />}
     </div>
   )
 }

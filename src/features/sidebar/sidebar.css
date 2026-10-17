@@ -81,6 +81,11 @@
     translate: -50% 4px;
   }
 }
+/* Project menu → Show Archived Workspaces: read-only rows, only Restore acts. */
+.row.archived {
+  color: var(--text-muted);
+  cursor: default;
+}
 .row.agent {
   padding-left: 40px;
   color: var(--text-muted);
