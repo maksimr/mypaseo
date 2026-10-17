@@ -201,6 +201,18 @@ export default function App() {
         e.preventDefault()
         toggleSidebar()
       }
+      const move = isShortcut(e, 'focusRight') ? 1 : isShortcut(e, 'focusLeft') ? -1 : 0
+      if (move && appRef.current) {
+        e.preventDefault()
+        flushSync(() => {}) // run from the command palette: it closes first, handing the focus back to where it was
+        // The shown panes, left to right; from outside them (a corner button, nothing), the focus counts as in the main area.
+        const panes = [...appRef.current.querySelectorAll<HTMLElement>('.sidebar, .center, .panel')].filter((p) => p.checkVisibility())
+        const center = panes.findIndex((p) => p.matches('.center'))
+        const at = panes.findIndex((p) => p.contains(document.activeElement))
+        const to = panes[(at < 0 ? center : at) + move]
+        if (to?.matches('.center')) focusView()
+        else if (to) focusRow(to)
+      }
       if (isShortcut(e, 'toggleActiveOnly')) {
         e.preventDefault()
         setActiveOnly((a) => !a)

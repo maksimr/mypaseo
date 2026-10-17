@@ -15,6 +15,9 @@ export const SHORTCUTS = {
   openSettings: { group: 'General', label: 'Open Settings', description: 'Open this settings window.', default: 'Ctrl+Comma' },
   toggleSidebar: { group: 'General', label: 'Toggle Sidebar', description: 'Show or hide the project sidebar.', default: `${mod}+KeyB` },
   togglePanel: { group: 'General', label: 'Toggle File Panel', description: 'Show or hide the right panel with files and changes.', default: `${mod}+KeyE` },
+  // Ctrl on Mac too: Chrome there keeps Cmd+Alt+Left/Right for switching browser tabs.
+  focusLeft: { group: 'General', label: 'Move Focus Left', description: 'Move the focus from the file panel to the main area, or from the main area to the sidebar. Hidden panes are skipped.', default: 'Ctrl+Alt+ArrowLeft' },
+  focusRight: { group: 'General', label: 'Move Focus Right', description: 'Move the focus from the sidebar to the main area, or from the main area to the file panel. Hidden panes are skipped.', default: 'Ctrl+Alt+ArrowRight' },
   addProject: { group: 'General', label: 'Add Project', description: 'Add a project directory to the sidebar.', default: 'Ctrl+KeyO' },
 
   // Tabs

@@ -28,8 +28,9 @@ export function TerminalList({ terminals, activeId, onOpen, onNew }: { terminals
   )
 }
 
-// In a terminal the shell gets every key but the app shortcuts with Cmd or Ctrl+Shift, which shells don't use.
-const appKey = (e: KeyboardEvent) => (e.metaKey || (e.ctrlKey && e.shiftKey)) && SHORTCUT_IDS.some((id) => isShortcut(e, id))
+// In a terminal the shell gets every key but the app shortcuts with Cmd, Ctrl+Shift or Ctrl+Alt+arrows, which shells don't use.
+const appKey = (e: KeyboardEvent) =>
+  (e.metaKey || (e.ctrlKey && (e.shiftKey || (e.altKey && e.code.startsWith('Arrow'))))) && SHORTCUT_IDS.some((id) => isShortcut(e, id))
 
 /** A daemon terminal in xterm.js: replays its screen and scrollback, then streams output and sends keys and size. */
 export function TerminalView({ terminalId }: { terminalId: string }) {

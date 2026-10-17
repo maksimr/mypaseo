@@ -32,8 +32,9 @@
   border-radius: 16px;
   background: var(--bg-elev);
 }
+/* The accent, like the :focus-visible outline on a focused sidebar row. */
 .composer:focus-within {
-  border-color: var(--border-strong);
+  border-color: var(--accent);
 }
 .composer.dragging {
   border-style: dashed;
