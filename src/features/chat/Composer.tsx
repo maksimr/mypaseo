@@ -94,6 +94,7 @@ export function Composer({
   const reviewCwd = target.workspace?.workspaceDirectory
   const review = useReview(reviewCwd)
   const [busy, setBusy] = useState(false)
+  const [dragging, setDragging] = useState(false)
   const isGit = projects.find((p) => p.projectId === target.projectId)?.projectKind === 'git'
   const [worktree, setWorktree] = useState(false)
   const [worktreeName, setWorktreeName] = useState('')
@@ -259,8 +260,31 @@ export function Composer({
   const empty = !text.trim() && !images.length && !files.length && !review.comments.length
   const n = review.comments.length
   const reviewPaths = [...new Set(review.comments.map((c) => c.path))]
+  // Only file drags: dragged text keeps the textarea's native drop.
+  const hasFiles = (e: React.DragEvent) => e.dataTransfer.types.includes('Files')
   return (
-    <div className="composer">
+    <div
+      className={`composer${dragging ? ' dragging' : ''}`}
+      onDragOver={(e) => {
+        if (!hasFiles(e)) return
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'copy'
+        setDragging(true)
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false)
+      }}
+      onDrop={(e) => {
+        if (!hasFiles(e)) return
+        e.preventDefault()
+        setDragging(false)
+        // A dropped folder comes through as a File that can't be read; skip it.
+        const items = [...e.dataTransfer.items].filter((it) => it.kind === 'file')
+        const dirs = items.filter((it) => it.webkitGetAsEntry()?.isDirectory)
+        if (dirs.length) alert(`Folders not attached: ${dirs.map((it) => it.getAsFile()?.name).join(', ')}`)
+        addFiles(items.filter((it) => !dirs.includes(it)).flatMap((it) => it.getAsFile() ?? []))
+      }}
+    >
       {ac.popup}
       {images.length + files.length + n > 0 && (
         <div className="composer-images">

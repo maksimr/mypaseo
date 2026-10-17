@@ -35,6 +35,11 @@
 .composer:focus-within {
   border-color: var(--border-strong);
 }
+.composer.dragging {
+  border-style: dashed;
+  border-color: var(--text-muted);
+  background: var(--bg-hover);
+}
 .composer textarea {
   display: block;
   width: 100%;
