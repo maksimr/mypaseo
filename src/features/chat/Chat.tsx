@@ -2,6 +2,7 @@ import { ArrowDown, Import, SquarePen } from 'lucide-react'
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { ActiveViewContext } from '../../activeView'
+import { artifactDocs } from '../../artifact'
 import type { Agent } from '../../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../../keymap'
 import type { ReviewComment } from '../review/review'
@@ -28,6 +29,7 @@ export function Chat({
   onProjectChange,
   onDraftProvider,
   onShowComment,
+  reveal,
 }: {
   agent: Agent | undefined
   target: Target
@@ -38,6 +40,8 @@ export function Chat({
   onProjectChange: (projectId: string) => void
   onDraftProvider?: (provider: string | undefined) => void
   onShowComment: (c: ReviewComment) => void
+  /** An artifact to scroll to, by its iframe document; a new object scrolls again. */
+  reveal?: { doc: string }
 }) {
   const daemon = useDaemon()
   const tl = useTimeline(agent?.id ?? null)
@@ -86,6 +90,35 @@ export function Chat({
     ro.observe(el.querySelector('.chat-foot')!)
     return () => ro.disconnect()
   }, [])
+  // Waits for the whole timeline: the first page is only its tail, and the rest arriving would shift the message.
+  const revealed = useRef<typeof reveal>(undefined)
+  useEffect(() => {
+    const el = scroller.current
+    if (!el || !reveal || reveal === revealed.current || tl.loading || tl.partial) return
+    const i = tl.items.findLastIndex((x) => x.type === 'assistant_message' && artifactDocs(x.text).includes(reveal.doc))
+    const msg = el.querySelector(`[data-item="${i}"]`)
+    if (!msg) return
+    revealed.current = reveal
+    atBottom.current = false // else sticking to the bottom scrolls it away again
+    // Markdown parses a message only once it nears the viewport (Markdown.tsx): go to the message, then to its iframe.
+    msg.scrollIntoView({ block: 'start' })
+    let frames = 60
+    const toIframe = () => {
+      const f = [...msg.querySelectorAll('iframe')].find((f) => f.srcdoc === reveal.doc)
+      if (!f) {
+        if (--frames) requestAnimationFrame(toIframe)
+        return
+      }
+      // The page sizes itself once its scripts run: keep its top in view meanwhile, over sticking to the bottom.
+      const ro = new ResizeObserver(() => {
+        atBottom.current = false
+        f.scrollIntoView({ block: 'start' })
+      })
+      ro.observe(f)
+      setTimeout(() => ro.disconnect(), 3000)
+    }
+    toIframe()
+  }, [reveal, tl])
   // Viewing an agent acknowledges its "finished" / "error" attention flag, except a Mark Unread made while it's open.
   // A chat kept mounted behind another tab isn't viewed.
   const agentId = agent?.id

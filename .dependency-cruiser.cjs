@@ -4,6 +4,7 @@ const { readdirSync } = require('node:fs')
 // The other features each feature may import. Anything else under src/features/<name>/ is private to <name>.
 // A new edge couples two features that agents may be changing in parallel: add it here on purpose, not to get past CI.
 const FEATURE_DEPS = {
+  artifacts: ['chat'],
   changes: ['review'],
   chat: ['review'],
   files: ['review'],
@@ -12,7 +13,7 @@ const FEATURE_DEPS = {
   settings: ['hosts'],
   sidebar: ['hosts'],
   // The layout that puts the views into tabs and the side panel.
-  tabs: ['changes', 'files', 'git-graph', 'review', 'terminal'],
+  tabs: ['artifacts', 'changes', 'files', 'git-graph', 'review', 'terminal'],
 }
 
 const features = readdirSync(`${__dirname}/src/features`)

@@ -1,6 +1,7 @@
 import { PanelLeft, PanelRight, X } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { ActiveViewContext } from './activeView'
+import { ArtifactView } from './features/artifacts/Artifacts'
 import { ChangesView } from './features/changes/Changes'
 import { Chat } from './features/chat/Chat'
 import type { Target } from './features/chat/target'
@@ -15,6 +16,7 @@ import { UpdateBanner } from './features/update/UpdateBanner'
 import { errorText, type Agent, type Workspace } from './daemon'
 import { formatCombo, isShortcut, useShortcut } from './keymap'
 import { useAttentionNotifications } from './notifications'
+import { OpenArtifactContext } from './openArtifact'
 import { OpenFileContext } from './openFile'
 import { selectionRef } from './features/review/selection'
 import { SelectionAction } from './features/review/SelectionAction'
@@ -133,10 +135,11 @@ export default function App() {
   const isGit = workspace?.projectKind === 'git'
 
   const [panel, setPanel] = useState<PanelView | null>(() => JSON.parse(localStorage.mypaseoPanel ?? 'null'))
-  const panelView = isGit || panel === 'terminals' ? (panel ?? 'changes') : 'files' // closed: what a swipe slides in
+  const panelView = isGit || panel === 'terminals' || panel === 'artifacts' ? (panel ?? 'changes') : 'files' // closed: what a swipe slides in
   const [settings, setSettings] = useState<{ hostId: string; section?: Section } | null>(null)
   const [palette, setPalette] = useState(false)
   const [chatText, setChatText] = useState('') // handed to the composer when the chat tab mounts
+  const [artifact, setArtifact] = useState<{ agentId: string; doc: string }>() // picked in the Artifacts panel
   const [sidebar, setSidebar] = useState(() => localStorage.mypaseoSidebar !== 'false')
   useEffect(() => {
     localStorage.mypaseoSidebar = sidebar
@@ -152,8 +155,8 @@ export default function App() {
   const diff = useCheckoutDiff(hostId, isGit ? cwd : undefined)
   const terms = useTerminals(hostId, workspace)
   const tabs = useTabs({ workspaceId: sel.workspaceId, isGit, diff, terms, setPanel, dismiss })
-  const { tab, setTab, files, changesTab, graphTab, graphPath, commit, setCommit, commitTab, commitFocus, focus, fileLine } = tabs
-  const { openFile, openChanges, openGraph, closeChanges, closeGraph, closeCommit, closeFile, showComment } = tabs
+  const { tab, setTab, files, artifacts, changesTab, graphTab, graphPath, commit, setCommit, commitTab, commitFocus, focus, fileLine } = tabs
+  const { openFile, openChanges, openGraph, closeChanges, closeGraph, closeCommit, closeFile, openArtifact, closeArtifact, showComment } = tabs
   const commitDiff = useCommitDiff(hostId, isGit ? cwd : undefined, commitTab)
   // Touch: dragging in from the left edge slides out the sidebar, from the right edge the file panel;
   // on narrow windows, dragging an open one toward its edge slides it back.
@@ -204,6 +207,7 @@ export default function App() {
           ...(graphTab ? ['graph' as const] : []),
           ...(commitTab ? ['commit' as const] : []),
           ...files.map((p) => `file:${p}` as const),
+          ...artifacts.map((a) => `art:${a.id}` as const),
         ]
         const next = order[(order.indexOf(tab === 'chat' ? agent : tab) + tabStep + order.length) % order.length]
         if (typeof next === 'string') setTab(next)
@@ -218,6 +222,7 @@ export default function App() {
         else if (tab === 'graph') closeGraph()
         else if (tab === 'commit') closeCommit()
         else if (tab.startsWith('term:')) closeTerminal(tab.slice('term:'.length))
+        else if (tab.startsWith('art:')) closeArtifact(tab.slice('art:'.length))
         else closeFile(tab.slice('file:'.length))
       }
       if (workspace && isShortcut(e, 'newTerminal')) {
@@ -316,6 +321,10 @@ export default function App() {
       const path = k.slice('file:'.length)
       return files.includes(path) && cwd ? <FileView cwd={cwd} path={path} reveal={fileLine?.path === path ? fileLine : undefined} onHistory={isGit ? () => openGraph(path) : undefined} /> : null
     }
+    if (k.startsWith('art:')) {
+      const a = artifacts.find((x) => `art:${x.id}` === k)
+      return a ? <ArtifactView doc={a.doc} /> : null
+    }
     const i = chatTabs.findIndex((a) => chatKey(a) === k)
     if (i < 0) return null
     const a = chatTabs[i]
@@ -330,6 +339,7 @@ export default function App() {
         onProjectChange={(projectId) => select({ projectId })}
         onDraftProvider={setDraftProvider}
         onShowComment={showComment}
+        reveal={a && artifact?.agentId === a.id ? artifact : undefined}
       />
     )
   }
@@ -340,6 +350,7 @@ export default function App() {
   return (
     <HostContext value={hostId}>
     <OpenFileContext value={openFile}>
+    <OpenArtifactContext value={openArtifact}>
       <div
         ref={appRef}
         className={`app ${panel && cwd ? 'with-panel' : ''} ${sidebar ? '' : 'no-sidebar'} ${swipe ? `swipe-${swipe.side} swipe-${swipe.settle ?? 'drag'}` : ''}`}
@@ -434,6 +445,10 @@ export default function App() {
             diff={diff}
             onOpenTerminals={openTerminals}
             onNewTerminal={() => void newTerminal()}
+            onOpenArtifact={(a, doc) => {
+              openChat(a)
+              setArtifact({ agentId: a.id, doc })
+            }}
             dismiss={dismiss}
           />
         )}
@@ -468,6 +483,7 @@ export default function App() {
           </HostContext>
         )}
       </div>
+    </OpenArtifactContext>
     </OpenFileContext>
     </HostContext>
   )

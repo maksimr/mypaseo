@@ -1,17 +1,18 @@
-import { FileDiff, Files, SquareTerminal } from 'lucide-react'
+import { FileDiff, Files, Shapes, SquareTerminal } from 'lucide-react'
+import { Artifacts } from '../artifacts/Artifacts'
 import { ChangesList } from '../changes/Changes'
 import { CommitDetails } from '../git-graph/CommitGraph'
 import { FileTree } from '../files/Files'
 import { GitGraphIcon } from '../../components/icons'
 import { TerminalList } from '../terminal/Terminal'
-import type { Workspace } from '../../daemon'
+import type { Agent, Workspace } from '../../daemon'
 import type { DiffState } from '../changes/useCheckoutDiff'
 import type { useTerminals } from '../terminal/useTerminals'
 import type { Tabs } from './useTabs'
 
-export type PanelView = 'files' | 'changes' | 'graph' | 'terminals'
+export type PanelView = 'files' | 'changes' | 'graph' | 'terminals' | 'artifacts'
 
-/** The right pane: Changes, Files, Git Graph (the picked commit) and Terminals sections. */
+/** The right pane: Changes, Files, Git Graph (the picked commit), Terminals and Artifacts sections. */
 export function Panel({
   tabs,
   workspace,
@@ -22,6 +23,7 @@ export function Panel({
   diff,
   onOpenTerminals,
   onNewTerminal,
+  onOpenArtifact,
   dismiss,
 }: {
   tabs: Tabs
@@ -33,6 +35,7 @@ export function Panel({
   diff: DiffState
   onOpenTerminals: () => void
   onNewTerminal: () => void
+  onOpenArtifact: (agent: Agent, doc: string) => void
   dismiss: () => void
 }) {
   const { tab, setTab, openChanges, openGraph, openFile, commit, setCommitTab, setCommitFocus, showChange } = tabs
@@ -56,6 +59,9 @@ export function Panel({
         <button className={`panel-tab ${view === 'terminals' ? 'on' : ''}`} title="Terminals" onClick={onOpenTerminals}>
           <SquareTerminal size={14} /> <span className="truncate">Terminals</span>
         </button>
+        <button className={`panel-tab ${view === 'artifacts' ? 'on' : ''}`} title="Artifacts" onClick={() => onView('artifacts')}>
+          <Shapes size={14} /> <span className="truncate">Artifacts</span>
+        </button>
       </div>
       {view === 'terminals' ? (
         <TerminalList
@@ -72,6 +78,15 @@ export function Panel({
         />
       ) : view === 'files' ? (
         <FileTree key={cwd} cwd={cwd} rootName={workspace.projectDisplayName} onOpen={openFile} activePath={tab.startsWith('file:') ? tab.slice(5) : undefined} />
+      ) : view === 'artifacts' ? (
+        <Artifacts
+          workspaceId={workspace.id}
+          onOpen={(agent, doc) => {
+            onOpenArtifact(agent, doc)
+            dismiss()
+          }}
+          onOpenTab={tabs.openArtifact}
+        />
       ) : view === 'graph' && !commit ? (
         <div className="empty">Pick a commit in the graph to see its changes.</div>
       ) : view === 'graph' && commit ? (

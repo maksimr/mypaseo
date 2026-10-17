@@ -1,11 +1,15 @@
 import { useState } from 'react'
+import { artifactTitle } from '../../artifact'
 import { revealComment, type ReviewComment } from '../review/review'
 import type { DiffState } from '../changes/useCheckoutDiff'
 import type { useTerminals } from '../terminal/useTerminals'
 import type { PanelView } from './Panel'
 
-export type Tab = 'chat' | 'changes' | 'graph' | 'commit' | `file:${string}` | `term:${string}`
+export type Tab = 'chat' | 'changes' | 'graph' | 'commit' | `file:${string}` | `term:${string}` | `art:${string}`
 export type Tabs = ReturnType<typeof useTabs>
+type ArtifactTab = { id: string; doc: string; title: string }
+
+let nextArtifact = 0 // artifact tab ids, unique across workspaces
 
 /** The center tabs of the selected workspace, kept per workspace while switching between them. */
 export function useTabs({
@@ -26,6 +30,7 @@ export function useTabs({
   const [tab, setTab] = useState<Tab>('chat')
   const [visited, setVisited] = useState<string[]>([]) // views shown since the workspace opened, in that order
   const [files, setFiles] = useState<string[]>([])
+  const [artifacts, setArtifacts] = useState<ArtifactTab[]>([])
   // undefined: shown while the workspace has changes; true/false: the user opened or closed it.
   const [changesPick, setChangesPick] = useState<boolean>()
   const [graphTab, setGraphTab] = useState(false)
@@ -46,13 +51,17 @@ export function useTabs({
   // Keyed by id, not directory: workspaces can share a checkout.
   const [tabsWs, setTabsWs] = useState(workspaceId)
   const [savedTabs, setSavedTabs] = useState(
-    new Map<string | undefined, { tab: Tab; files: string[]; changesPick?: boolean; graphTab: boolean; graphPath?: string; commit?: string; commitTab?: string }>(),
+    new Map<
+      string | undefined,
+      { tab: Tab; files: string[]; artifacts: ArtifactTab[]; changesPick?: boolean; graphTab: boolean; graphPath?: string; commit?: string; commitTab?: string }
+    >(),
   )
   if (tabsWs !== workspaceId) {
-    setSavedTabs(new Map(savedTabs).set(tabsWs, { tab, files, changesPick, graphTab, graphPath, commit, commitTab }))
+    setSavedTabs(new Map(savedTabs).set(tabsWs, { tab, files, artifacts, changesPick, graphTab, graphPath, commit, commitTab }))
     const s = savedTabs.get(workspaceId)
     setTabsWs(workspaceId)
     setFiles(s?.files ?? [])
+    setArtifacts(s?.artifacts ?? [])
     setChangesPick(s?.changesPick)
     setGraphTab(s?.graphTab ?? false)
     setGraphPath(s?.graphPath)
@@ -72,6 +81,20 @@ export function useTabs({
     setFileLine(line ? { path, line } : null)
     setTab(`file:${path}`)
     dismiss()
+  }
+  /** Opening the same page again shows its tab. */
+  const openArtifact = (doc: string, title = artifactTitle(doc)) => {
+    let a = artifacts.find((x) => x.doc === doc)
+    if (!a) {
+      a = { id: String(nextArtifact++), doc, title }
+      setArtifacts([...artifacts, a])
+    }
+    setTab(`art:${a.id}`)
+    dismiss()
+  }
+  const closeArtifact = (id: string) => {
+    setArtifacts((as) => as.filter((a) => a.id !== id))
+    if (tab === `art:${id}`) setTab('chat')
   }
   // A panel section also opens its center tab: the diff for Changes, the graph for Git Graph (whose section shows the picked commit).
   const openChanges = () => {
@@ -126,6 +149,7 @@ export function useTabs({
     visited,
     visit,
     files,
+    artifacts,
     changesTab,
     graphTab,
     graphPath,
@@ -144,6 +168,8 @@ export function useTabs({
     closeGraph,
     closeCommit,
     closeFile,
+    openArtifact,
+    closeArtifact,
     showChange,
     showComment,
   }

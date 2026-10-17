@@ -46,3 +46,35 @@
   border: 0;
   border-top: 1px solid var(--border);
 }
+/* The page sets its height (Artifact.tsx); the outline, unlike a border, doesn't eat into it. */
+.artifact {
+  position: relative;
+  margin: 0 0 12px;
+}
+.artifact iframe {
+  display: block;
+  width: 100%;
+  height: 300px;
+  max-height: 80vh;
+  border: 0;
+  border-radius: 6px;
+  outline: 1px solid var(--border);
+  outline-offset: -1px;
+  background: var(--bg-panel);
+}
+/* Over the page, so it has its own background; shown while the page is hovered or focused, always on touch. */
+.artifact-open {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--bg-elev);
+  visibility: hidden;
+}
+.artifact:is(:hover, :focus-within) .artifact-open {
+  visibility: visible;
+}
+@media (hover: none) {
+  .artifact-open {
+    visibility: visible;
+  }
+}

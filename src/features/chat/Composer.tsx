@@ -1,6 +1,7 @@
 import { ArrowUp, Brain, Folder, GitBranch, Loader2, MessageCircle, Paperclip, Plus, Shield, Sparkles, Square, X } from 'lucide-react'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { ActiveViewContext } from '../../activeView'
+import { ARTIFACT_PROMPT } from '../../artifact'
 import { errorText, type Agent } from '../../daemon'
 import { dropImageRef, imageRef } from './imageRefs'
 import { formatCombo, isShortcut, useShortcut } from '../../keymap'
@@ -183,6 +184,7 @@ export function Composer({
           thinkingOptionId: validThinking,
           modeId: modes.some((m) => m.id === mode) ? (mode ?? undefined) : undefined,
           initialPrompt: prompt,
+          systemPrompt: ARTIFACT_PROMPT,
           images,
           attachments,
         }

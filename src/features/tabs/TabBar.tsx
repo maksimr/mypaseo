@@ -1,4 +1,4 @@
-import { ChevronDown, FileCode, FileDiff, GitCommitHorizontal, History, Loader2, SquareTerminal, X } from 'lucide-react'
+import { ChevronDown, FileCode, FileDiff, GitCommitHorizontal, History, Loader2, Shapes, SquareTerminal, X } from 'lucide-react'
 import { clickable } from '../../a11y'
 import { GitGraphIcon } from '../../components/icons'
 import { OpenInEditor } from '../files/OpenInEditor'
@@ -32,7 +32,7 @@ export function TabBar({
   onCloseAgent: (a: Agent) => void
   onCloseTerminal: (id: string) => void
 }) {
-  const { tab, setTab, changesTab, closeChanges, graphTab, graphPath, closeGraph, commitTab, closeCommit, files, closeFile } = tabs
+  const { tab, setTab, changesTab, closeChanges, graphTab, graphPath, closeGraph, commitTab, closeCommit, files, closeFile, artifacts, closeArtifact } = tabs
   const closeAgentKey = useShortcut('closeAgent')
   const t = totals(diff.files)
   return (
@@ -148,6 +148,22 @@ export function TabBar({
               onClick={(e) => {
                 e.stopPropagation()
                 closeFile(path)
+              }}
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ))}
+        {artifacts.map((a) => (
+          <div key={a.id} className={`tab ${tab === `art:${a.id}` ? 'on' : ''}`} {...clickable(() => setTab(`art:${a.id}`))} title={a.title}>
+            <Shapes size={13} />
+            <span className="truncate">{a.title}</span>
+            <button
+              className="tab-close"
+              title="Close"
+              onClick={(e) => {
+                e.stopPropagation()
+                closeArtifact(a.id)
               }}
             >
               <X size={12} />

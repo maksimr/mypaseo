@@ -3,7 +3,8 @@ import { errorText, type TimelineItem } from '../../daemon'
 import { useDaemon } from '../../store'
 import { applyStreamItem } from './streamItems'
 
-type Timeline = { items: TimelineItem[]; loading: boolean; error: string | null }
+/** partial: only the first, tail page is in yet. */
+type Timeline = { items: TimelineItem[]; loading: boolean; error: string | null; partial?: boolean }
 
 export function useTimeline(agentId: string | null) {
   const daemon = useDaemon()
@@ -32,7 +33,7 @@ export function useTimeline(agentId: string | null) {
       // Sent first so the daemon answers it first. Stream events stay buffered for the full page.
       if (!items.length)
         daemon.fetchAgentTimeline(agentId, { ...opts, limit: 10 }).then(
-          (page) => alive && fetching && setTl({ items: page.entries.map((e) => e.item), loading: false, error: null }),
+          (page) => alive && fetching && setTl({ items: page.entries.map((e) => e.item), loading: false, error: null, partial: true }),
           () => {},
         )
       try {

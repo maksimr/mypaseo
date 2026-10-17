@@ -41,6 +41,7 @@
 | Command palette | `features/palette/` | `keymap.ts` (`HIDDEN` list) |
 | Tabs / panel layout | `features/tabs/` + `App.tsx` | — |
 | Update banner (new deploy cached by the service worker in `vite.config.ts`) | `features/update/` | — |
+| Artifacts panel (lists the workspace's `artifact`/`mermaid` blocks, a click opens the chat at one; fences, prompt and iframe in `src/artifact.ts`, `components/Artifact`) | `features/artifacts/` | `chat/useTimeline`, `chat/Chat` (`reveal`), `tabs/Panel.tsx`, `App.tsx` |
 | Git daemon plugin | `paseo-plugin/` | `git.ts` is its only client (oxlint fails on `invokePluginRpc` anywhere else); its zod schemas are the source of truth for the types |
 
 Shared leaves live in `src/components/` (`ProviderIcon`, `Markdown`, `Code`, `Pick`, `icons`, `menu`); shared modules
@@ -65,6 +66,7 @@ stay flat in `src/`.
 | `.timeline` inside `.chat-scroll` | `chat/Timeline.tsx`, `chat/Chat.tsx` | `Chat.tsx` (ResizeObserver), `components/Markdown.tsx` (IntersectionObserver root) |
 | `.sidebar`, `.panel` | `sidebar/Sidebar.tsx`, `tabs/Panel.tsx` | `swipe.ts` |
 | `.selection-action` | `review/SelectionAction.tsx` | itself (hover keep-alive) |
+| `.msg[data-item]` (assistant message's timeline index), `iframe[srcdoc]` | `chat/Timeline.tsx`, `components/Artifact.tsx` | `chat/Chat.tsx` (scroll to an artifact) |
 
 ### CSS ↔ TS constants (keep in sync; the TS comment names the CSS rule)
 - `changes/Changes.tsx` `HEADERS = 72` = `.changes-toolbar` 38px + `.excerpt-head` 34px

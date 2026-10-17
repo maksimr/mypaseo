@@ -1,0 +1,25 @@
+/* Artifacts panel */
+.artifacts {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+/* Every agent section renders nothing until it finds an artifact. */
+.artifacts:empty::before {
+  content: 'No artifacts in this workspace yet.';
+  display: block;
+  padding: 10px 12px;
+  color: var(--text-muted);
+}
+.artifacts-agent {
+  padding: 10px 12px 4px;
+  font-size: 12px;
+}
+/* Artifact tab */
+.artifact-view {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+}

@@ -1,7 +1,9 @@
-import { memo, useContext, useEffect, useRef, useState } from 'react'
-import ReactMarkdown, { type Components } from 'react-markdown'
+import { createContext, memo, useContext, useEffect, useRef, useState } from 'react'
+import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { artifactDoc, fenceClosed } from '../artifact'
 import { OpenFileContext } from '../openFile'
+import { Artifact } from './Artifact'
 import { Code } from './Code'
 
 
@@ -29,15 +31,25 @@ function Link({ href = '', children }: { href?: string; children?: React.ReactNo
   )
 }
 
+// The text being rendered: a code block slices its own source out of it by position.
+const Source = createContext('')
+
+function CodeBlock({ className, children, node }: React.ComponentProps<'code'> & ExtraProps) {
+  const source = useContext(Source)
+  const lang = /language-([\w+-]+)/.exec(className ?? '')?.[1]
+  const text = String(children)
+  if (!lang && !text.includes('\n')) return <code className="inline">{children}</code>
+  const doc = lang && artifactDoc(lang, text)
+  const pos = node?.position
+  // A page still streaming in would reload on every chunk: it shows as code until its closing fence arrives.
+  if (doc && pos && fenceClosed(source.slice(pos.start.offset, pos.end.offset))) return <Artifact doc={doc} />
+  return <Code code={text} filename={`snippet.${lang ?? 'txt'}`} />
+}
+
 const components: Components = {
   a: Link,
   pre: ({ children }) => <>{children}</>,
-  code({ className, children }) {
-    const lang = /language-([\w+-]+)/.exec(className ?? '')?.[1]
-    const text = String(children)
-    if (!lang && !text.includes('\n')) return <code className="inline">{children}</code>
-    return <Code code={text} filename={`snippet.${lang ?? 'txt'}`} />
-  },
+  code: CodeBlock,
 }
 
 // Parsing every message froze long threads on open, so text shows raw until it nears the chat's viewport, then stays parsed.
@@ -57,9 +69,11 @@ export const Markdown = memo(function Markdown({ text }: { text: string }) {
   return (
     <div ref={ref} className={near ? 'md' : 'md pre-wrap'}>
       {near ? (
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-          {text}
-        </ReactMarkdown>
+        <Source value={text}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+            {text}
+          </ReactMarkdown>
+        </Source>
       ) : (
         text
       )}

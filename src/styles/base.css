@@ -275,8 +275,8 @@ code.inline {
   padding-left: 6px;
   container-type: inline-size;
 }
-/* All four labels need ~372px; narrower, only the open tab keeps its label, the rest show icons (named by title). */
-@container (width < 372px) {
+/* All five labels need ~490px; narrower, only the open tab keeps its label, the rest show icons (named by title). */
+@container (width < 490px) {
   .panel-tabs:has(> :nth-child(4)) .panel-tab:not(.on) .truncate {
     display: none;
   }

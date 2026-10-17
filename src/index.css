@@ -16,4 +16,5 @@
 @import './features/review/review.css';
 @import './features/git-graph/graph.css';
 @import './features/update/update.css';
+@import './features/artifacts/artifacts.css';
 @import './styles/tablet.css';

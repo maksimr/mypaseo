@@ -23,7 +23,7 @@ export function Timeline({ items, running }: { items: TimelineItem[]; running: b
   return (
     <div className="timeline">
       {items.map((item, i) => (
-        <Item key={i} item={item} expanded={expanded} />
+        <Item key={i} index={i} item={item} expanded={expanded} />
       ))}
       {running && (
         <div className="msg muted working">
@@ -34,7 +34,7 @@ export function Timeline({ items, running }: { items: TimelineItem[]; running: b
   )
 }
 
-const Item = memo(function Item({ item, expanded }: { item: TimelineItem; expanded: boolean }) {
+const Item = memo(function Item({ index, item, expanded }: { index: number; item: TimelineItem; expanded: boolean }) {
   switch (item.type) {
     case 'user_message':
       return (
@@ -44,7 +44,7 @@ const Item = memo(function Item({ item, expanded }: { item: TimelineItem; expand
       )
     case 'assistant_message':
       return (
-        <div className="msg">
+        <div className="msg" data-item={index}>
           <Markdown text={item.text} />
         </div>
       )
