@@ -7,8 +7,17 @@ export function UpdateBanner() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
     const onChange = () => setReady(true)
+    // The browser checks for a new sw.js only on page load; an installed app can stay open for days.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible')
+        void navigator.serviceWorker.getRegistration().then((r) => r?.update()).catch(() => {}) // offline
+    }
     navigator.serviceWorker.addEventListener('controllerchange', onChange)
-    return () => navigator.serviceWorker.removeEventListener('controllerchange', onChange)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      navigator.serviceWorker.removeEventListener('controllerchange', onChange)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
   if (!ready) return null
   return (
