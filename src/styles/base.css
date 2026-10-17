@@ -30,6 +30,10 @@
 * {
   box-sizing: border-box;
 }
+/* Icons keep their size in a squeezed flex row (tabs, sidebar rows): only the text beside them truncates. */
+svg {
+  flex-shrink: 0;
+}
 /* The page never scrolls (panes do), so no rubber-band bounce either. */
 html {
   overscroll-behavior: none;

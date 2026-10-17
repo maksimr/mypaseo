@@ -92,6 +92,7 @@
   justify-content: center;
   width: 13px; /* the status mark's slot, so swapping them doesn't resize the tab */
   height: 13px;
+  flex: none;
   border-radius: 3px;
   color: var(--text-faint);
 }
