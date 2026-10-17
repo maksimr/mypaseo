@@ -56,6 +56,8 @@ export const SHORTCUTS = {
   // Ctrl+" (Shift+Quote on US layout), Ctrl on Mac too.
   expandTools: { group: 'Chat', label: 'Expand Tool Output', description: 'Expand or collapse the output of every tool call in the chat.', default: 'Ctrl+Shift+Quote' },
   jumpToLatest: { group: 'Chat', label: 'Jump to Latest Message', description: 'Scroll the chat to its newest message.', default: 'Ctrl+End' },
+  // Ctrl on Mac too, as asked. On Mac it shares ⌃L with Add Selection to Chat below, which acts only on a selection.
+  focusComposer: { group: 'Chat', label: 'Focus Composer', description: 'Move the focus to the chat composer, showing it if scrolling hid it.', default: 'Ctrl+KeyL' },
   // Browsers keep ⌘L / Ctrl+L (address bar) for themselves.
   addToChat: { group: 'Chat', label: 'Add Selection to Chat', description: 'Insert the selected lines of a file or diff into the chat composer as path:start-end.', default: isMac ? 'Ctrl+KeyL' : 'Alt+KeyL' },
 

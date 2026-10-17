@@ -61,10 +61,18 @@ export function Chat({
     const el = scroller.current
     if (el) el.scrollTop = el.scrollHeight
   }
+  const showComposer = () => {
+    flushSync(() => setHide(false))
+    foot.current?.querySelector('textarea')?.focus({ preventScroll: true }) // within the tap, so touch keyboards open
+  }
   const active = useContext(ActiveViewContext)
   useEffect(() => {
     if (!active) return
     const onKey = (e: KeyboardEvent) => {
+      if (isShortcut(e, 'focusComposer')) {
+        e.preventDefault()
+        showComposer()
+      }
       if (!isShortcut(e, 'jumpToLatest')) return
       if (!(e.target instanceof HTMLTextAreaElement)) e.preventDefault() // Ctrl+End still moves the composer caret
       jumpToLatest()
@@ -202,10 +210,7 @@ export function Chat({
               className="show-composer"
               title="Write Message"
               aria-label="Write Message"
-              onClick={() => {
-                flushSync(() => setHide(false))
-                foot.current?.querySelector('textarea')?.focus({ preventScroll: true }) // within the tap, so touch keyboards open
-              }}
+              onClick={showComposer}
             >
               <SquarePen size={14} />
             </button>
