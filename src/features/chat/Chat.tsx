@@ -3,6 +3,7 @@ import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { ActiveViewContext } from '../../activeView'
 import { artifactDocs } from '../../artifact'
+import { parseNear } from '../../components/Markdown'
 import type { Agent } from '../../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../../keymap'
 import type { ReviewComment } from '../review/review'
@@ -75,7 +76,9 @@ export function Chat({
   // Stick to the bottom while streaming unless the user scrolled up.
   useLayoutEffect(() => {
     const el = scroller.current
-    if (el && atBottom.current) el.scrollTop = el.scrollHeight
+    if (!el) return
+    if (atBottom.current) el.scrollTop = el.scrollHeight
+    parseNear(el) // else opening a chat paints its messages raw for a frame, then parsed
   }, [tl.items, agent?.pendingPermissions.length])
   // And while the chat or its timeline resizes, as when the composer slides in or grows, or markdown near the bottom gets parsed.
   useEffect(() => {
