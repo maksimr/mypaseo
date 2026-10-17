@@ -1,4 +1,5 @@
 import { FileDiff, Files, Shapes, SquareTerminal } from 'lucide-react'
+import { navigateRows } from '../../a11y'
 import { Artifacts } from '../artifacts/Artifacts'
 import { ChangesList } from '../changes/Changes'
 import { CommitDetails } from '../git-graph/CommitGraph'
@@ -41,7 +42,8 @@ export function Panel({
   const { tab, setTab, openChanges, openGraph, openFile, commit, setCommitTab, setCommitFocus, showChange } = tabs
   const cwd = workspace.workspaceDirectory
   return (
-    <aside className="panel">
+    // Focusable: before its rows load (Files), the pane itself takes the focus when it opens. Arrow keys browse the rows like a tree.
+    <aside className="panel" tabIndex={-1} onKeyDown={navigateRows}>
       <div className="panel-tabs">
         {isGit && (
           <button className={`panel-tab ${view === 'changes' ? 'on' : ''}`} title="Changes" onClick={openChanges}>

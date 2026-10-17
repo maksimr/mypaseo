@@ -76,6 +76,8 @@ export function ProjectRow({
       <div
         className="row project"
         aria-expanded={open}
+        // The selection's row when its workspace row isn't shown (collapsed, or a new workspace): opening the sidebar focuses it.
+        aria-current={selection.projectId === p.projectId && (!open || !selection.workspaceId) ? true : undefined}
         aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
         draggable
         onDragStart={(e) => {

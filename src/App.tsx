@@ -1,5 +1,7 @@
 import { PanelLeft, PanelRight, X } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { flushSync } from 'react-dom'
+import { focusRow } from './a11y'
 import { ActiveViewContext } from './activeView'
 import { ArtifactView } from './features/artifacts/Artifacts'
 import { ChangesView } from './features/changes/Changes'
@@ -171,6 +173,24 @@ export default function App() {
   const [panelW, setPanelW] = useWidth('mypaseoPanelWidth', 320) // room for the Changes, Files and Git Graph tabs
   const sidebarKey = useShortcut('toggleSidebar')
   const panelKey = useShortcut('togglePanel')
+  /** The open tab takes the focus: its composer or terminal when shown, else its focusable view, so keys type or scroll there. */
+  const focusView = () => {
+    const view = appRef.current?.querySelector('.view:not([inert])')
+    const input = [...(view?.querySelectorAll<HTMLElement>('.chat-foot textarea, .term-view textarea') ?? [])].find((el) => el.checkVisibility())
+    ;(input ?? view?.querySelector<HTMLElement>('[tabindex="-1"]'))?.focus()
+  }
+  // Like Zed's docks: a pane the toggle opens takes the focus on its current row, so arrow keys and Enter work there;
+  // one it closes hands the focus to the open tab, unless the focus is already there or in the other pane.
+  const toggleSidebar = () => {
+    flushSync(() => setSidebar(!sidebar))
+    if (!sidebar) focusRow(appRef.current?.querySelector<HTMLElement>('.sidebar'))
+    else if (!document.activeElement?.closest('.center, .panel')) focusView()
+  }
+  const togglePanel = () => {
+    flushSync(() => setPanel(panel ? null : 'changes'))
+    if (!panel) focusRow(appRef.current?.querySelector<HTMLElement>('.panel'))
+    else if (!document.activeElement?.closest('.center, .sidebar')) focusView()
+  }
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (isShortcut(e, 'commandPalette')) {
@@ -179,7 +199,7 @@ export default function App() {
       }
       if (isShortcut(e, 'toggleSidebar')) {
         e.preventDefault()
-        setSidebar((s) => !s)
+        toggleSidebar()
       }
       if (isShortcut(e, 'toggleActiveOnly')) {
         e.preventDefault()
@@ -187,7 +207,7 @@ export default function App() {
       }
       if (cwd && isShortcut(e, 'togglePanel')) {
         e.preventDefault()
-        setPanel((p) => (p ? null : 'changes'))
+        togglePanel()
       }
       if (isGit && isShortcut(e, 'openChanges')) {
         e.preventDefault()
@@ -374,12 +394,12 @@ export default function App() {
           }}
         />
         {sidebar && <Resizer side="left" label="Resize Sidebar" width={sidebarW} onResize={setSidebarW} />}
-        <button className={`icon-btn corner left ${sidebar ? 'on' : ''}`} title={`Toggle Sidebar (${formatCombo(sidebarKey)})`} onClick={() => setSidebar(!sidebar)}>
+        <button className={`icon-btn corner left ${sidebar ? 'on' : ''}`} title={`Toggle Sidebar (${formatCombo(sidebarKey)})`} onClick={toggleSidebar}>
           <PanelLeft size={15} />
           <X size={15} />
         </button>
         {cwd && (
-          <button className={`icon-btn corner right ${panel ? 'on' : ''}`} title={`Toggle File Panel (${formatCombo(panelKey)})`} onClick={() => setPanel(panel ? null : 'changes')}>
+          <button className={`icon-btn corner right ${panel ? 'on' : ''}`} title={`Toggle File Panel (${formatCombo(panelKey)})`} onClick={togglePanel}>
             <PanelRight size={15} />
             <X size={15} />
           </button>

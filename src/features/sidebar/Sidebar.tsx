@@ -1,5 +1,6 @@
 import { ListFilter, Server, Settings } from 'lucide-react'
 import { useEffect, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { navigateRows } from '../../a11y'
 import { errorText, type Agent, type Workspace } from '../../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../../keymap'
 import { client, hostLabel, markRead, markUnread, moveProject, scratchProject, sidebarWorkspaces, togglePin, useHostId, useStore } from '../../store'
@@ -126,7 +127,8 @@ export function Sidebar({
 
   return (
     <>
-      <aside className="sidebar">
+      {/* Focusable: with no rows, the pane itself takes the focus when it opens. Arrow keys browse the rows like a tree. */}
+      <aside className="sidebar" tabIndex={-1} onKeyDown={navigateRows}>
         <div className="sidebar-head">
           <span className="section-label">Projects</span>
           <button className="icon-btn hover-only" title={`Add Project (${formatCombo(addProjectKey)})`} onClick={() => setAdding(true)}>

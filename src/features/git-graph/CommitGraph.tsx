@@ -195,6 +195,7 @@ export function CommitGraph({
     <div
       className="graph"
       ref={pane}
+      tabIndex={-1} // App focuses the shown view when a side pane closes, so arrow keys scroll it
       style={{ '--graph-w': `${graphW}px`, '--refs-w': `${refsW}px`, '--date-w': `${cols.date}px`, '--author-w': `${cols.author}px`, '--sha-w': `${cols.sha}px` } as CSSProperties}
     >
       <div className="graph-toolbar">
