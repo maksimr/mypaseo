@@ -15,4 +15,5 @@
 @import './features/changes/commit-dialog.css';
 @import './features/review/review.css';
 @import './features/git-graph/graph.css';
+@import './features/update/update.css';
 @import './styles/tablet.css';

@@ -11,6 +11,7 @@ import { ImportSession } from './features/chat/ImportSession'
 import { Settings, type Section } from './features/settings/Settings'
 import { Sidebar, type Selection } from './features/sidebar/Sidebar'
 import { TerminalView } from './features/terminal/Terminal'
+import { UpdateBanner } from './features/update/UpdateBanner'
 import { errorText, type Agent, type Workspace } from './daemon'
 import { formatCombo, isShortcut, useShortcut } from './keymap'
 import { useAttentionNotifications } from './notifications'
@@ -453,6 +454,7 @@ export default function App() {
           </HostContext>
         )}
         {palette && <CommandPalette cwd={cwd} onClose={() => setPalette(false)} />}
+        <UpdateBanner />
         {importTarget && (
           <HostContext value={projects.find((p) => p.projectId === importTarget.projectId)?.hostId ?? hostId}>
             <ImportSession

@@ -40,6 +40,7 @@
 | Settings | `features/settings/` | `keymap.ts` (`SHORTCUT_GROUPS`), `notifications.ts` |
 | Command palette | `features/palette/` | `keymap.ts` (`HIDDEN` list) |
 | Tabs / panel layout | `features/tabs/` + `App.tsx` | — |
+| Update banner (new deploy cached by the service worker in `vite.config.ts`) | `features/update/` | — |
 | Git daemon plugin | `paseo-plugin/` | `git.ts` is its only client (oxlint fails on `invokePluginRpc` anywhere else); its zod schemas are the source of truth for the types |
 
 Shared leaves live in `src/components/` (`ProviderIcon`, `Markdown`, `Code`, `Pick`, `icons`, `menu`); shared modules

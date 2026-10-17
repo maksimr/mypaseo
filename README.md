@@ -40,7 +40,8 @@ must listen on a reachable address (`PASEO_LISTEN`) and allow this UI's origin (
 
 `.github/workflows/pages.yml` builds and deploys every push to `main` (one-time: repo Settings → Pages → Source:
 GitHub Actions). The deployed UI has no proxy: its default host is the daemon at `ws://127.0.0.1:6767/ws`, so whoever
-opens the page talks to the daemon on their own computer. The daemon only accepts allowed origins, so allow the page
+opens the page talks to the daemon on their own computer. After one online visit the page also opens offline (a service
+worker caches the build); after a new deploy it offers a reload. The daemon only accepts allowed origins, so allow the page
 once (a running daemon picks it up immediately; the list replaces the old one, so keep entries you need):
 
 ```bash
