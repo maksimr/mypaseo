@@ -225,7 +225,7 @@
 .rail-step.failed {
   color: color-mix(in srgb, var(--red) 30%, var(--border-strong));
 }
-/* The step at the top of the chat (on its button, over their hover color), and its row in the card. */
+/* The step across the chat's reading line (on its button, over their hover color), and its row in the card. */
 .rail-step.current > button {
   color: var(--text-faint);
 }

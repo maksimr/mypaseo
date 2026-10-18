@@ -13,6 +13,7 @@ import { Timeline } from './Timeline'
 import { Composer } from './Composer'
 import { PermissionCard } from './PermissionCard'
 import { Rail } from './Rail'
+import { readingLine } from './reading'
 import type { Target } from './target'
 
 /** Whether the user is writing in the composer: it has focus and unsent text. */
@@ -63,15 +64,20 @@ export function Chat({
     const el = scroller.current
     if (el) el.scrollTop = el.scrollHeight
   }
-  // The rail's pick: the item at the top. Parsing the messages around it can move it, so it goes there again after.
+  // The rail's pick: the item centered on the reading line, or one taller than the view at its top. Parsing the
+  // messages around it can move it, so it goes there again after.
   const goTo = (i: number) => {
     const el = scroller.current
     const item = el?.querySelector(`[data-item="${i}"]`)
     if (!el || !item) return
     atBottom.current = false // else sticking to the bottom scrolls it away again
-    item.scrollIntoView({ block: 'start' })
+    const place = () => {
+      const r = item.getBoundingClientRect()
+      el.scrollTop += Math.min(r.top + r.height / 2 - readingLine(el), r.top - el.getBoundingClientRect().top)
+    }
+    place()
     flushSync(() => parseNear(el))
-    item.scrollIntoView({ block: 'start' })
+    place()
     lastTop.current = el.scrollTop // not a scroll up by the user: the composer, and the rail in it, stay shown
   }
   const showComposer = () => {

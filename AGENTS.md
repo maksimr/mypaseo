@@ -63,10 +63,10 @@ stay flat in `src/`.
 | `[data-path]` on the file or diff container | `changes/Changes.tsx` (`.excerpt`), `files/Files.tsx` (`.file-view`) | `selection.ts`, `review.ts`, `Changes.tsx` (focus scroll) |
 | `.review-thread` between lines | `review/ReviewThread.tsx` | `selection.ts`, `ReviewThread.tsx` (prev/next comment) |
 | `.chunk[data-hunk][data-chunk]`, `.staged` | `changes/FileHunks.tsx` | `changes/Changes.tsx` (stage current / go to hunk) |
-| `.timeline` inside `.chat-scroll` | `chat/Timeline.tsx`, `chat/Chat.tsx` | `Chat.tsx` (ResizeObserver), `components/Markdown.tsx` (IntersectionObserver root) |
+| `.timeline` and `.chat-foot` inside `.chat-scroll` | `chat/Timeline.tsx`, `chat/Chat.tsx` | `Chat.tsx` (ResizeObserver), `components/Markdown.tsx` (IntersectionObserver root), `chat/reading.ts` (`.chat-foot`) |
 | `.sidebar`, `.panel` | `sidebar/Sidebar.tsx`, `tabs/Panel.tsx` | `swipe.ts` |
 | `.selection-action` | `review/SelectionAction.tsx` | itself (hover keep-alive) |
-| `[data-item]` (its timeline index) on each timeline item's root, `iframe[srcdoc]` | `chat/Timeline.tsx`, `components/Artifact.tsx` | `chat/Chat.tsx` (scroll to an artifact, or to the rail's pick), `chat/Rail.tsx` (`.timeline > [data-item]`: the step at the top) |
+| `[data-item]` (its timeline index) on each timeline item's root, `iframe[srcdoc]` | `chat/Timeline.tsx`, `components/Artifact.tsx` | `chat/Chat.tsx` (scroll to an artifact, or to the rail's pick), `chat/Rail.tsx` (`.timeline > [data-item]`: the item across the reading line) |
 | `.row[tabindex]` (`clickable`), current one `.active` or `[aria-current]`, `[aria-expanded]` on the row or its chevron, inside `.sidebar`, `.panel` | sidebar rows, `ProjectRow.tsx` (`aria-current`), `WorkspaceRow.tsx` (chevron), the panel's lists (changes, files, terminal, artifacts, git-graph) | `a11y.ts` (`focusRow`, `navigateRows`: arrow keys) |
 | `.view:not([inert])` holding `.chat-foot textarea`, `.term-view textarea` or a `[tabindex="-1"]` scroller (`.changes`, `.graph`, `.file-view`) | `App.tsx`, `chat/Chat.tsx`, `terminal/Terminal.tsx`, `changes/Changes.tsx`, `git-graph/CommitGraph.tsx`, `files/Files.tsx` | `focus.ts` (`focusView`: a side pane closes, or Move Focus lands in the main area) |
 | Columns `.sidebar`, `.center`, `.panel`; their content `.sidebar > .tree`, `.panel > .panel-tabs + *`, `.view:not([inert])` | `sidebar/Sidebar.tsx`, `App.tsx`, `tabs/Panel.tsx` | `focus.ts` (`moveFocus`: Ctrl+Alt+arrows) |

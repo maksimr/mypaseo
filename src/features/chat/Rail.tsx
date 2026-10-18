@@ -24,14 +24,15 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties
 import { flushSync } from 'react-dom'
 import type { TimelineItem, ToolDetail } from '../../daemon'
 import { fold } from './fold'
+import { readingLine } from './reading'
 import { toolArg } from './toolArg'
 
 type Step = { i: number; icon: LucideIcon; failed: boolean; minor: boolean }
 
 /** The agent's timeline as a row of icons under the composer, oldest on the left. What doesn't fit folds into crosses
  *  of dots (see `fold`); a click on one opens a card above it listing its run on a vertical rail. A click on a step
- *  calls `onPick` with its item's index; the last, a circle (a spinner while running), `onEnd`. The step at the top of
- *  `scroller`, or the circle at its bottom, is highlighted. */
+ *  calls `onPick` with its item's index; the last, a circle (a spinner while running), `onEnd`. The step across
+ *  `scroller`'s reading line, or the circle at its bottom, is highlighted. */
 export function Rail({
   items,
   running,
@@ -175,17 +176,17 @@ function summary(item: TimelineItem): string {
   }
 }
 
-/** The item at the top of the chat, or its end once it's scrolled to the bottom (as `atBottom` in Chat.tsx). */
+/** The item across the chat's reading line, or its end once it's scrolled to the bottom (as `atBottom` in Chat.tsx). */
 function currentItem(scroller: HTMLElement): number | 'end' | undefined {
   if (scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 40) return 'end'
   const items = scroller.querySelectorAll<HTMLElement>('.timeline > [data-item]')
-  const top = scroller.getBoundingClientRect().top + 1 // a pick's scrollIntoView can leave it a fraction below
-  // The last item starting above the top: they're in order, so a binary search.
+  const line = readingLine(scroller)
+  // The last item starting above the line: they're in order, so a binary search.
   let lo = 0
   let hi = items.length - 1
   while (lo < hi) {
     const mid = (lo + hi + 1) >> 1
-    if (items[mid].getBoundingClientRect().top <= top) lo = mid
+    if (items[mid].getBoundingClientRect().top <= line) lo = mid
     else hi = mid - 1
   }
   return items.length ? Number(items[lo].dataset.item) : undefined
