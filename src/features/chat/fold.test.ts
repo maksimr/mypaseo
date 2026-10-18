@@ -10,8 +10,10 @@ test('every step its own icon when they all fit', () => {
   assert.equal(shape(fold(steps, 282)), '0 1 2 3 4 5 6 7 8')
 })
 
-test("else the user's messages, with the agent's steps between them folded", () => {
-  assert.equal(shape(fold(steps, 281)), '0 [1,2] 3 [4] 5 [6,7,8]')
+test("else the agent's steps fold, oldest first, as few as it takes", () => {
+  assert.equal(shape(fold(steps, 281)), '0 [1,2] 3 4 5 6 7 8')
+  assert.equal(shape(fold(steps, 259)), '0 [1,2] 3 [4] 5 [6,7] 8')
+  assert.equal(shape(fold(steps, 245)), '0 [1,2] 3 [4] 5 [6,7,8]')
   assert.equal(shape(fold(steps, 216)), '0 [1,2] 3 [4] 5 [6,7,8]')
 })
 

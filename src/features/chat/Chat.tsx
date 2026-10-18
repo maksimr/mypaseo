@@ -48,6 +48,7 @@ export function Chat({
   const daemon = useDaemon()
   const tl = useTimeline(agent?.id ?? null)
   const running = agent?.status === 'running'
+  const historyIn = !tl.loading && !tl.partial
   const scroller = useRef<HTMLDivElement>(null)
   const atBottom = useRef(true)
   const [away, setAway] = useState(false)
@@ -216,8 +217,16 @@ export function Chat({
               onDraftProvider={onDraftProvider}
               onShowComment={onShowComment}
             />
-            {/* Even empty, as for a new agent: its space stays, so the composer doesn't jump when steps arrive. */}
-            <Rail key={agent?.id} items={tl.items} running={running} scroller={scroller} onPick={goTo} onEnd={jumpToLatest} />
+            {/* Even empty, as for a new agent: its space stays, so the composer doesn't jump when steps arrive. Empty too
+                until the whole history is in: the tail page alone would fold, then refold as the rest arrives. */}
+            <Rail
+              key={agent?.id}
+              items={historyIn ? tl.items : []}
+              running={historyIn && running}
+              scroller={scroller}
+              onPick={goTo}
+              onEnd={jumpToLatest}
+            />
           </div>
           {composerHidden && (
             <button
