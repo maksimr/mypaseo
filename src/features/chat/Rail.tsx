@@ -20,7 +20,17 @@ import {
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react'
 import { flushSync } from 'react-dom'
 import type { TimelineItem, ToolDetail } from '../../daemon'
 import { fold } from './fold'
@@ -116,7 +126,7 @@ export function Rail({
   return (
     <>
       {/* Newest first in a row-reverse: the row opens scrolled to its right end, the newest step. */}
-      <div className="rail" ref={rail}>
+      <div className="rail" ref={rail} onPointerMove={magnify} onPointerLeave={unmagnify}>
         {nodes.reverse()}
       </div>
       <div
@@ -190,6 +200,21 @@ function currentItem(scroller: HTMLElement): number | 'end' | undefined {
     else hi = mid - 1
   }
   return items.length ? Number(items[lo].dataset.item) : undefined
+}
+
+// Magnifies the icons near the mouse, as macOS's Dock does: 2x at the pointer, easing off in a bell over 80px either
+// side. `--s` grows them up from the line and apart, the lines between giving the room (chat.css).
+function magnify(e: PointerEvent<HTMLElement>) {
+  if (e.pointerType !== 'mouse') return
+  for (const b of e.currentTarget.querySelectorAll<HTMLElement>('.rail-step > button')) {
+    const r = b.getBoundingClientRect()
+    const d = Math.min(1, Math.abs(e.clientX - (r.left + r.width / 2)) / 80)
+    b.style.setProperty('--s', String(1 + (1 + Math.cos(Math.PI * d)) / 2))
+  }
+}
+
+function unmagnify(e: PointerEvent<HTMLElement>) {
+  for (const b of e.currentTarget.querySelectorAll<HTMLElement>('.rail-step > button')) b.style.removeProperty('--s')
 }
 
 const stepClass = (failed: boolean, current: boolean) => `rail-step${failed ? ' failed' : ''}${current ? ' current' : ''}`

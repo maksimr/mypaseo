@@ -88,6 +88,7 @@
   position: relative;
   width: 20px;
   height: 20px;
+  margin: 0 calc((var(--s, 1) - 1) * 5px);
 }
 .rail-run::before,
 .rail-run::after {
@@ -203,7 +204,6 @@
 }
 .rail-step {
   display: flex;
-  flex-shrink: 0;
   align-items: center;
   height: 20px;
 }
@@ -217,10 +217,19 @@
 }
 .rail-step:not(:last-child)::before {
   content: '';
-  flex: 1 0 10px;
+  flex: 1 1 10px; /* below 10px only to make room for magnified icons */
   height: 1px;
   margin: 0 4px;
   background: color-mix(in srgb, var(--border) 60%, var(--bg));
+}
+/* Magnified near the mouse by --s (Rail.tsx), as the Dock does: up from the line (the icon's bottom), and apart by
+   its margins (see .rail-pick, .rail-run), half the icon's growth each side. */
+.rail-step > button {
+  scale: var(--s, 1);
+  transform-origin: 50% 75%;
+  transition:
+    scale 0.15s ease-out,
+    margin 0.15s ease-out;
 }
 .rail-step.failed {
   color: color-mix(in srgb, var(--red) 30%, var(--border-strong));
@@ -235,7 +244,7 @@
 /* A step's icon, scrolling the chat to it: a 20px hit area over the gaps to its lines. */
 .rail-pick {
   display: flex;
-  margin: 0 -4px;
+  margin: 0 calc(-4px + (var(--s, 1) - 1) * 5px);
   padding: 5px;
 }
 .rail-pick:hover {
