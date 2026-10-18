@@ -12,6 +12,7 @@ import { CommandPalette } from './features/palette/CommandPalette'
 import { CommitGraph } from './features/git-graph/CommitGraph'
 import { FileView } from './features/files/Files'
 import { ImportSession } from './features/chat/ImportSession'
+import { ListSearch } from './features/list-search/ListSearch'
 import { Settings, type Section } from './features/settings/Settings'
 import { Sidebar, type Selection } from './features/sidebar/Sidebar'
 import { TerminalView } from './features/terminal/Terminal'
@@ -492,6 +493,7 @@ export default function App() {
         )}
         {palette && <CommandPalette cwd={cwd} onClose={() => setPalette(false)} />}
         <UpdateBanner />
+        <ListSearch />
         {importTarget && (
           <HostContext value={projects.find((p) => p.projectId === importTarget.projectId)?.hostId ?? hostId}>
             <ImportSession

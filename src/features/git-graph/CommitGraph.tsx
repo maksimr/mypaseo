@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { clickable } from '../../a11y'
 import { errorText, type DiffFile, type Workspace } from '../../daemon'
 import * as git from '../../git'
+import { isShortcut } from '../../keymap'
 import { layout, type GraphLine } from './graph'
 import { useDaemon } from '../../store'
 import { split } from '../changes/useCheckoutDiff'
@@ -190,6 +191,17 @@ export function CommitGraph({
   useEffect(() => {
     if (current !== undefined) body.current?.children[current + 1]?.scrollIntoView({ block: 'nearest' }) // +1: the svg
   }, [current])
+  // Search in List: the graph has its own search box, so `/` from the graph's rows goes there.
+  const searchBox = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!isShortcut(e, 'listSearch') || !(e.target instanceof Node) || !pane.current?.contains(e.target) || e.target === searchBox.current) return
+      e.preventDefault()
+      searchBox.current?.select()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   return (
     <div
@@ -200,6 +212,7 @@ export function CommitGraph({
     >
       <div className="graph-toolbar" role="toolbar" aria-label="Git Graph">
         <input
+          ref={searchBox}
           className="input grow"
           placeholder="Search commits…"
           aria-label="Search Commits"

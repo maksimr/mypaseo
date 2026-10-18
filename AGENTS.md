@@ -41,6 +41,7 @@
 | Command palette | `features/palette/` | `keymap.ts` (`HIDDEN` list) |
 | Tabs / panel layout | `features/tabs/` + `App.tsx` | — |
 | Update banner (new deploy cached by the service worker in `vite.config.ts`) | `features/update/` | — |
+| List search (`/` in the sidebar, file panel or an open menu: type to jump to a matching row) | `features/list-search/` | `keymap.ts` (`listSearch`), markup contract below; the git graph sends `/` to its own search box |
 | Artifacts panel (lists the workspace's `artifact`/`mermaid` blocks, a click opens the chat at one; fences, prompt and iframe in `src/artifact.ts`, `components/Artifact`) | `features/artifacts/` | `chat/useTimeline`, `chat/Chat` (`reveal`), `tabs/Panel.tsx`, `App.tsx` |
 | Git daemon plugin | `paseo-plugin/` | `git.ts` is its only client (oxlint fails on `invokePluginRpc` anywhere else); its zod schemas are the source of truth for the types |
 
@@ -68,6 +69,7 @@ stay flat in `src/`.
 | `.selection-action` | `review/SelectionAction.tsx` | itself (hover keep-alive) |
 | `[data-item]` (its timeline index) on each timeline item's root, `iframe[srcdoc]` | `chat/Timeline.tsx`, `components/Artifact.tsx` | `chat/Chat.tsx` (scroll to an artifact, or to the rail's pick), `chat/Rail.tsx` (`.timeline > [data-item]`: the item across the reading line) |
 | `.row[tabindex]` (`clickable`), current one `.active` or `[aria-current]`, `[aria-expanded]` on the row or its chevron, inside `.sidebar`, `.panel` | sidebar rows, `ProjectRow.tsx` (`aria-current`), `WorkspaceRow.tsx` (chevron), the panel's lists (changes, files, terminal, artifacts, git-graph) | `a11y.ts` (`focusRow`, `navigateRows`: arrow keys) |
+| Searchable items `.row[tabindex]` and `.menu > button` (menus `.menu[popover]`), each labelled by its first `.truncate` (else all its text); the box sits over `.sidebar > .tree`, `.panel > .panel-tabs + *` | sidebar rows, the panel's lists, `menu`s (`WorkspaceRow`, `ProjectRow`, `Hosts`, `Files` crumbs, `CommitDialog`, `OpenInEditor`) | `list-search/ListSearch.tsx` |
 | `.view:not([inert])` holding `.chat-foot textarea`, `.term-view textarea` or a `[tabindex="-1"]` scroller (`.changes`, `.graph`, `.file-view`) | `App.tsx`, `chat/Chat.tsx`, `terminal/Terminal.tsx`, `changes/Changes.tsx`, `git-graph/CommitGraph.tsx`, `files/Files.tsx` | `focus.ts` (`focusView`: a side pane closes, or Move Focus lands in the main area) |
 | Columns `.sidebar`, `.center`, `.panel`; their content `.sidebar > .tree`, `.panel > .panel-tabs + *`, `.view:not([inert])` | `sidebar/Sidebar.tsx`, `App.tsx`, `tabs/Panel.tsx` | `focus.ts` (`moveFocus`: Ctrl+Alt+arrows) |
 | `[role="toolbar"]` bars (`.sidebar-head`, `.sidebar-foot`, `.tabbar`, `.panel-tabs`, `.changes-toolbar`, `.graph-toolbar`, `.file-path`), open tab `.tab.on`, `.panel-tab.on`, menus `.menu` skipped | `sidebar/Sidebar.tsx`, `tabs/TabBar.tsx`, `tabs/Panel.tsx`, `changes/Changes.tsx`, `git-graph/CommitGraph.tsx`, `files/Files.tsx` | `a11y.ts` (`navigateBars`: left/right, `focusBar`), `focus.ts` (`moveFocus`) |

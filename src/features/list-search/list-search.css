@@ -1,0 +1,41 @@
+/* Speed search: the query, over the searched list's toolbar (or above the menu). */
+.list-search {
+  inset: auto;
+  margin: 0;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--bg-elev);
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.list-search:popover-open {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.list-search.none {
+  border-color: var(--red);
+  color: var(--red);
+}
+.list-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  outline: none; /* the box's border shows the focus */
+}
+.list-search input::placeholder {
+  color: var(--text-faint);
+}
+/* The current match, outlined like the focused row it stands for while the focus is in the search box. */
+[data-list-search] {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+::highlight(list-search) {
+  background-color: rgba(222, 193, 132, 0.35);
+  color: var(--text);
+}

@@ -17,4 +17,5 @@
 @import './features/git-graph/graph.css';
 @import './features/update/update.css';
 @import './features/artifacts/artifacts.css';
+@import './features/list-search/list-search.css';
 @import './styles/tablet.css';

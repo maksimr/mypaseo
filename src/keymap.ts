@@ -21,6 +21,8 @@ export const SHORTCUTS = {
   focusUp: { group: 'General', label: 'Move Focus Up', description: 'Move the focus up within the sidebar, main area or file panel: from the content to the toolbar or tabs above it. There Left and Right go through the controls.', default: 'Ctrl+Alt+ArrowUp' },
   focusDown: { group: 'General', label: 'Move Focus Down', description: 'Move the focus down within the sidebar, main area or file panel: from the tabs or a toolbar to what is below it.', default: 'Ctrl+Alt+ArrowDown' },
   addProject: { group: 'General', label: 'Add Project', description: 'Add a project directory to the sidebar.', default: 'Ctrl+KeyO' },
+  // Vim's and less's search key. A bare key: it acts only with the focus on a list, never in a text field.
+  listSearch: { group: 'General', label: 'Search in List', description: 'In the sidebar, the file panel, an open menu or the git graph, type to jump to a matching row. Up and Down go through the matches, Enter opens the current one, Escape stops on it.', default: 'Slash' },
 
   // Tabs
   nextTab: { group: 'Tabs', label: 'Next Tab', description: 'Go to the next tab of the current workspace: agents, terminals, changes, git graph, open files.', default: 'Ctrl+Shift+BracketRight' },
