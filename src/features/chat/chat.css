@@ -66,6 +66,179 @@
 .show-composer:hover {
   background: var(--bg-hover);
 }
+/* The agent's timeline under the composer, across the chat: one icon per item, joined by a line. */
+.rail {
+  display: flex;
+  flex-direction: row-reverse; /* see Rail.tsx */
+  margin-top: -16px; /* takes the composer's bottom margin: the strip down to the page bottom is the rail's */
+  /* Fixed, empty too. .sidebar-foot's height and top border: its icons line up with the settings button. */
+  height: 38px;
+  align-items: center;
+  padding: 1px 12px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  color: color-mix(in srgb, var(--text-faint) 70%, var(--border));
+  /* Frosted, to stay readable over the messages scrolling under it. */
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  backdrop-filter: blur(8px);
+}
+/* A folded run of the agent's steps: a cross of dots, spreading on hover. Open, a ring. Two layers, as box-shadow
+   can't blend the dots into the ring's inset shadow: the cross shrinks into the middle as the ring grows out of it. */
+.rail-run {
+  position: relative;
+  width: 20px;
+  height: 20px;
+}
+.rail-run::before,
+.rail-run::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 50%;
+  transition:
+    transform 0.15s,
+    opacity 0.15s,
+    box-shadow 0.15s;
+}
+.rail-run::before {
+  width: 2px;
+  height: 2px;
+  background: currentColor;
+  box-shadow: 0 -3px, 3px 0, 0 3px, -3px 0;
+}
+.rail-run::after {
+  width: 8px;
+  height: 8px;
+  box-shadow: inset 0 0 0 1px;
+  opacity: 0;
+  transform: scale(0.25);
+}
+.rail-run:hover {
+  color: var(--text-muted);
+}
+.rail-run:hover::before {
+  box-shadow: 0 -4px, 4px 0, 0 4px, -4px 0;
+}
+.rail-run[aria-expanded='true']::before {
+  opacity: 0;
+  transform: scale(0);
+}
+.rail-run[aria-expanded='true']::after {
+  opacity: 1;
+  transform: none;
+}
+/* The open run, above its .rail-run at (--x, --y): centered on it, but 8px inside the window. It grows out of the
+   run, from a point. */
+.rail-card {
+  --w: min(380px, 100vw - 16px);
+  --cx: clamp(8px + var(--w) / 2, var(--x), 100vw - 8px - var(--w) / 2);
+  --ox: calc(var(--x) - var(--cx) + var(--w) / 2); /* the run's x in the card */
+  inset: auto;
+  top: calc(var(--y) - 18px); /* 8px above the 20px .rail-run */
+  left: calc(var(--cx) - var(--w) / 2);
+  translate: 0 -100%;
+  width: var(--w);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  transition:
+    display 0.25s allow-discrete,
+    overlay 0.25s allow-discrete;
+}
+.rail-card-box {
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+  padding: 8px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--bg-elev);
+  clip-path: inset(0 round 12px);
+  transition:
+    clip-path 0.25s ease,
+    opacity 0.25s ease;
+}
+/* Closed, and as it opens: the box a point at the run. */
+.rail-card:not(:popover-open) .rail-card-box {
+  clip-path: inset(100% calc(100% - var(--ox)) 0 var(--ox) round 12px);
+  opacity: 0;
+}
+@starting-style {
+  .rail-card:popover-open .rail-card-box {
+    clip-path: inset(100% calc(100% - var(--ox)) 0 var(--ox) round 12px);
+    opacity: 0;
+  }
+}
+/* The run on a vertical rail: a line joins each icon to the one above. */
+.rail-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 28px;
+  font: 12px var(--mono);
+  text-align: left;
+}
+.rail-row:hover {
+  color: var(--text);
+}
+.rail-row + .rail-row::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 5.5px;
+  width: 1px;
+  height: 10px;
+  background: var(--border-strong);
+}
+.rail-row b {
+  color: var(--text);
+  font-weight: 500;
+}
+.rail-row.failed svg {
+  color: var(--red);
+}
+.rail-step {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 20px;
+}
+/* The newest: a lone step has no line to stretch, and this keeps it on the left. */
+.rail-step:first-child {
+  margin-right: auto;
+}
+/* The line from the step before; the oldest is the last child. The lines stretch the rail across the chat. */
+.rail-step:not(:last-child) {
+  flex-grow: 1;
+}
+.rail-step:not(:last-child)::before {
+  content: '';
+  flex: 1 0 10px;
+  height: 1px;
+  margin: 0 4px;
+  background: var(--border);
+}
+.rail-step.failed {
+  color: color-mix(in srgb, var(--red) 45%, var(--text-faint)); /* a hint, as dim as the rail */
+}
+/* The step at the top of the chat (on its button, over their hover color). */
+.rail-step.current > button,
+.rail-row.current {
+  color: var(--text);
+}
+/* A step's icon, scrolling the chat to it: a 20px hit area over the gaps to its lines. */
+.rail-pick {
+  display: flex;
+  margin: 0 -4px;
+  padding: 5px;
+}
+.rail-pick:hover {
+  color: var(--text-muted);
+}
 .timeline {
   width: 100%;
   max-width: 860px;

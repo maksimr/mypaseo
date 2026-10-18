@@ -5,6 +5,7 @@ import type { TimelineItem, ToolCall, ToolDetail } from '../../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../../keymap'
 import { Code } from '../../components/Code'
 import { Markdown } from '../../components/Markdown'
+import { toolArg } from './toolArg'
 
 export function Timeline({ items, running }: { items: TimelineItem[]; running: boolean }) {
   // Like pi's Ctrl+O (here Ctrl+" by default): expand or collapse every tool output at once.
@@ -38,7 +39,7 @@ const Item = memo(function Item({ index, item, expanded }: { index: number; item
   switch (item.type) {
     case 'user_message':
       return (
-        <div className="msg user">
+        <div className="msg user" data-item={index}>
           <div className="user-text">{item.text}</div>
         </div>
       )
@@ -50,15 +51,15 @@ const Item = memo(function Item({ index, item, expanded }: { index: number; item
       )
     case 'reasoning':
       return (
-        <div className="msg thinking">
+        <div className="msg thinking" data-item={index}>
           <Markdown text={item.text} />
         </div>
       )
     case 'tool_call':
-      return <ToolRow tool={item} expanded={expanded} />
+      return <ToolRow index={index} tool={item} expanded={expanded} />
     case 'todo':
       return (
-        <div className="msg">
+        <div className="msg" data-item={index}>
           <ul className="todo">
             {item.items.map((t, i) => (
               <li key={t.id ?? i} className={t.completed ? 'done' : t.status === 'in_progress' ? 'doing' : ''}>
@@ -70,54 +71,25 @@ const Item = memo(function Item({ index, item, expanded }: { index: number; item
       )
     case 'error':
       return (
-        <div className="msg error">
+        <div className="msg error" data-item={index}>
           <div className="pre-wrap">{item.message}</div>
         </div>
       )
     case 'notification':
       return (
-        <div className={`msg ${item.level === 'error' ? 'error' : 'muted'}`}>
+        <div className={`msg ${item.level === 'error' ? 'error' : 'muted'}`} data-item={index}>
           <div className="pre-wrap">{item.message}</div>
         </div>
       )
     case 'compaction':
-      return <div className="divider">{item.status === 'loading' ? 'Compacting context…' : 'Context compacted'}</div>
+      return <div className="divider" data-item={index}>{item.status === 'loading' ? 'Compacting context…' : 'Context compacted'}</div>
     default:
       return null
   }
 })
 
-/** The tool's main argument, shown after its name in the header. */
-function toolArg(t: ToolCall): string {
-  const d = t.detail
-  switch (d.type) {
-    case 'shell':
-      return d.command
-    case 'read':
-    case 'edit':
-    case 'write':
-      return d.filePath
-    case 'search':
-      return d.query
-    case 'fetch':
-      return d.url
-    case 'sub_agent':
-      return d.description ?? d.subAgentType ?? ''
-    case 'worktree_setup':
-      return d.branchName
-    case 'plain_text':
-      return d.label ?? ''
-    case 'plan':
-      return ''
-    default: {
-      const input = (d.input ?? {}) as Record<string, unknown>
-      return String([input.path, input.file_path, input.command, input.pattern, input.query].find((v) => typeof v === 'string') ?? '')
-    }
-  }
-}
-
 /** Pi-style tool box: green when it succeeded, red when it failed or was canceled. */
-function ToolRow({ tool, expanded }: { tool: ToolCall; expanded: boolean }) {
+function ToolRow({ index, tool, expanded }: { index: number; tool: ToolCall; expanded: boolean }) {
   const d = tool.detail
   const expandKey = useShortcut('expandTools')
   // A click overrides the shortcut's state for this row until the shortcut is pressed again.
@@ -136,7 +108,7 @@ function ToolRow({ tool, expanded }: { tool: ToolCall; expanded: boolean }) {
   const lines = out?.split('\n') ?? []
   const hidden = open ? 0 : Math.max(0, lines.length - PREVIEW_LINES)
   return (
-    <div className={`tool ${tool.status}`}>
+    <div className={`tool ${tool.status}`} data-item={index}>
       <button className="tool-head" onClick={toggle}>
         {d.type === 'shell' ? (
           `$ ${d.command}`

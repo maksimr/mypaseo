@@ -66,7 +66,7 @@ stay flat in `src/`.
 | `.timeline` inside `.chat-scroll` | `chat/Timeline.tsx`, `chat/Chat.tsx` | `Chat.tsx` (ResizeObserver), `components/Markdown.tsx` (IntersectionObserver root) |
 | `.sidebar`, `.panel` | `sidebar/Sidebar.tsx`, `tabs/Panel.tsx` | `swipe.ts` |
 | `.selection-action` | `review/SelectionAction.tsx` | itself (hover keep-alive) |
-| `.msg[data-item]` (assistant message's timeline index), `iframe[srcdoc]` | `chat/Timeline.tsx`, `components/Artifact.tsx` | `chat/Chat.tsx` (scroll to an artifact) |
+| `[data-item]` (its timeline index) on each timeline item's root, `iframe[srcdoc]` | `chat/Timeline.tsx`, `components/Artifact.tsx` | `chat/Chat.tsx` (scroll to an artifact, or to the rail's pick), `chat/Rail.tsx` (`.timeline > [data-item]`: the step at the top) |
 | `.row[tabindex]` (`clickable`), current one `.active` or `[aria-current]`, `[aria-expanded]` on the row or its chevron, inside `.sidebar`, `.panel` | sidebar rows, `ProjectRow.tsx` (`aria-current`), `WorkspaceRow.tsx` (chevron), the panel's lists (changes, files, terminal, artifacts, git-graph) | `a11y.ts` (`focusRow`, `navigateRows`: arrow keys) |
 | `.view:not([inert])` holding `.chat-foot textarea`, `.term-view textarea` or a `[tabindex="-1"]` scroller (`.changes`, `.graph`, `.file-view`) | `App.tsx`, `chat/Chat.tsx`, `terminal/Terminal.tsx`, `changes/Changes.tsx`, `git-graph/CommitGraph.tsx`, `files/Files.tsx` | `focus.ts` (`focusView`: a side pane closes, or Move Focus lands in the main area) |
 | Columns `.sidebar`, `.center`, `.panel`; their content `.sidebar > .tree`, `.panel > .panel-tabs + *`, `.view:not([inert])` | `sidebar/Sidebar.tsx`, `App.tsx`, `tabs/Panel.tsx` | `focus.ts` (`moveFocus`: Ctrl+Alt+arrows) |
@@ -76,6 +76,7 @@ stay flat in `src/`.
 - `changes/Changes.tsx` `HEADERS = 72` = `.changes-toolbar` 38px + `.excerpt-head` 34px
 - `git-graph/CommitGraph.tsx` `ROW = 28` = `.graph-row` height; `LANE = 16`
 - `App.tsx` `NARROW = '(width < 900px)'` = the tablet media query in `styles/tablet.css`
+- `chat/fold.ts` `PICK = 12`, `RUN = 20`, `LINE = 18` = `.rail-pick`, `.rail-run`, `.rail-step::before` widths
 - `swipe.ts` `SETTLE_MS = 200` = the settle transition in `styles/tablet.css`
 
 ### localStorage keys (`grep localStorage.mypaseo` before adding or renaming one)

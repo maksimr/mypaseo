@@ -12,6 +12,7 @@ import { useTimeline } from './useTimeline'
 import { Timeline } from './Timeline'
 import { Composer } from './Composer'
 import { PermissionCard } from './PermissionCard'
+import { Rail } from './Rail'
 import type { Target } from './target'
 
 /** Whether the user is writing in the composer: it has focus and unsent text. */
@@ -60,6 +61,17 @@ export function Chat({
   const jumpToLatest = () => {
     const el = scroller.current
     if (el) el.scrollTop = el.scrollHeight
+  }
+  // The rail's pick: the item at the top. Parsing the messages around it can move it, so it goes there again after.
+  const goTo = (i: number) => {
+    const el = scroller.current
+    const item = el?.querySelector(`[data-item="${i}"]`)
+    if (!el || !item) return
+    atBottom.current = false // else sticking to the bottom scrolls it away again
+    item.scrollIntoView({ block: 'start' })
+    flushSync(() => parseNear(el))
+    item.scrollIntoView({ block: 'start' })
+    lastTop.current = el.scrollTop // not a scroll up by the user: the composer, and the rail in it, stay shown
   }
   const showComposer = () => {
     flushSync(() => setHide(false))
@@ -204,6 +216,8 @@ export function Chat({
               onDraftProvider={onDraftProvider}
               onShowComment={onShowComment}
             />
+            {/* Even empty, as for a new agent: its space stays, so the composer doesn't jump when steps arrive. */}
+            <Rail key={agent?.id} items={tl.items} running={running} scroller={scroller} onPick={goTo} onEnd={jumpToLatest} />
           </div>
           {composerHidden && (
             <button
