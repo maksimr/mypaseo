@@ -77,7 +77,7 @@
   padding: 1px 12px 0;
   overflow-x: auto;
   scrollbar-width: none;
-  color: color-mix(in srgb, var(--text-faint) 70%, var(--border));
+  color: var(--border-strong); /* barely off the background, as if printed on it; so are its highlights */
   /* Frosted, to stay readable over the messages scrolling under it. */
   background: color-mix(in srgb, var(--bg) 70%, transparent);
   backdrop-filter: blur(8px);
@@ -115,7 +115,7 @@
   transform: scale(0.25);
 }
 .rail-run:hover {
-  color: var(--text-muted);
+  color: var(--text-faint);
 }
 .rail-run:hover::before {
   box-shadow: 0 -4px, 4px 0, 0 4px, -4px 0;
@@ -220,13 +220,15 @@
   flex: 1 0 10px;
   height: 1px;
   margin: 0 4px;
-  background: var(--border);
+  background: color-mix(in srgb, var(--border) 60%, var(--bg));
 }
 .rail-step.failed {
-  color: color-mix(in srgb, var(--red) 45%, var(--text-faint)); /* a hint, as dim as the rail */
+  color: color-mix(in srgb, var(--red) 30%, var(--border-strong));
 }
-/* The step at the top of the chat (on its button, over their hover color). */
-.rail-step.current > button,
+/* The step at the top of the chat (on its button, over their hover color), and its row in the card. */
+.rail-step.current > button {
+  color: var(--text-faint);
+}
 .rail-row.current {
   color: var(--text);
 }
@@ -237,7 +239,7 @@
   padding: 5px;
 }
 .rail-pick:hover {
-  color: var(--text-muted);
+  color: var(--text-faint);
 }
 .timeline {
   width: 100%;
