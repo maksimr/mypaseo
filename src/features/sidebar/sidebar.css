@@ -107,6 +107,16 @@
 .panel-root {
   font-weight: 500;
 }
+/* No projects: the hint and Add Project, centered in the tree. */
+.sidebar-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 100%;
+  padding: 16px;
+}
 .sidebar-foot {
   display: flex;
   align-items: center;

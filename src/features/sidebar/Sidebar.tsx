@@ -147,7 +147,14 @@ export function Sidebar({
           </button>
         </div>
         <nav className="tree">
-          {projects.length === 0 && <div className="empty">{down ? 'Connecting…' : 'No projects yet'}</div>}
+          {projects.length === 0 && (
+            <div className="sidebar-empty">
+              <span className="muted">No projects</span>
+              <button className="btn ghost" title={`Add Project (${formatCombo(addProjectKey)})`} onClick={() => setAdding(true)}>
+                <FolderAdd /> Add Project
+              </button>
+            </div>
+          )}
           {listed.map(({ p, shownWorkspaces }, i) => (
             <ProjectRow
               key={p.projectId}
