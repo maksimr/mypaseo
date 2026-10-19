@@ -6,7 +6,7 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="color-scheme" content="light dark" />
-    <!-- The theme picked in Settings, applied before the first paint; theme.ts keeps it in sync. -->
+    <!-- The theme picked in Settings, before the first paint; theme.ts keeps it current. -->
     <script>
       document.querySelector('meta[name="color-scheme"]').content = localStorage.mypaseoTheme ?? 'light dark'
     </script>

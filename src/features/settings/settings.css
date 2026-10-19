@@ -202,11 +202,11 @@
   transition: transform 0.15s;
 }
 .toggle[aria-checked='true'] {
-  background: light-dark(#4a6bd6, #3b5a85);
+  background: var(--toggle-on);
 }
 .toggle[aria-checked='true'] span {
   transform: translateX(14px);
-  background: light-dark(#ffffff, #e8eef6);
+  background: var(--toggle-on-knob);
 }
 .pill {
   margin-left: 6px;

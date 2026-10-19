@@ -1,13 +1,13 @@
 import { useSyncExternalStore } from 'react'
 
-// The <meta name="color-scheme"> holds the theme: 'light dark' follows the system. index.html applies the stored one before
-// the first paint, base.css maps it onto color-scheme, and color-scheme picks every light-dark() color.
-export type Theme = 'light dark' | 'light' | 'dark'
+// <meta name="color-scheme"> holds the theme: 'light dark' follows the system. index.html applies the one picked in
+// Settings before the first paint; styles/theme.css maps it onto color-scheme, which picks each light-dark() color.
+export type Theme = 'system' | 'light' | 'dark'
 
 const meta = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]')!
 const system = matchMedia('(prefers-color-scheme: dark)')
-const theme = () => meta.content as Theme
-const dark = () => theme() === 'dark' || (theme() === 'light dark' && system.matches)
+const picked = () => (meta.content === 'light dark' ? 'system' : meta.content) as Theme
+const dark = () => picked() === 'dark' || (picked() === 'system' && system.matches)
 
 function subscribe(onChange: () => void) {
   const observer = new MutationObserver(onChange)
@@ -20,23 +20,33 @@ function subscribe(onChange: () => void) {
 }
 
 export function setTheme(t: Theme) {
-  if (t === 'light dark') delete localStorage.mypaseoTheme
+  if (t === 'system') delete localStorage.mypaseoTheme
   else localStorage.mypaseoTheme = t
-  meta.content = t
+  meta.content = t === 'system' ? 'light dark' : t
 }
 
-export const useTheme = () => useSyncExternalStore(subscribe, theme)
+/** The theme picked in Settings. */
+export const useTheme = () => useSyncExternalStore(subscribe, picked)
 
-/** Whether the dark colors show, for colors CSS doesn't reach (xterm's ANSI palette). */
+/** Whether the dark colors show: TS that reads colors (cssColor) reads them again when this changes. */
 export const useDark = () => useSyncExternalStore(subscribe, dark)
 
-/** Takes a theme picked in another tab, and tints the browser's title bar with the app's background. */
+// light-dark() resolves only inside a color property, so variables are read through one, on an element that never renders.
+const probe = document.head.appendChild(document.createElement('meta'))
+
+/** A color variable of styles/theme.css as shown now, e.g. cssColor('bg'). */
+export function cssColor(name: string) {
+  probe.style.color = `var(--${name})`
+  return getComputedStyle(probe).color
+}
+
+/** Takes a theme picked in another tab, and tints the browser's title bar with --bg. */
 export function watchTheme() {
   addEventListener('storage', (e) => {
     if (e.key === 'mypaseoTheme') meta.content = e.newValue ?? 'light dark'
   })
   const bar = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')!
-  const tint = () => (bar.content = getComputedStyle(document.documentElement).backgroundColor)
+  const tint = () => (bar.content = cssColor('bg'))
   subscribe(tint)
   tint()
 }

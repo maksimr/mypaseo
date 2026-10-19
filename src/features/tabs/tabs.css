@@ -136,10 +136,8 @@
   padding: 40px;
 }
 
-/* xterm fits its grid to this box, padding excluded. Terminal.tsx paints xterm with its background, color and caret-color. */
+/* xterm fits its grid to this box, padding excluded. */
 .term-view {
-  background: var(--bg);
-  caret-color: var(--accent);
   flex: 1;
   min-height: 0;
   padding: 6px 0 0 12px;

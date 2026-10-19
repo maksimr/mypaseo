@@ -1,42 +1,12 @@
-/* Zed-like palettes, light-dark(One Light, One Dark): color-scheme picks one, see the end of this rule. */
+/* Colors: styles/theme.css. */
 :root {
-  --bg: light-dark(#fafafa, #23252b);
-  --bg-panel: light-dark(#efeff0, #1f2125);
-  --bg-elev: light-dark(#ffffff, #2a2c33);
-  --bg-hover: light-dark(#e6e6e8, #2c2f36);
-  --bg-active: light-dark(#dbdbde, #33363e);
-  --bg-input: light-dark(#ffffff, #17191c);
-  --border: light-dark(#dfdfe1, #33363d);
-  --border-strong: light-dark(#c9c9cc, #43464f);
-  --text: light-dark(#242529, #dce0e5);
-  --text-muted: light-dark(#5f6168, #9097a1);
-  --text-faint: light-dark(#8e9097, #646a74);
-  --accent: light-dark(#4a6bd6, #74ade8);
-  --green: light-dark(#4d8a3f, #a1c181);
-  --red: light-dark(#c94237, #e06c75);
-  --yellow: light-dark(#9a7a0e, #dec184);
-  --add-bg: light-dark(rgba(80, 170, 70, 0.15), rgba(161, 193, 129, 0.12));
-  --del-bg: light-dark(rgba(225, 80, 70, 0.12), rgba(224, 108, 117, 0.13));
-  /* Shadow colors, named by their dark alpha; on the light background a third of it is enough. */
-  --shadow-30: light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
-  --shadow-35: light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.35));
-  --shadow-40: light-dark(rgba(0, 0, 0, 0.13), rgba(0, 0, 0, 0.4));
-  --shadow-50: light-dark(rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.5));
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --mono: 'Zed Mono', 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
 
-  color-scheme: light dark;
   font: 13px/1.5 var(--sans);
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
-}
-/* The system's scheme unless Settings → Theme picked one (theme.ts writes it to this <meta>). */
-:root:has(> head > meta[name='color-scheme'][content='light']) {
-  color-scheme: light;
-}
-:root:has(> head > meta[name='color-scheme'][content='dark']) {
-  color-scheme: dark;
 }
 
 * {
@@ -181,11 +151,11 @@ h2 {
   background: var(--bg-hover);
 }
 .btn.primary {
-  background: light-dark(#d9e3f8, #3b5a85);
-  border-color: light-dark(#a8bdec, #4a6c9b);
+  background: var(--btn-primary-bg);
+  border-color: var(--btn-primary-border);
 }
 .btn.danger {
-  border-color: light-dark(#e6aaa4, #7a3b40);
+  border-color: var(--btn-danger-border);
   color: var(--red);
 }
 .btn.ghost {

@@ -32,48 +32,48 @@
   padding-right: 16px;
 }
 .tk-keyword {
-  color: light-dark(#a626a4, #b477cf);
+  color: var(--syntax-keyword);
 }
 .tk-comment,
 .tk-meta {
-  color: light-dark(#a0a1a7, #5d636f);
+  color: var(--syntax-comment);
   font-style: italic;
 }
 .tk-string,
 .tk-regexp {
-  color: light-dark(#50a14f, #a1c181);
+  color: var(--syntax-string);
 }
 .tk-number,
 .tk-literal {
-  color: light-dark(#986801, #bf956a);
+  color: var(--syntax-number);
 }
 .tk-function,
 .tk-definition {
-  color: light-dark(#4078f2, #73ade9);
+  color: var(--syntax-function);
 }
 .tk-class,
 .tk-type {
-  color: light-dark(#0184bc, #6eb4bf);
+  color: var(--syntax-type);
 }
 .tk-tag,
 .tk-heading {
-  color: light-dark(#e45649, #e06c75);
+  color: var(--syntax-tag);
 }
 .tk-attribute,
 .tk-property {
-  color: light-dark(#c4493d, #d07277);
+  color: var(--syntax-attribute);
 }
 .tk-variable {
-  color: light-dark(#383a42, #dce0e5);
+  color: var(--syntax-variable);
 }
 .tk-operator,
 .tk-escape {
-  color: light-dark(#0184bc, #6eb4bf);
+  color: var(--syntax-operator);
 }
 .tk-punctuation {
-  color: light-dark(#696c77, #acb2be);
+  color: var(--syntax-punctuation);
 }
 .tk-link {
-  color: light-dark(#4078f2, #74ade8);
+  color: var(--syntax-link);
   text-decoration: underline;
 }

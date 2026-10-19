@@ -36,6 +36,6 @@
   outline-offset: -1px;
 }
 ::highlight(list-search) {
-  background-color: rgba(222, 193, 132, 0.35);
+  background-color: var(--match-bg);
   color: var(--text);
 }

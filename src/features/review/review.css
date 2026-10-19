@@ -56,7 +56,7 @@
   border-left-color: var(--red);
 }
 .review-comment {
-  background: light-dark(#e6eef8, #2b3a4b);
+  background: var(--review-comment-bg);
 }
 .review-thread > * > svg {
   flex: none;

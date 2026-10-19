@@ -1,14 +1,14 @@
 import { FitAddon } from '@xterm/addon-fit'
-import { Terminal, type ITheme } from '@xterm/xterm'
+import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import { Plus, SquareTerminal } from 'lucide-react'
-import { useContext, useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { clickable } from '../../a11y'
 import { ActiveViewContext } from '../../activeView'
 import { errorText, type TerminalInfo } from '../../daemon'
 import { formatCombo, isShortcut, SHORTCUT_IDS, useShortcut } from '../../keymap'
 import { useDaemon } from '../../store'
-import { useDark } from '../../theme'
+import { cssColor, useDark } from '../../theme'
 
 /** The right panel's Terminals section: the workspace's terminals, each opening its tab. */
 export function TerminalList({ terminals, activeId, onOpen, onNew }: { terminals: TerminalInfo[]; activeId?: string; onOpen: (id: string) => void; onNew: () => void }) {
@@ -29,45 +29,17 @@ export function TerminalList({ terminals, activeId, onOpen, onNew }: { terminals
   )
 }
 
-// Soft pastel ANSI colors instead of xterm's saturated defaults. Bold text uses the bright ones.
-const DARK: ITheme = {
-  selectionBackground: 'rgba(116, 173, 232, 0.3)',
-  black: '#3a3a3a',
-  red: '#c86464',
-  green: '#8cbf7f',
-  yellow: '#d6d27a',
-  blue: '#6b70e0',
-  magenta: '#c27fd1',
-  cyan: '#6fc0d4',
-  white: '#d4d4d4',
-  brightBlack: '#6e6e6e',
-  brightRed: '#e06c6c',
-  brightGreen: '#93c88a',
-  brightYellow: '#e6e47a',
-  brightBlue: '#7b7ef0',
-  brightMagenta: '#d495e3',
-  brightCyan: '#80d0e4',
-  brightWhite: '#f0f0f0',
-}
-// GitHub Light's: dark enough to read on white (yellow turns brown, white gray).
-const LIGHT: ITheme = {
-  selectionBackground: 'rgba(74, 107, 214, 0.25)',
-  black: '#24292f',
-  red: '#cf222e',
-  green: '#116329',
-  yellow: '#4d2d00',
-  blue: '#0969da',
-  magenta: '#8250df',
-  cyan: '#1b7c83',
-  white: '#6e7781',
-  brightBlack: '#57606a',
-  brightRed: '#a40e26',
-  brightGreen: '#1a7f37',
-  brightYellow: '#633c01',
-  brightBlue: '#218bff',
-  brightMagenta: '#a475f9',
-  brightCyan: '#3192aa',
-  brightWhite: '#8c959f',
+const ANSI = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'] as const
+
+/** xterm's colors from styles/theme.css. */
+function paint(term: Terminal) {
+  term.options.theme = {
+    background: cssColor('bg'),
+    foreground: cssColor('text'),
+    cursor: cssColor('accent'),
+    selectionBackground: cssColor('term-selection'),
+    ...Object.fromEntries(ANSI.flatMap((c) => [[c, cssColor(`term-${c}`)], [`bright${c[0].toUpperCase()}${c.slice(1)}`, cssColor(`term-bright-${c}`)]])),
+  }
 }
 
 // In a terminal the shell gets every key but the app shortcuts with Cmd, Ctrl+Shift or Ctrl+Alt+arrows, which shells don't use.
@@ -81,11 +53,6 @@ export function TerminalView({ terminalId }: { terminalId: string }) {
   const xterm = useRef<Terminal>(null)
   const [error, setError] = useState<string>()
   const dark = useDark()
-  // Background, text and cursor from .term-view (tabs.css), resolved for the color-scheme.
-  const paint = useEffectEvent((term: Terminal) => {
-    const css = getComputedStyle(host.current!)
-    term.options.theme = { background: css.backgroundColor, foreground: css.color, cursor: css.caretColor, ...(dark ? DARK : LIGHT) }
-  })
   useEffect(() => {
     if (xterm.current) paint(xterm.current)
   }, [dark])

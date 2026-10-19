@@ -67,7 +67,7 @@ export function General({ config, patch, q }: SectionProps) {
         matches(q, 'theme appearance light dark white color scheme') && (
           <Row key="theme" title="Theme" description="Light, dark, or whichever your system uses. Stored in this browser.">
             <select className="input select" aria-label="Theme" value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
-              <option value="light dark">System</option>
+              <option value="system">System</option>
               <option value="light">Light</option>
               <option value="dark">Dark</option>
             </select>

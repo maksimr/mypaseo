@@ -58,11 +58,11 @@
   background: var(--bg-hover);
 }
 .graph-row.match {
-  background: rgba(222, 193, 132, 0.1);
+  background: var(--graph-match-bg);
 }
 .graph-row.current,
 .graph-body .graph-row.current:hover {
-  background: rgba(222, 193, 132, 0.22);
+  background: var(--graph-current-bg);
 }
 .graph-lines {
   position: absolute;
@@ -115,8 +115,8 @@
   position: relative;
   flex: none;
   padding: 1px 6px;
-  background: #3a7bd5;
-  color: #fff;
+  background: var(--graph-more-bg);
+  color: var(--graph-more-text);
 }
 .graph-more-list {
   position: absolute;

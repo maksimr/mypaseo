@@ -4,9 +4,9 @@
   max-width: 812px;
   margin: 0 auto 8px;
   padding: 10px 12px;
-  border: 1px solid light-dark(#e3cf8f, #5c5032);
+  border: 1px solid var(--permission-border);
   border-radius: 8px;
-  background: light-dark(#fcf5df, #2b2a26);
+  background: var(--permission-bg);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -195,7 +195,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgba(127, 127, 127, 0.6);
+  box-shadow: inset 0 0 0 1px var(--swatch-ring);
 }
 .swatch[aria-pressed='true'] {
   outline: 2px solid var(--text);

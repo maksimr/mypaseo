@@ -1,0 +1,113 @@
+/* Every color in the app: light-dark(light, dark), One Light and One Dark as in Zed; one value serves both themes.
+   color-scheme picks the side: the system's, unless Settings picked a theme (the rules after this one). */
+:root {
+  color-scheme: light dark;
+
+  /* Surfaces */
+  --bg: light-dark(#fafafa, #23252b);
+  --bg-panel: light-dark(#efeff0, #1f2125);
+  --bg-elev: light-dark(#ffffff, #2a2c33);
+  --bg-hover: light-dark(#e6e6e8, #2c2f36);
+  --bg-active: light-dark(#dbdbde, #33363e);
+  --bg-input: light-dark(#ffffff, #17191c);
+  --border: light-dark(#dfdfe1, #33363d);
+  --border-strong: light-dark(#c9c9cc, #43464f);
+
+  /* Text and status */
+  --text: light-dark(#242529, #dce0e5);
+  --text-muted: light-dark(#5f6168, #9097a1);
+  --text-faint: light-dark(#8e9097, #646a74);
+  --accent: light-dark(#4a6bd6, #74ade8);
+  --green: light-dark(#4d8a3f, #a1c181);
+  --red: light-dark(#c94237, #e06c75);
+  --yellow: light-dark(#9a7a0e, #dec184);
+
+  /* Shadows, named by their dark alpha (light: a third of it); overlays */
+  --shadow-30: light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
+  --shadow-35: light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.35));
+  --shadow-40: light-dark(rgba(0, 0, 0, 0.13), rgba(0, 0, 0, 0.4));
+  --shadow-50: light-dark(rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.5));
+  --backdrop: rgba(0, 0, 0, 0.45); /* behind a modal */
+  --scrim: rgba(0, 0, 0, 0.3); /* behind a pane over the app (tablet) */
+
+  /* Controls */
+  --btn-primary-bg: light-dark(#d9e3f8, #3b5a85);
+  --btn-primary-border: light-dark(#a8bdec, #4a6c9b);
+  --btn-danger-border: light-dark(#e6aaa4, #7a3b40);
+  --toggle-on: light-dark(#4a6bd6, #3b5a85);
+  --toggle-on-knob: light-dark(#ffffff, #e8eef6);
+  --swatch-ring: rgba(127, 127, 127, 0.6); /* around a pen color (image editor) */
+
+  /* Diffs */
+  --add-bg: light-dark(rgba(80, 170, 70, 0.15), rgba(161, 193, 129, 0.12));
+  --del-bg: light-dark(rgba(225, 80, 70, 0.12), rgba(224, 108, 117, 0.13));
+  --staged-add-bg: rgba(161, 193, 129, 0.06);
+  --staged-del-bg: rgba(224, 108, 117, 0.06);
+
+  /* Chat */
+  --chat-grid: light-dark(rgba(0, 0, 0, 0.015), rgba(255, 255, 255, 0.012));
+  --user-msg-bg: light-dark(#e2ebf7, #273947);
+  --tool-bg: light-dark(rgba(218, 219, 224, 0.5), rgba(45, 47, 54, 0.5)); /* translucent so the chat grid shows through */
+  --tool-done-bg: light-dark(rgba(200, 228, 196, 0.5), rgba(48, 73, 54, 0.5));
+  --tool-failed-bg: light-dark(rgba(244, 204, 202, 0.5), rgba(105, 44, 44, 0.5));
+  --permission-bg: light-dark(#fcf5df, #2b2a26);
+  --permission-border: light-dark(#e3cf8f, #5c5032);
+  --review-comment-bg: light-dark(#e6eef8, #2b3a4b);
+
+  /* Search matches, git graph */
+  --match-bg: rgba(222, 193, 132, 0.35);
+  --graph-match-bg: rgba(222, 193, 132, 0.1);
+  --graph-current-bg: rgba(222, 193, 132, 0.22);
+  --graph-more-bg: #3a7bd5;
+  --graph-more-text: #fff;
+  /* Lanes, cycled in order (CommitGraph.tsx LANES); light ones darker, to read on white */
+  --lane-0: light-dark(#4078f2, #74ade8);
+  --lane-1: light-dark(#c96a1f, #e5894a);
+  --lane-2: light-dark(#50a14f, #a1c181);
+  --lane-3: light-dark(#a626a4, #c678dd);
+  --lane-4: light-dark(#c18401, #dec184);
+  --lane-5: light-dark(#0184bc, #56b6c2);
+  --lane-6: light-dark(#e45649, #e06c75);
+
+  /* Syntax */
+  --syntax-keyword: light-dark(#a626a4, #b477cf);
+  --syntax-comment: light-dark(#a0a1a7, #5d636f);
+  --syntax-string: light-dark(#50a14f, #a1c181);
+  --syntax-number: light-dark(#986801, #bf956a);
+  --syntax-function: light-dark(#4078f2, #73ade9);
+  --syntax-type: light-dark(#0184bc, #6eb4bf);
+  --syntax-tag: light-dark(#e45649, #e06c75);
+  --syntax-attribute: light-dark(#c4493d, #d07277);
+  --syntax-variable: light-dark(#383a42, #dce0e5);
+  --syntax-operator: light-dark(#0184bc, #6eb4bf);
+  --syntax-punctuation: light-dark(#696c77, #acb2be);
+  --syntax-link: light-dark(#4078f2, #74ade8);
+
+  /* Terminal (Terminal.tsx): background, text and cursor are --bg, --text, --accent; bold text uses the bright
+     colors. Light: GitHub Light's ANSI colors, dark enough for white (yellow turns brown, white gray). Dark: pastel
+     ones instead of xterm's saturated defaults. */
+  --term-selection: light-dark(rgba(74, 107, 214, 0.25), rgba(116, 173, 232, 0.3));
+  --term-black: light-dark(#24292f, #3a3a3a);
+  --term-red: light-dark(#cf222e, #c86464);
+  --term-green: light-dark(#116329, #8cbf7f);
+  --term-yellow: light-dark(#4d2d00, #d6d27a);
+  --term-blue: light-dark(#0969da, #6b70e0);
+  --term-magenta: light-dark(#8250df, #c27fd1);
+  --term-cyan: light-dark(#1b7c83, #6fc0d4);
+  --term-white: light-dark(#6e7781, #d4d4d4);
+  --term-bright-black: light-dark(#57606a, #6e6e6e);
+  --term-bright-red: light-dark(#a40e26, #e06c6c);
+  --term-bright-green: light-dark(#1a7f37, #93c88a);
+  --term-bright-yellow: light-dark(#633c01, #e6e47a);
+  --term-bright-blue: light-dark(#218bff, #7b7ef0);
+  --term-bright-magenta: light-dark(#a475f9, #d495e3);
+  --term-bright-cyan: light-dark(#3192aa, #80d0e4);
+  --term-bright-white: light-dark(#8c959f, #f0f0f0);
+}
+/* The theme picked in Settings: theme.ts writes it to this <meta>. */
+:root:has(> head > meta[name='color-scheme'][content='light']) {
+  color-scheme: light;
+}
+:root:has(> head > meta[name='color-scheme'][content='dark']) {
+  color-scheme: dark;
+}
