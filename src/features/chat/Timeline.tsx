@@ -7,7 +7,7 @@ import { Code } from '../../components/Code'
 import { Markdown } from '../../components/Markdown'
 import { toolArg } from './toolArg'
 
-export function Timeline({ items, running }: { items: TimelineItem[]; running: boolean }) {
+export function Timeline({ items, running, error }: { items: TimelineItem[]; running: boolean; error?: string | null }) {
   // Like pi's Ctrl+O (here Ctrl+" by default): expand or collapse every tool output at once.
   const [expanded, setExpanded] = useState(false)
   const active = useContext(ActiveViewContext)
@@ -31,6 +31,7 @@ export function Timeline({ items, running }: { items: TimelineItem[]; running: b
           <Loader2 size={13} className="spin" /> Working…
         </div>
       )}
+      {error && <div className="msg error pre-wrap">{error}</div>}
     </div>
   )
 }
