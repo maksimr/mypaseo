@@ -102,7 +102,6 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
         <div className="settings-body" ref={body}>
           {shown.map((s) => (
             <Fragment key={s}>
-              {error && s === bannerAt && <div className="banner err">{error}</div>}
               {
                 // Shortcuts live in localStorage, so they don't wait for the daemon config.
                 s === 'Keymap' ? (
@@ -110,11 +109,18 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
                 ) : s === 'Host' ? (
                   <HostSection q={q} />
                 ) : !config ? (
-                  (s === 'General' || !q) && <div className="empty">Loading…</div>
+                  // Blank while loading; on failure, just the title and why.
+                  error &&
+                  s === bannerAt && (
+                    <section className="settings-section">
+                      <h2>{s}</h2>
+                      <div className="banner err">{error}</div>
+                    </section>
+                  )
                 ) : s === 'General' ? (
-                  <General config={config} patch={patch} q={q} />
+                  <General config={config} patch={patch} q={q} error={s === bannerAt ? error : null} />
                 ) : (
-                  <Providers config={config} patch={patch} q={q} />
+                  <Providers config={config} patch={patch} q={q} error={s === bannerAt ? error : null} />
                 )
               }
             </Fragment>

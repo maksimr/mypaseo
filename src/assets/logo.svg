@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="80 64 384 384">
+  <!-- The butterfly traced from public/icon-512.png, as a mask (tabs.css .landing-logo). The filter prints it in ink:
+       roughened edges, then uneven density, then pinholes. -->
+  <filter id="ink" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="3" seed="3" result="warp" />
+    <feDisplacementMap in="SourceGraphic" in2="warp" scale="3.5" xChannelSelector="R" yChannelSelector="G" result="rough" />
+    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" seed="5" />
+    <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  2 0 0 0 -0.1" result="density" />
+    <feComposite in="rough" in2="density" operator="in" result="inked" />
+    <feTurbulence type="fractalNoise" baseFrequency="0.2" numOctaves="2" seed="9" />
+    <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  6 0 0 0 -1.6" result="pinholes" />
+    <feComposite in="inked" in2="pinholes" operator="in" />
+  </filter>
+  <path filter="url(#ink)" fill-rule="evenodd" d="M 168 78 C 152 82 141 92 133 108 C 122 129 119 140 120 171 C 120 196 121 209 128 232 L 132 242 121 253 C 100 274 90 299 91 333 C 92 355 97 370 107 388 C 134 430 190 449 230 429 C 251 419 296 373 343 315 C 376 274 395 255 402 255 C 405 255 408 261 408 266 C 408 284 379 321 337 356 C 324 367 322 370 322 377 C 322 388 333 395 344 392 C 351 390 385 360 403 340 C 445 294 454 258 430 234 C 412 216 390 218 364 240 L 357 246 356 242 C 353 223 348 208 340 191 C 303 119 220 64 168 78 M 174 111 C 164 116 157 133 154 156 C 152 175 155 204 163 226 L 164 231 181 231 C 217 231 243 244 255 268 C 272 304 249 344 212 341 C 188 339 168 321 150 286 L 145 276 141 280 C 136 286 130 299 128 308 C 115 356 148 403 195 403 C 209 404 214 402 227 391 C 252 369 303 314 312 297 C 326 273 326 244 313 213 C 291 162 229 111 188 109 C 180 109 178 109 174 111 M 177 264 C 177 265 191 289 195 294 C 210 312 224 312 226 294 C 227 280 216 269 196 264 C 189 263 177 262 177 264" />
+</svg>

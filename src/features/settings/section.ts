@@ -4,5 +4,6 @@ import type { DaemonClient, DaemonConfig } from '../../daemon'
 export const GENERAL_GROUPS = ['Agents', 'Notifications', 'Appearance'] as const
 export const anchor = (...parts: string[]) => `settings-${parts.join('-')}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-')
 export type Patch = Parameters<DaemonClient['patchDaemonConfig']>[0]
-export type SectionProps = { config: DaemonConfig; patch: (p: Patch) => Promise<void>; q: string }
+// error: the config error, shown under the section title.
+export type SectionProps = { config: DaemonConfig; patch: (p: Patch) => Promise<void>; q: string; error: string | null }
 export const matches = (q: string, ...texts: (string | undefined)[]) => !q || texts.some((t) => t?.toLowerCase().includes(q))

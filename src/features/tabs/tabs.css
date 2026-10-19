@@ -115,16 +115,28 @@
   color: var(--text-muted);
 }
 .setup-cmd {
-  max-width: 100%;
+  max-width: min(100%, 640px);
   margin: 6px 0;
   padding: 10px 14px;
+  border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg-elev);
   font-family: var(--mono);
   font-size: 12px;
+  text-align: left;
   white-space: pre-wrap;
-  word-break: break-all;
+  overflow-wrap: anywhere;
   user-select: all;
+}
+/* One command per line; wrapped lines hang under the command, past the prompt. */
+.setup-cmd code {
+  display: block;
+  padding-left: 2ch;
+  text-indent: -2ch;
+}
+.setup-cmd code::before {
+  content: '$ ';
+  color: var(--text-faint);
 }
 .empty-chat {
   flex: 1;
@@ -134,6 +146,26 @@
   justify-content: center;
   gap: 6px;
   padding: 40px;
+}
+/* The grid behind the chat (.chat in chat.css). */
+.landing {
+  background-image:
+    linear-gradient(var(--chat-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--chat-grid) 1px, transparent 1px);
+  background-size: 16px 16px;
+  text-align: center;
+}
+/* Stamped in ink: the logo's shape (and its rough edges) masks a flat color. */
+.landing-logo {
+  width: 168px;
+  aspect-ratio: 1;
+  margin-bottom: 4px;
+  background: var(--logo-ink);
+  mask: url(../../assets/logo.svg) center / contain no-repeat;
+  opacity: 0.85;
+}
+.landing h2 {
+  font-size: 20px;
 }
 
 /* xterm fits its grid to this box, padding excluded. */

@@ -5,7 +5,7 @@ import { setTheme, useTheme, type Theme } from '../../theme'
 import { Row, Toggle } from './Row'
 import { anchor, GENERAL_GROUPS, matches, type SectionProps } from './section'
 
-export function General({ config, patch, q }: SectionProps) {
+export function General({ config, patch, q, error }: SectionProps) {
   const [prompt, setPrompt] = useState(config.appendSystemPrompt)
   const [notify, setNotify] = useState(notificationsOn)
   const theme = useTheme()
@@ -77,10 +77,11 @@ export function General({ config, patch, q }: SectionProps) {
     ],
   ]
   const visible = groups.map(([label, rows]) => [label, rows.filter(Boolean)] as const).filter(([, rows]) => rows.length)
-  if (!visible.length) return null
+  if (!visible.length && !error) return null
   return (
     <section className="settings-section">
       <h2>General</h2>
+      {error && <div className="banner err">{error}</div>}
       {visible.map(([label, rows]) => (
         <div key={label} id={anchor('general', label)} className="settings-group">
           <div className="group-label">{label}</div>

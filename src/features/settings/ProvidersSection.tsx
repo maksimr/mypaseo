@@ -8,11 +8,11 @@ import { anchor, matches, type SectionProps } from './section'
 
 type ProviderConfig = Record<string, unknown> & { enabled?: boolean; env?: Record<string, string>; command?: string[] }
 
-export function Providers({ config, patch, q }: SectionProps) {
+export function Providers({ config, patch, q, error }: SectionProps) {
   const daemon = useDaemon()
   const { providers } = useHost()
   const list = providers.filter((p) => matches(q, p.label, p.provider, p.description, 'provider llm model'))
-  if (!list.length) return null
+  if (!list.length && !error) return null
   return (
     <section className="settings-section">
       <h2>
@@ -21,6 +21,7 @@ export function Providers({ config, patch, q }: SectionProps) {
           <RefreshCw size={14} />
         </button>
       </h2>
+      {error && <div className="banner err">{error}</div>}
       <div className="group-label">Agent providers on this daemon</div>
       {list.map((p) => (
         <ProviderRow key={p.provider} entry={p} config={config} patch={patch} />
