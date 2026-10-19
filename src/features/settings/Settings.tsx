@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, Search, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useEscape } from '../../a11y'
 import { errorText, type DaemonConfig } from '../../daemon'
 import { SHORTCUT_GROUPS } from '../../keymap'
@@ -63,6 +63,8 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
 
   const q = query.trim().toLowerCase()
   const shown = q ? SECTIONS : [section]
+  // The config error belongs to the sections that read the config; Host shows its connection error under Address.
+  const bannerAt = shown.find((s) => s === 'General' || s === 'Providers')
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="settings" role="dialog" aria-label="Settings">
@@ -98,25 +100,25 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
           })}
         </nav>
         <div className="settings-body" ref={body}>
-          {error && <div className="banner err">{error}</div>}
-          {shown.map((s) =>
-            // Shortcuts live in localStorage, so they don't wait for the daemon config.
-            s === 'Keymap' ? (
-              <Shortcuts key={s} q={q} />
-            ) : s === 'Host' ? (
-              <HostSection key={s} q={q} />
-            ) : !config ? (
-              (s === 'General' || !q) && (
-                <div key={s} className="empty">
-                  Loading…
-                </div>
-              )
-            ) : s === 'General' ? (
-              <General key={s} config={config} patch={patch} q={q} />
-            ) : (
-              <Providers key={s} config={config} patch={patch} q={q} />
-            ),
-          )}
+          {shown.map((s) => (
+            <Fragment key={s}>
+              {error && s === bannerAt && <div className="banner err">{error}</div>}
+              {
+                // Shortcuts live in localStorage, so they don't wait for the daemon config.
+                s === 'Keymap' ? (
+                  <Shortcuts q={q} />
+                ) : s === 'Host' ? (
+                  <HostSection q={q} />
+                ) : !config ? (
+                  (s === 'General' || !q) && <div className="empty">Loading…</div>
+                ) : s === 'General' ? (
+                  <General config={config} patch={patch} q={q} />
+                ) : (
+                  <Providers config={config} patch={patch} q={q} />
+                )
+              }
+            </Fragment>
+          ))}
         </div>
         {/* Outside the scrolling body so it stays in view; after it so it paints on top. */}
         <button className="icon-btn close" title="Close (Esc)" onClick={onClose}>

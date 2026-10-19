@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { errorText } from '../../daemon'
 import { toWsUrl } from '../hosts/hostUrl'
 import { hostEndpoint, hostLabel, removeHost, updateHost, useHost, useHostId, useStore } from '../../store'
@@ -12,6 +12,7 @@ export function HostSection({ q }: { q: string }) {
   const { status, error, hostname } = useHost()
   const host = hosts.find((h) => h.id === id)!
   const [urlError, setUrlError] = useState<string | null>(null)
+  const addressError = urlError ?? error
   const rows = [
     matches(q, 'host name label') && (
       <Row key="name" title="Name" description="Shown in the host list and next to its projects.">
@@ -26,25 +27,28 @@ export function HostSection({ q }: { q: string }) {
       </Row>
     ),
     matches(q, 'host daemon address url connection') && (
-      <Row key="url" title="Address" description={urlError ? <span className="err">{urlError}</span> : status === 'connected' ? 'Connected' : (error ?? status)}>
-        <input
-          className="input mono"
-          name="hostUrl"
-          aria-label="Host address"
-          defaultValue={host.url}
-          spellCheck={false}
-          onBlur={(e) => {
-            try {
-              const url = toWsUrl(e.target.value)
-              setUrlError(null)
-              e.target.value = url
-              if (url !== host.url) updateHost(id, { url })
-            } catch (err) {
-              setUrlError(errorText(err))
-            }
-          }}
-        />
-      </Row>
+      <Fragment key="url">
+        <Row title="Address" description={status === 'connected' ? 'Connected' : status}>
+          <input
+            className="input mono"
+            name="hostUrl"
+            aria-label="Host address"
+            defaultValue={host.url}
+            spellCheck={false}
+            onBlur={(e) => {
+              try {
+                const url = toWsUrl(e.target.value)
+                setUrlError(null)
+                e.target.value = url
+                if (url !== host.url) updateHost(id, { url })
+              } catch (err) {
+                setUrlError(errorText(err))
+              }
+            }}
+          />
+        </Row>
+        {addressError && <div className="banner err">{addressError}</div>}
+      </Fragment>
     ),
     matches(q, 'host password') && (
       <Row key="password" title="Password" description="Set on the host with paseo daemon set-password. Stored in this browser.">
