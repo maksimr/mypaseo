@@ -114,29 +114,18 @@
   background: var(--bg-elev);
   color: var(--text-muted);
 }
+/* A command as the chat shows a finished tool call (.tool.completed, .tool-head, .tool-arg in chat.css). */
 .setup-cmd {
-  max-width: min(100%, 640px);
   margin: 6px 0;
-  padding: 10px 14px;
-  border: 1px solid var(--border);
+  padding: 8px 12px;
   border-radius: 6px;
-  background: var(--bg-elev);
-  font-family: var(--mono);
-  font-size: 12px;
-  text-align: left;
+  background: var(--tool-done-bg);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   user-select: all;
 }
-/* One command per line; wrapped lines hang under the command, past the prompt. */
-.setup-cmd code {
-  display: block;
-  padding-left: 2ch;
-  text-indent: -2ch;
-}
-.setup-cmd code::before {
-  content: '$ ';
-  color: var(--text-faint);
+.setup-cmd span {
+  color: var(--accent);
 }
 .empty-chat {
   flex: 1;
@@ -153,19 +142,24 @@
     linear-gradient(var(--chat-grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--chat-grid) 1px, transparent 1px);
   background-size: 16px 16px;
-  text-align: center;
 }
 /* Stamped in ink: the logo's shape (and its rough edges) masks a flat color. */
 .landing-logo {
   width: 168px;
   aspect-ratio: 1;
-  margin-bottom: 4px;
+  margin-bottom: 16px;
   background: var(--logo-ink);
   mask: url(../../assets/logo.svg) center / contain no-repeat;
   opacity: 0.85;
 }
-.landing h2 {
-  font-size: 20px;
+/* Set like the chat's messages (.timeline, .msg in chat.css). */
+.landing-text {
+  max-width: 640px;
+  font: 13px/1.6 var(--mono);
+}
+.landing-text p {
+  margin: 0;
+  padding: 6px 0;
 }
 
 /* xterm fits its grid to this box, padding excluded. */

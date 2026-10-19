@@ -425,19 +425,24 @@ export default function App() {
           {!target ? (
             <div className="empty-chat landing">
               <div className="landing-logo" />
-              <h2>mypaseo</h2>
-              {hosts.some((h) => byHost[h.id]?.status === 'connected') || !hosts.some((h) => byHost[h.id]?.error) ? (
-                <p className="muted">Pick a project or workspace on the left, or add a project.</p>
-              ) : (
-                <>
-                  <p className="muted">Can't reach a Paseo daemon. Start one on this computer and let this page connect to it:</p>
-                  <pre className="setup-cmd">
-                    <code>npx @getpaseo/cli daemon start</code>
-                    <code>{`npx @getpaseo/cli daemon config set daemon.cors.allowedOrigins '["https://app.paseo.sh","${location.origin}"]'`}</code>
-                  </pre>
-                  <p className="muted">Or add a remote daemon from the server button under the projects.</p>
-                </>
-              )}
+              <div className="landing-text">
+                {hosts.some((h) => byHost[h.id]?.status === 'connected') || !hosts.some((h) => byHost[h.id]?.error) ? (
+                  <p>Pick a project or workspace on the left, or add a project.</p>
+                ) : (
+                  <>
+                    <p>Can't reach a Paseo daemon. Start one on this computer:</p>
+                    <div className="setup-cmd">
+                      <b>npx</b> <span>@getpaseo/cli daemon start</span>
+                    </div>
+                    <p>Then let this page connect to it:</p>
+                    <div className="setup-cmd">
+                      <b>npx</b>{' '}
+                      <span>{`@getpaseo/cli daemon config set daemon.cors.allowedOrigins '["https://app.paseo.sh","${location.origin}"]'`}</span>
+                    </div>
+                    <p>Daemon on another machine? Add it with the server button under the projects.</p>
+                  </>
+                )}
+              </div>
             </div>
           ) : (
             // Every view shown since the workspace opened stays mounted, so each tab keeps its scroll and state.
