@@ -128,7 +128,7 @@
   border: 1px solid var(--border-strong);
   border-radius: 8px;
   background: var(--bg-active);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px var(--shadow-30);
   color: var(--text);
   font: 13px/1.6 var(--sans);
 }

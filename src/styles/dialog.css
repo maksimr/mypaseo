@@ -7,7 +7,7 @@
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   background: var(--bg);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 60px var(--shadow-50);
   overflow: hidden;
 }
 .dialog-head {

@@ -6,7 +6,7 @@
   border-radius: 10px;
   background: var(--bg-panel);
   /* Zed's double frame: a lighter ring around the card. */
-  box-shadow: 0 0 0 7px var(--bg-elev), 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 7px var(--bg-elev), 0 20px 60px var(--shadow-50);
 }
 .commit-message {
   padding: 14px 16px;

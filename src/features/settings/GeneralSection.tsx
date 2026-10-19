@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { notificationsOn, notificationsSupported } from '../../notifications'
 import { useHost } from '../../store'
+import { setTheme, useTheme, type Theme } from '../../theme'
 import { Row, Toggle } from './Row'
 import { anchor, GENERAL_GROUPS, matches, type SectionProps } from './section'
 
 export function General({ config, patch, q }: SectionProps) {
   const [prompt, setPrompt] = useState(config.appendSystemPrompt)
   const [notify, setNotify] = useState(notificationsOn)
+  const theme = useTheme()
   const toggleNotify = async (on: boolean) => {
     if (on && (await Notification.requestPermission()) !== 'granted') return alert('Notifications are blocked for this site in your browser settings.')
     localStorage.mypaseoNotifications = on ? 'on' : 'off'
@@ -55,6 +57,20 @@ export function General({ config, patch, q }: SectionProps) {
             description={notificationsSupported ? 'Notify when an agent finishes, fails or needs permission while you look elsewhere.' : 'Not supported in this browser.'}
           >
             {notificationsSupported && <Toggle label="Desktop notifications" checked={notify} onChange={(v) => void toggleNotify(v)} />}
+          </Row>
+        ),
+      ],
+    ],
+    [
+      'Appearance',
+      [
+        matches(q, 'theme appearance light dark white color scheme') && (
+          <Row key="theme" title="Theme" description="Light, dark, or whichever your system uses. Stored in this browser.">
+            <select className="input select" aria-label="Theme" value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
+              <option value="light dark">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
           </Row>
         ),
       ],

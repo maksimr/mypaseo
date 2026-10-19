@@ -4,9 +4,9 @@
   max-width: 812px;
   margin: 0 auto 8px;
   padding: 10px 12px;
-  border: 1px solid #5c5032;
+  border: 1px solid light-dark(#e3cf8f, #5c5032);
   border-radius: 8px;
-  background: #2b2a26;
+  background: light-dark(#fcf5df, #2b2a26);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -70,7 +70,7 @@
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   background: var(--bg-elev);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px var(--shadow-40);
 }
 .composer:not(:focus-within) .autocomplete,
 .path-field:not(:focus-within) .autocomplete {
@@ -125,6 +125,7 @@
   object-fit: cover;
   border: 1px solid var(--border-strong);
   border-radius: 4px;
+  cursor: pointer;
 }
 .composer-file {
   display: flex;
@@ -167,6 +168,38 @@
   border-radius: 50%;
   background: var(--bg-active);
   color: var(--text);
+}
+/* Draw on Image: the dialog fits the image, which shrinks to fit the window under the header and footer. */
+.dialog.image-editor {
+  width: auto;
+  min-width: min(400px, 92vw);
+  max-width: 92vw;
+  max-height: 92vh;
+}
+.image-editor canvas {
+  align-self: center;
+  max-width: calc(92vw - 36px);
+  max-height: calc(92vh - 110px);
+  margin: 0 18px;
+  cursor: crosshair;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.image-editor-colors {
+  display: flex;
+  gap: 8px;
+  margin-right: 8px;
+}
+.swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(127, 127, 127, 0.6);
+}
+.swatch[aria-pressed='true'] {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
 }
 .composer-bar {
   display: flex;
@@ -278,7 +311,7 @@
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   background: var(--bg-elev);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px var(--shadow-40);
   font-size: 12px;
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -343,7 +376,7 @@
   border: 1px solid var(--border-strong);
   border-radius: 8px;
   background: var(--bg-active);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px var(--shadow-30);
   color: var(--text);
   font-size: 12px;
   white-space: nowrap;

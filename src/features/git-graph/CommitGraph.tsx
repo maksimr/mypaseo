@@ -18,7 +18,12 @@ const REFS_W = 200 // default room left of the lanes for a commit's first ref an
 const MIN_REFS = 72 // narrower, a ref pill shows no text, so refs hide
 const PHONE = '(width < 600px)' // the phone media query in graph.css, which hides date, author and sha
 const COLORS = ['#74ade8', '#e5894a', '#a1c181', '#c678dd', '#dec184', '#56b6c2', '#e06c75']
-const color = (lane: number) => COLORS[lane % COLORS.length]
+const LIGHT_COLORS = ['#4078f2', '#c96a1f', '#50a14f', '#a626a4', '#c18401', '#0184bc', '#e45649'] // darker, to read on white
+/** A CSS color for the color-scheme: goes in style, not in an SVG attribute. */
+const color = (lane: number) => {
+  const i = lane % COLORS.length
+  return `light-dark(${LIGHT_COLORS[i]}, ${COLORS[i]})`
+}
 const x = (lane: number) => 12 + lane * LANE
 const y = (row: number) => row * ROW + ROW / 2
 // en-US for "Sep", not en-GB's "Sept"; parts reordered since neither locale has this layout.
@@ -168,9 +173,9 @@ export function CommitGraph({
   const lines = useMemo(
     () => (
       <svg className="graph-lines" height={rows.length * ROW} aria-hidden>
-        {rows.flatMap((r, i) => r.lines.map((l, j) => <path key={`${i}.${j}`} d={linePath(l, i)} stroke={color(l.lane)} />))}
+        {rows.flatMap((r, i) => r.lines.map((l, j) => <path key={`${i}.${j}`} d={linePath(l, i)} style={{ stroke: color(l.lane) }} />))}
         {rows.map((r, i) => (
-          <circle key={i} cx={x(r.lane)} cy={y(i)} r={4} stroke={color(r.lane)} />
+          <circle key={i} cx={x(r.lane)} cy={y(i)} r={4} style={{ stroke: color(r.lane) }} />
         ))}
       </svg>
     ),

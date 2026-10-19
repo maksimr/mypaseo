@@ -4,6 +4,7 @@ import { ActiveViewContext } from '../../activeView'
 import { ARTIFACT_PROMPT } from '../../artifact'
 import { errorText, type Agent } from '../../daemon'
 import { dropImageRef, imageRef } from './imageRefs'
+import { ImageEditor, type PastedImage } from './ImageEditor'
 import { formatCombo, isShortcut, useShortcut } from '../../keymap'
 import { deleteComments, reviewAttachment, useReview, type ReviewComment } from '../review/review'
 import { clickable } from '../../a11y'
@@ -23,7 +24,6 @@ const loadDraft = (): Draft => {
   return def ? { ...def, mode: def.provider === last.provider ? last.mode : undefined } : last
 }
 
-type PastedImage = { data: string; mimeType: string }
 const readImage = (file: File) =>
   new Promise<PastedImage>((resolve, reject) => {
     const r = new FileReader()
@@ -90,6 +90,7 @@ export function Composer({
   }, [initialText]) // eslint-disable-line react-hooks/exhaustive-deps
   const [images, setImages] = useDraftList(imageDrafts, draftKey)
   const [files, setFiles] = useDraftList(fileDrafts, draftKey)
+  const [editing, setEditing] = useState<number | null>(null)
   // Review comments from the workspace's diff and file views go with the next message.
   const reviewCwd = target.workspace?.workspaceDirectory
   const review = useReview(reviewCwd)
@@ -313,7 +314,13 @@ export function Composer({
           })}
           {images.map((img, i) => (
             <span key={i} className="composer-image">
-              <img src={`data:${img.mimeType};base64,${img.data}`} alt={`Pasted image ${i + 1}`} />
+              <img
+                src={`data:${img.mimeType};base64,${img.data}`}
+                alt={`Pasted image ${i + 1}`}
+                title="Draw on Image"
+                aria-label={`Draw on Image ${i + 1}`}
+                {...clickable(() => setEditing(i))}
+              />
               <button
                 title="Remove"
                 aria-label={`Remove Image ${i + 1}`}
@@ -326,6 +333,21 @@ export function Composer({
               </button>
             </span>
           ))}
+          {editing !== null && images[editing] && (
+            <ImageEditor
+              image={images[editing]}
+              n={editing + 1}
+              onSave={(img) => {
+                setImages((prev) => prev.map((im, j) => (j === editing ? img : im)))
+                setEditing(null)
+                input.current?.focus()
+              }}
+              onClose={() => {
+                setEditing(null)
+                input.current?.focus()
+              }}
+            />
+          )}
           {files.map((f, i) => (
             <span key={`file${i}`} className="composer-image composer-file" title={f.name}>
               <Paperclip size={14} />

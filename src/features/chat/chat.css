@@ -6,8 +6,8 @@
   flex-direction: column;
   min-height: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+    linear-gradient(light-dark(rgba(0, 0, 0, 0.015), rgba(255, 255, 255, 0.012)) 1px, transparent 1px),
+    linear-gradient(90deg, light-dark(rgba(0, 0, 0, 0.015), rgba(255, 255, 255, 0.012)) 1px, transparent 1px);
   background-size: 16px 16px;
 }
 .chat-scroll {
@@ -61,7 +61,7 @@
   border: 1px solid var(--border-strong);
   border-radius: 50%;
   background: var(--bg-elev);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px var(--shadow-40);
 }
 .show-composer:hover {
   background: var(--bg-hover);
@@ -283,7 +283,7 @@
   margin-top: 10px;
   padding: 10px 12px;
   border-radius: 6px;
-  background: #273947;
+  background: light-dark(#e2ebf7, #273947);
 }
 .user-text {
   white-space: pre-wrap;
@@ -298,14 +298,14 @@
   margin: 6px 0;
   border-radius: 6px;
   /* translucent so the chat grid shows through; tuned to match the old solid colors over --bg */
-  background: rgba(45, 47, 54, 0.5);
+  background: light-dark(rgba(218, 219, 224, 0.5), rgba(45, 47, 54, 0.5));
 }
 .tool.completed {
-  background: rgba(48, 73, 54, 0.5);
+  background: light-dark(rgba(200, 228, 196, 0.5), rgba(48, 73, 54, 0.5));
 }
 .tool.failed,
 .tool.canceled {
-  background: rgba(105, 44, 44, 0.5);
+  background: light-dark(rgba(244, 204, 202, 0.5), rgba(105, 44, 44, 0.5));
 }
 .tool-head {
   display: block;

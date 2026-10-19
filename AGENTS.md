@@ -80,6 +80,12 @@ stay flat in `src/`.
 - `App.tsx` `NARROW = '(width < 900px)'` = the tablet media query in `styles/tablet.css`
 - `chat/fold.ts` `PICK = 12`, `RUN = 20`, `LINE = 18` = `.rail-pick`, `.rail-run`, `.rail-step::before` widths
 - `swipe.ts` `SETTLE_MS = 200` = the settle transition in `styles/tablet.css`
+- `terminal/Terminal.tsx` paints xterm with `.term-view`'s `background`, `color` and `caret-color` (`tabs/tabs.css`)
+
+### Light and dark theme
+Every color is `light-dark(light, dark)`: a `--` variable in `styles/base.css` `:root`, else inline. `theme.ts` writes
+the picked theme to `<meta name="color-scheme">`; `base.css` maps that to `color-scheme`. Colors set from TS need both
+values too (`git-graph/CommitGraph.tsx` lanes, the `Terminal.tsx` ANSI palette via `useDark`).
 
 ### localStorage keys (`grep localStorage.mypaseo` before adding or renaming one)
 | Key | Written by | Read by |
@@ -96,5 +102,6 @@ stay flat in `src/`.
 | `mypaseoEditor` | files/OpenInEditor | same |
 | `mypaseoPaletteHidden` | palette/CommandPalette | same |
 | `mypaseoClientId` | daemon.ts | daemon.ts |
+| `mypaseoTheme` | theme.ts (`setTheme`, from settings/GeneralSection) | **index.html** (inline script), theme.ts |
 
 Bold = crosses a feature boundary with no import between the files.

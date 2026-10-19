@@ -17,7 +17,7 @@
     top: 0;
     bottom: 0;
     z-index: 4;
-    box-shadow: 0 0 24px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 24px var(--shadow-50);
   }
   .sidebar {
     left: 0;
@@ -194,7 +194,7 @@
     padding: 6px;
     border-bottom: 1px solid var(--border-strong);
     background: var(--bg-elev);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 24px var(--shadow-40);
   }
   .tabs:popover-open > .tab {
     max-width: none;
@@ -212,7 +212,7 @@
   top: 0;
   bottom: 0;
   z-index: 4;
-  box-shadow: 0 0 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 24px var(--shadow-50);
 }
 .app.swipe-left .sidebar {
   left: 0;
