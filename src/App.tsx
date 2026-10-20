@@ -211,6 +211,12 @@ export default function App() {
         e.preventDefault()
         togglePanel()
       }
+      const pane = isShortcut(e, 'openFiles') ? 'files' : isShortcut(e, 'openArtifacts') ? 'artifacts' : undefined
+      if (cwd && pane) {
+        e.preventDefault()
+        flushSync(() => setPanel(pane)) // also closes the command palette, which hands the focus back first
+        focusRow(appRef.current?.querySelector<HTMLElement>('.panel'))
+      }
       if (isGit && isShortcut(e, 'openChanges')) {
         e.preventDefault()
         openChanges()

@@ -15,6 +15,10 @@ export const SHORTCUTS = {
   openSettings: { group: 'General', label: 'Open Settings', description: 'Open this settings window.', default: 'Ctrl+Comma' },
   toggleSidebar: { group: 'General', label: 'Toggle Sidebar', description: 'Show or hide the project sidebar.', default: `${mod}+KeyB` },
   togglePanel: { group: 'General', label: 'Toggle Secondary Sidebar', description: 'Show or hide the right panel with files and changes.', default: `${mod}+KeyE` },
+  // VS Code's Explorer binding. Shift sorts before Meta in a combo.
+  openFiles: { group: 'General', label: 'Open Files', description: 'Show the file tree in the secondary sidebar and move the focus there.', default: isMac ? 'Shift+Meta+KeyE' : 'Ctrl+Shift+KeyE' },
+  // A for Artifacts, like Open Files. Chrome's Search Tabs on the same keys isn't reserved, so the page gets them first.
+  openArtifacts: { group: 'General', label: 'Open Artifacts', description: 'Show the artifacts of the current workspace in the secondary sidebar and move the focus there.', default: isMac ? 'Shift+Meta+KeyA' : 'Ctrl+Shift+KeyA' },
   // Ctrl on Mac too: Chrome there keeps Cmd+Alt+Left/Right for switching browser tabs.
   focusLeft: { group: 'General', label: 'Move Focus Left', description: 'Move the focus from the file panel to the main area, or from the main area to the sidebar. Hidden panes are skipped.', default: 'Ctrl+Alt+ArrowLeft' },
   focusRight: { group: 'General', label: 'Move Focus Right', description: 'Move the focus from the sidebar to the main area, or from the main area to the file panel. Hidden panes are skipped.', default: 'Ctrl+Alt+ArrowRight' },
