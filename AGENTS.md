@@ -79,6 +79,7 @@ stay flat in `src/`.
 - `git-graph/CommitGraph.tsx` `ROW = 28` = `.graph-row` height; `LANE = 16`
 - `App.tsx` `NARROW = '(width < 900px)'` = the tablet media query in `styles/tablet.css`
 - `chat/fold.ts` `PICK = 12`, `RUN = 20`, `LINE = 18` = `.rail-pick`, `.rail-run`, `.rail-step::before` widths
+- `components/menu.ts` `PHONE = '(width < 600px)'` = the phone media query in `styles/tablet.css` (`.menu::backdrop` scrim)
 - `swipe.ts` `SETTLE_MS = 200` = the settle transition in `styles/tablet.css`
 - `git-graph/CommitGraph.tsx` `LANES = 7` = `--lane-0` … `--lane-6` in `styles/theme.css`
 

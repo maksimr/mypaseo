@@ -27,6 +27,7 @@ import { SelectionAction } from './features/review/SelectionAction'
 import { reviewKey, startComment } from './features/review/review'
 import { archiveAgent, archiveWorkspace, byRecent, HostContext, projectName, sidebarWorkspaces, startSync, useStore } from './store'
 import { useEdgeSwipe } from './swipe'
+import { useMenuScrim } from './components/menu'
 import { useTabStatus } from './tabStatus'
 import { useCheckoutDiff, useCommitDiff } from './features/changes/useCheckoutDiff'
 import { useTerminals } from './features/terminal/useTerminals'
@@ -134,6 +135,7 @@ export default function App() {
       ? { projectId: project.projectId, name: projectName(project), rootPath: project.projectRootPath }
       : null
   useTabStatus(agent?.title || workspace?.title || workspace?.name || target?.name, agents)
+  useMenuScrim()
   const projectId = project?.projectId
   const cwd = workspace?.workspaceDirectory
   const isGit = workspace?.projectKind === 'git'
