@@ -392,7 +392,7 @@ export function Composer({
           }
         }}
       />
-      <div className="composer-bar">
+      <div className={agent ? 'composer-bar' : 'composer-bar new-agent'}>
         <button className="icon-btn composer-add" title="Attach Files" onClick={() => fileInput.current?.click()}>
           <Plus size={16} />
         </button>

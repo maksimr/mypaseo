@@ -297,6 +297,20 @@
   font: 12px var(--mono);
   font-variant-numeric: tabular-nums;
 }
+/* Phones: an agent's bar stays one row; the picks shrink and the context ring drops its numbers (its card has them).
+   A new agent's bar holds up to five picks and the worktree name, more than a row: it wraps, Send stays right. */
+@media (width < 600px) {
+  .ctx-text {
+    display: none;
+  }
+  .composer-bar.new-agent {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .send {
+    margin-left: auto; /* right end of its row when it wraps alone */
+  }
+}
 .ctx-card {
   position: absolute;
   bottom: calc(100% + 8px);
