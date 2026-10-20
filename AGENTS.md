@@ -95,7 +95,7 @@ feature CSS and TS use only `var(--…)`. `color-scheme` picks the side: the sys
 | `mypaseoNotifications` | settings/GeneralSection | **notifications.ts** |
 | `mypaseoKeymap` | keymap.ts | keymap.ts |
 | `mypaseoHosts`, `mypaseoPinned`, `mypaseoProjectOrder` | store.ts | store.ts |
-| `mypaseoSelection`, `mypaseoSidebar`, `mypaseoPanel`, `mypaseoActiveOnly`, `mypaseoSidebarWidth`, `mypaseoPanelWidth` | App.tsx | App.tsx |
+| `mypaseoSelection`, `mypaseoSidebar`, `mypaseoPanel`, `mypaseoPanelTab`, `mypaseoActiveOnly`, `mypaseoSidebarWidth`, `mypaseoPanelWidth` | App.tsx | App.tsx |
 | `mypaseoCollapsed` | sidebar/Sidebar | same |
 | `mypaseoReview` | review/review.ts | same |
 | `mypaseoGraphColumns` | git-graph/CommitGraph | same |

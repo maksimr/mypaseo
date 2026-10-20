@@ -138,8 +138,13 @@ export default function App() {
   const cwd = workspace?.workspaceDirectory
   const isGit = workspace?.projectKind === 'git'
 
-  const [panel, setPanel] = useState<PanelView | null>(() => JSON.parse(localStorage.mypaseoPanel ?? 'null'))
-  const panelView = isGit || panel === 'terminals' || panel === 'artifacts' ? (panel ?? 'changes') : 'files' // closed: what a swipe slides in
+  const [panel, showPanel] = useState<PanelView | null>(() => JSON.parse(localStorage.mypaseoPanel ?? 'null'))
+  const [panelTab, setPanelTab] = useState<PanelView>(() => panel ?? localStorage.mypaseoPanelTab ?? 'changes') // kept while closed: the toggle reopens it
+  const setPanel = (p: PanelView | null) => {
+    showPanel(p)
+    if (p) setPanelTab(p)
+  }
+  const panelView = isGit || panelTab === 'terminals' || panelTab === 'artifacts' ? panelTab : 'files' // closed: what a swipe slides in
   const [settings, setSettings] = useState<{ hostId: string; section?: Section } | null>(null)
   const [palette, setPalette] = useState(false)
   const [chatText, setChatText] = useState('') // handed to the composer when the chat tab mounts
@@ -148,8 +153,9 @@ export default function App() {
   useEffect(() => {
     localStorage.mypaseoSidebar = sidebar
     localStorage.mypaseoPanel = JSON.stringify(panel)
+    localStorage.mypaseoPanelTab = panelTab
     localStorage.mypaseoActiveOnly = activeOnly
-  }, [sidebar, panel, activeOnly])
+  }, [sidebar, panel, panelTab, activeOnly])
   /** On narrow windows, picking something in an overlaid pane closes the panes, like a drawer. */
   const dismiss = () => {
     if (!matchMedia(NARROW).matches) return
@@ -169,7 +175,7 @@ export default function App() {
     appRef,
     (side) => (side === 'left' ? !sidebar : !!cwd && !panel),
     () => matchMedia(NARROW).matches,
-    (side, open) => (side === 'left' ? setSidebar(open) : setPanel((p) => (open ? (p ?? 'changes') : null))),
+    (side, open) => (side === 'left' ? setSidebar(open) : setPanel(open ? panelTab : null)),
   )
   const [sidebarW, setSidebarW] = useWidth('mypaseoSidebarWidth', 270)
   const [panelW, setPanelW] = useWidth('mypaseoPanelWidth', 320) // room for the Changes, Files and Git Graph tabs
@@ -183,7 +189,7 @@ export default function App() {
     else if (!document.activeElement?.closest('.center, .panel')) focusView(appRef.current)
   }
   const togglePanel = () => {
-    flushSync(() => setPanel(panel ? null : 'changes'))
+    flushSync(() => setPanel(panel ? null : panelTab))
     if (!panel) focusRow(appRef.current?.querySelector<HTMLElement>('.panel'))
     else if (!document.activeElement?.closest('.center, .sidebar')) focusView(appRef.current)
   }
