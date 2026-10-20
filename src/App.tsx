@@ -402,7 +402,7 @@ export default function App() {
           <X size={15} />
         </button>
         {cwd && (
-          <button className={`icon-btn corner right ${panel ? 'on' : ''}`} title={`Toggle File Panel (${formatCombo(panelKey)})`} onClick={togglePanel}>
+          <button className={`icon-btn corner right ${panel ? 'on' : ''}`} title={`Toggle Secondary Sidebar (${formatCombo(panelKey)})`} onClick={togglePanel}>
             <PanelRight size={15} />
             <X size={15} />
           </button>
