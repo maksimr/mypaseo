@@ -2,7 +2,7 @@ import { PanelLeft, PanelRight, X } from 'lucide-react'
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
 import { focusRow, navigateBars } from './a11y'
-import { focusView, moveFocus } from './focus'
+import { focusView, isTouch, moveFocus } from './focus'
 import { ActiveViewContext } from './activeView'
 import { ArtifactView } from './features/artifacts/Artifacts'
 import { ChangesView } from './features/changes/Changes'
@@ -156,9 +156,11 @@ export default function App() {
     localStorage.mypaseoPanelTab = panelTab
     localStorage.mypaseoActiveOnly = activeOnly
   }, [sidebar, panel, panelTab, activeOnly])
-  /** On narrow windows, picking something in an overlaid pane closes the panes, like a drawer. */
+  /** On narrow windows, picking something in an overlaid pane closes the panes, like a drawer: a lone one slides away. */
   const dismiss = () => {
     if (!matchMedia(NARROW).matches) return
+    const open = (['left', 'right'] as const).filter((s) => (s === 'left' ? sidebar : panel && cwd))
+    if (open.length === 1) return slideClosed(open[0])
     setSidebar(false)
     setPanel(null)
   }
@@ -171,7 +173,7 @@ export default function App() {
   // Touch: dragging in from the left edge slides out the sidebar, from the right edge the file panel;
   // on narrow windows, dragging an open one toward its edge slides it back.
   const appRef = useRef<HTMLDivElement>(null)
-  const swipe = useEdgeSwipe(
+  const [swipe, slideClosed] = useEdgeSwipe(
     appRef,
     (side) => (side === 'left' ? !sidebar : !!cwd && !panel),
     () => matchMedia(NARROW).matches,
@@ -182,14 +184,19 @@ export default function App() {
   const sidebarKey = useShortcut('toggleSidebar')
   const panelKey = useShortcut('togglePanel')
   // Like Zed's docks: a pane the toggle opens takes the focus on its current row, so arrow keys and Enter work there;
-  // one it closes hands the focus to the open tab, unless the focus is already there or in the other pane.
-  const toggleSidebar = () => {
-    flushSync(() => setSidebar(!sidebar))
+  // one it closes hands the focus to the open tab, unless the focus is already there or in the other pane. Not on a tap
+  // (focus = false): the composer taking it would open the on-screen keyboard. On narrow windows a closing pane slides away.
+  const toggleSidebar = (focus = true) => {
+    if (sidebar && matchMedia(NARROW).matches) slideClosed('left')
+    else flushSync(() => setSidebar(!sidebar))
+    if (!focus) return
     if (!sidebar) focusRow(appRef.current?.querySelector<HTMLElement>('.sidebar'))
     else if (!document.activeElement?.closest('.center, .panel')) focusView(appRef.current)
   }
-  const togglePanel = () => {
-    flushSync(() => setPanel(panel ? null : panelTab))
+  const togglePanel = (focus = true) => {
+    if (panel && matchMedia(NARROW).matches) slideClosed('right')
+    else flushSync(() => setPanel(panel ? null : panelTab))
+    if (!focus) return
     if (!panel) focusRow(appRef.current?.querySelector<HTMLElement>('.panel'))
     else if (!document.activeElement?.closest('.center, .sidebar')) focusView(appRef.current)
   }
@@ -409,12 +416,12 @@ export default function App() {
           }}
         />
         {sidebar && <Resizer side="left" label="Resize Sidebar" width={sidebarW} onResize={setSidebarW} />}
-        <button className={`icon-btn corner left ${sidebar ? 'on' : ''}`} title={`Toggle Sidebar (${formatCombo(sidebarKey)})`} onClick={toggleSidebar}>
+        <button className={`icon-btn corner left ${sidebar ? 'on' : ''}`} title={`Toggle Sidebar (${formatCombo(sidebarKey)})`} onClick={() => toggleSidebar(!isTouch())}>
           <PanelLeft size={15} />
           <X size={15} />
         </button>
         {cwd && (
-          <button className={`icon-btn corner right ${panel ? 'on' : ''}`} title={`Toggle Secondary Sidebar (${formatCombo(panelKey)})`} onClick={togglePanel}>
+          <button className={`icon-btn corner right ${panel ? 'on' : ''}`} title={`Toggle Secondary Sidebar (${formatCombo(panelKey)})`} onClick={() => togglePanel(!isTouch())}>
             <PanelRight size={15} />
             <X size={15} />
           </button>

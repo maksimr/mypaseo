@@ -1,5 +1,8 @@
 import { focusBar, focusRow } from './a11y'
 
+/** A finger is the main pointer: focusing a text field opens the on-screen keyboard, so taps elsewhere shouldn't. */
+export const isTouch = () => matchMedia('(pointer: coarse)').matches
+
 /** The open tab takes the focus: its composer or terminal when shown, else its focusable view, so keys type or scroll there. */
 export function focusView(app: HTMLElement | null) {
   const view = app?.querySelector('.view:not([inert])')

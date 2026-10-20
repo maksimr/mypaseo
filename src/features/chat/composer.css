@@ -308,7 +308,13 @@
     row-gap: 4px;
   }
   .send {
+    position: relative;
     margin-left: auto; /* right end of its row when it wraps alone */
+  }
+  .send::after {
+    content: '';
+    position: absolute;
+    inset: -4px; /* a 36px hit area round the 28px circle, for a thumb */
   }
 }
 .ctx-card {

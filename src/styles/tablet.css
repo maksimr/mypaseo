@@ -35,6 +35,30 @@
     background: var(--scrim);
   }
 }
+/* A pane slides in as it opens and, closed by its toggle or a pick in it, out (App.tsx slideClosed, the swipe's settle);
+   the scrim fades with it. Not while a finger drags the pane: it follows the finger. */
+@media (width < 900px) and (prefers-reduced-motion: no-preference) {
+  .app:not(.swipe-drag) :is(.sidebar, .panel) {
+    transition: translate 0.2s ease-out; /* SETTLE_MS in swipe.ts */
+  }
+  .scrim {
+    transition: opacity 0.2s ease-out;
+  }
+  .app.swipe-closed .scrim {
+    opacity: 0;
+  }
+  @starting-style {
+    .app:not(.swipe-drag) .sidebar {
+      translate: -100%;
+    }
+    .app:not(.swipe-drag) .panel {
+      translate: 100%;
+    }
+    .scrim {
+      opacity: 0;
+    }
+  }
+}
 /* Phones: the drawers cover the whole window (over the dragged widths, which stay for wider windows).
    The open one's toggle turns into an X; the other toggle would sit on its bar, so it hides (the panel is on top). */
 @media (width < 600px) {
@@ -68,6 +92,38 @@
   }
   .chunk-actions {
     opacity: 1;
+  }
+  /* iOS keeps :hover on the last tapped control until the next tap: no hover backgrounds; a press lights it instead. */
+  .icon-btn:not(.artifact-open):hover,
+  .tab-close:hover,
+  .tab:not(.on):hover,
+  .row:not(.active):hover,
+  .menu button:hover,
+  .pick:hover select {
+    background: none;
+  }
+  .icon-btn:not(.artifact-open):active,
+  .tab-close:active,
+  .tab:not(.on):active,
+  .row:not(.active):active,
+  .menu button:active {
+    background: var(--bg-hover);
+  }
+  /* A long press on a control or a bar selects no text (the chat's tool calls stay selectable, to copy a command). */
+  button:not(.tool-head),
+  .tab,
+  .row,
+  .sidebar-head,
+  .sidebar-foot,
+  .tabbar,
+  .panel-tabs {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* WebKit inherits the prefixed one, and a field under it takes no typing on iOS (the rename field in a row). */
+  input {
+    -webkit-user-select: text;
+    user-select: text;
   }
 }
 /* Fingers: bigger hit areas on the same visual grid (negative margins keep the 13px slots). */
@@ -208,6 +264,52 @@
     flex: 1; /* the label, so close buttons line up at the right */
   }
 }
+/* Phones: a menu is a sheet along the bottom over the dimmed app (wider, it drops from its button: !important beats the
+   place placeMenu sets inline). It slides up; out too where a top-layer exit can animate (overlay). */
+@media (width < 600px) {
+  .menu {
+    inset: auto 0 0 !important;
+    width: auto;
+    max-width: none;
+    max-height: 80svh;
+    overflow-y: auto;
+    padding: 8px 8px calc(8px + var(--safe-bottom));
+    border-width: 1px 0 0;
+    border-radius: 14px 14px 0 0;
+  }
+  .menu::backdrop {
+    background: var(--scrim);
+  }
+}
+@media (width < 600px) and (prefers-reduced-motion: no-preference) {
+  .menu,
+  .menu::backdrop {
+    transition:
+      translate 0.2s ease-out,
+      opacity 0.2s ease-out;
+  }
+  @starting-style {
+    .menu:popover-open {
+      translate: 0 100%;
+    }
+    .menu:popover-open::backdrop {
+      opacity: 0;
+    }
+  }
+  @supports (overlay: auto) {
+    .menu,
+    .menu::backdrop {
+      transition-property: translate, opacity, display, overlay;
+      transition-behavior: allow-discrete;
+    }
+    .menu:not(:popover-open) {
+      translate: 0 100%;
+    }
+    .menu:not(:popover-open)::backdrop {
+      opacity: 0;
+    }
+  }
+}
 /* Edge swipe (swipe.ts): the pane follows the finger over the center (--swipe-dx), then settles open or closed. */
 .app.swipe-left .sidebar,
 .app.swipe-right .panel {
@@ -273,4 +375,30 @@
   .app:not(.with-panel) .tabbar {
     padding-right: calc(36px + var(--wco-right));
   }
+}
+
+/* Touch: a tap flashes nothing, a double tap doesn't zoom (a pinch still does), and iOS keeps text sizes in landscape. */
+html {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+/* Edge to edge (viewport-fit=cover in index.html): the panes' backgrounds reach under the home indicator, their content
+   stops above it; in landscape the app keeps clear of the notch. */
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px); /* 0 while the keyboard covers the indicator (viewport.ts) */
+}
+body {
+  padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+}
+.sidebar,
+.center,
+.panel {
+  padding-bottom: var(--safe-bottom);
+}
+/* On-screen keyboard (viewport.ts): the app covers only the part of the page it leaves visible. */
+.app {
+  height: var(--vv-h, 100svh);
+  top: var(--vv-top, 0px);
 }

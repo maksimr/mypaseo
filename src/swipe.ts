@@ -21,7 +21,8 @@ export const settlesOpen = (side: Side, closing: boolean, dx: number) => (closin
 /**
  * Touch: a closed side pane follows a finger dragged in from its window edge, and, while canClose, an open one follows
  * a finger dragged toward its edge; either then settles open or closed. While it moves, root's --swipe-dx holds the
- * pane's offset from closed; onChange commits a pane that settled the other way.
+ * pane's offset from closed; onChange commits a pane that settled the other way. The returned close slides an open
+ * pane closed the same way, for its toggle and taps that dismiss it.
  */
 export function useEdgeSwipe(
   root: RefObject<HTMLElement | null>,
@@ -32,6 +33,14 @@ export function useEdgeSwipe(
   const [swipe, setSwipe] = useState<Swipe>()
   // A ref, since the listeners re-bind every render and a render can land mid-drag.
   const drag = useRef<{ side: Side; closing: boolean; x: number; y: number; moving?: boolean }>(undefined)
+  /** Moves the pane to open or closed (the transition), then commits it if that changed it. */
+  const settle = (side: Side, open: boolean, changed: boolean) => {
+    setSwipe({ side, settle: open ? 'open' : 'closed' })
+    setTimeout(() => {
+      if (changed) onChange(side, open)
+      setSwipe(undefined)
+    }, SETTLE_MS)
+  }
   useEffect(() => {
     const onStart = (e: TouchEvent) => {
       drag.current = undefined
@@ -67,11 +76,7 @@ export function useEdgeSwipe(
       drag.current = undefined
       if (!d?.moving) return
       const open = settlesOpen(d.side, d.closing, e.type === 'touchend' ? e.changedTouches[0].clientX - d.x : 0)
-      setSwipe({ side: d.side, settle: open ? 'open' : 'closed' })
-      setTimeout(() => {
-        if (open !== d.closing) onChange(d.side, open) // a closing pane started open
-        setSwipe(undefined)
-      }, SETTLE_MS)
+      settle(d.side, open, open !== d.closing) // a closing pane started open
     }
     window.addEventListener('touchstart', onStart, { passive: true })
     window.addEventListener('touchmove', onMove, { passive: true })
@@ -84,5 +89,5 @@ export function useEdgeSwipe(
       window.removeEventListener('touchcancel', onEnd)
     }
   })
-  return swipe
+  return [swipe, (side: Side) => settle(side, false, true)] as const
 }

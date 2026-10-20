@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronRight, Search, X } from 'lucide-react'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { useEscape } from '../../a11y'
+import { isTouch } from '../../focus'
 import { errorText, type DaemonConfig } from '../../daemon'
 import { SHORTCUT_GROUPS } from '../../keymap'
 import { hostLabel, useDaemon, useHost, useHostId, useStore } from '../../store'
@@ -71,7 +72,7 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
         <nav className="settings-nav">
           <label className="search">
             <Search size={14} />
-            <input autoFocus name="search" placeholder="Search settings…" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input autoFocus={!isTouch()} name="search" placeholder="Search settings…" value={query} onChange={(e) => setQuery(e.target.value)} />
           </label>
           {hosts.length > 1 && <div className="settings-host muted truncate">{hostLabel(hostId)}</div>}
           {SECTIONS.map((s) => {

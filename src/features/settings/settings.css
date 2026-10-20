@@ -310,7 +310,7 @@ kbd {
     padding: 0 8px;
   }
   .settings-body {
-    padding: 0 16px 24px;
+    padding: 0 16px calc(24px + var(--safe-bottom)); /* clear of the home indicator (styles/tablet.css) */
   }
   .setting-row:has(.input) {
     flex-direction: column;

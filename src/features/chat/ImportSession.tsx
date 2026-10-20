@@ -2,6 +2,7 @@ import { Import, Loader2, Search, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useEscape } from '../../a11y'
 import { errorText, type Agent, type DaemonClient, type SessionEntry } from '../../daemon'
+import { isTouch } from '../../focus'
 import { rememberAgent, useDaemon, useHost, useHostId } from '../../store'
 import type { Target } from './target'
 
@@ -88,7 +89,7 @@ export function ImportSession({ target, onClose, onImported }: { target: Target;
         <div className="dialog-toolbar">
           <label className="search grow">
             <Search size={14} />
-            <input autoFocus name="query" placeholder="Search sessions…" value={query} onChange={(e) => (setQuery(e.target.value), setLimit(PAGE))} />
+            <input autoFocus={!isTouch()} name="query" placeholder="Search sessions…" value={query} onChange={(e) => (setQuery(e.target.value), setLimit(PAGE))} />
           </label>
           <select className="input select" name="provider" aria-label="Provider" value={provider} onChange={(e) => (setProvider(e.target.value), setLimit(PAGE))}>
             <option value="">All providers</option>
