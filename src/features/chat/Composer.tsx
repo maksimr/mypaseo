@@ -449,7 +449,7 @@ export function Composer({
           />
         )}
         {models.length > 0 && (
-          <Pick ref={modelSelect} icon={<Sparkles size={14} />} value={model?.id} onChange={(v) => change('model', v)} options={models.map((m) => [m.id, m.label])} title="Model" />
+          <Pick ref={modelSelect} icon={<Sparkles size={14} />} value={model?.id} onChange={(v) => change('model', v)} options={models.map((m) => [m.id, m.label, m.id.includes('/') ? m.id.split('/')[0] : undefined])} title="Model" />
         )}
         {thinkingOptions.length > 0 && (
           <Pick
