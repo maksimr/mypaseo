@@ -1,5 +1,5 @@
 import { Archive, Check, ChevronDown, ChevronRight, Copy, Ellipsis, GitBranch, Loader2, Mail, MailOpen, Pencil, Pin, PinOff, Plus, Trash2, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { errorText, type Agent, type Workspace } from '../../daemon'
 import { clickable } from '../../a11y'
 import { formatCombo, useShortcut } from '../../keymap'
@@ -9,6 +9,7 @@ import { ProviderIcon } from '../../components/ProviderIcon'
 import { Pull, Push } from '../../components/icons'
 import { placeMenu } from '../../components/menu'
 import { StatusMark } from './StatusMark'
+import { useRowSwipe } from './rowSwipe'
 import type { Selection } from './Sidebar'
 
 export function WorkspaceRow({
@@ -51,6 +52,15 @@ export function WorkspaceRow({
   const readKey = useShortcut('toggleRead')
   const pushKey = useShortcut('push')
   const archive = (deleteAgents: boolean) => onArchive(w, deleteAgents)
+  // For the row's buttons and its swipe actions; a click on them isn't one on the row.
+  const archiveNow = (e: MouseEvent) => {
+    e.stopPropagation()
+    archive(false)
+  }
+  const push = (e: MouseEvent) => {
+    e.stopPropagation()
+    onSync('push')
+  }
   const unread = agents.some((a) => a.requiresAttention)
   const pick = unreadPick(agents, w.id)
   const git = w.gitRuntime
@@ -58,6 +68,7 @@ export function WorkspaceRow({
   const unpushed = git?.aheadOfOrigin ?? (git?.remoteUrl ? git.aheadBehind?.ahead : 0) ?? 0
   const [editing, setEditing] = useState(false)
   const [copied, setCopied] = useState(false)
+  const swipe = useRowSwipe()
   const saveName = (value: string) => {
     setEditing(false)
     // The daemon trims it, and an empty title clears the override.
@@ -66,7 +77,7 @@ export function WorkspaceRow({
 
   return (
     <>
-      <div className={`row workspace ${active ? 'active' : ''}`} {...clickable(() => select(agents[0]?.id))}>
+      <div className={`row workspace ${active ? 'active' : ''} ${swipe.className}`} {...clickable(() => select(agents[0]?.id))} {...swipe.props}>
         {agents.length > 1 ? (
           <button
             className="chevron"
@@ -135,25 +146,11 @@ export function WorkspaceRow({
         <button className="icon-btn hover-swap" title="Workspace Actions" popoverTarget={menuId} onClick={placeMenu(menuId)}>
           <Ellipsis size={13} />
         </button>
-        <button
-          className="icon-btn hover-swap"
-          title={`Archive (${formatCombo(archiveKey)})`}
-          onClick={(e) => {
-            e.stopPropagation()
-            archive(false)
-          }}
-        >
+        <button className="icon-btn hover-swap" title={`Archive (${formatCombo(archiveKey)})`} onClick={archiveNow}>
           <Archive size={11} strokeWidth={1.75} />
         </button>
         {unpushed > 0 && !syncing && (
-          <button
-            className="icon-btn hover-swap"
-            title={`Push (${formatCombo(pushKey)})`}
-            onClick={(e) => {
-              e.stopPropagation()
-              onSync('push')
-            }}
-          >
+          <button className="icon-btn hover-swap" title={`Push (${formatCombo(pushKey)})`} onClick={push}>
             <Push size={13} />
           </button>
         )}
@@ -174,6 +171,21 @@ export function WorkspaceRow({
               }
             />
           </>
+        )}
+        {swipe.shown && (
+          <span className="swipe-actions">
+            <button popoverTarget={menuId} onClick={placeMenu(menuId)}>
+              <Ellipsis size={20} /> More
+            </button>
+            {unpushed > 0 && !syncing && (
+              <button className="push" onClick={push}>
+                <Push size={20} /> Push
+              </button>
+            )}
+            <button className="archive" onClick={archiveNow}>
+              <Archive size={20} /> Archive
+            </button>
+          </span>
         )}
       </div>
       <div id={menuId} popover="auto" className="menu">

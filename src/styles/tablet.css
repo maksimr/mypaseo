@@ -264,6 +264,129 @@
     flex: 1; /* the label, so close buttons line up at the right */
   }
 }
+/* Phones: the Projects sidebar as an iOS grouped list, like Apple Notes' folders: a large title under the buttons, each
+   project a bold section header over a rounded card of its workspaces, 17px rows with 20px glyphs. The action grid
+   grows with them: 20px slots, 44px buttons (doc/action-grid.md). */
+@media (width < 600px) {
+  .sidebar-head {
+    flex-wrap: wrap;
+    height: auto;
+    padding-block: 6px 4px; /* the buttons line up with the corner X: (48 - 36) / 2 */
+    border-bottom: 0;
+  }
+  .sidebar-head > .icon-btn:first-of-type {
+    margin-left: auto;
+  }
+  :is(.sidebar-head, .sidebar-foot) .icon-btn svg,
+  .corner.left.on svg {
+    width: 20px;
+    height: 20px;
+  }
+  .sidebar-head .section-label {
+    order: 1;
+    flex-basis: 100%; /* its own line, under the buttons */
+    margin-left: -32px; /* back from the corner's 48px to 16px */
+    color: var(--text);
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 41px;
+  }
+  .tree {
+    padding-top: 0;
+  }
+  .tree .row {
+    gap: 10px;
+    line-height: 22px;
+    font-size: 17px;
+  }
+  .tree .row svg {
+    width: 20px;
+    height: 20px;
+  }
+  .tree .dot.status-mark {
+    width: 10px;
+    height: 10px;
+    margin-inline: 5px;
+  }
+  .tree .chevron {
+    width: 20px;
+  }
+  .tree .row .icon-btn {
+    width: 44px;
+    height: 44px;
+    margin-inline: -12px;
+  }
+  .tree .row .icon-btn + .icon-btn {
+    margin-left: 2px; /* centers 44px apart: 12px margin - 10px gap */
+  }
+  .tree .row.project {
+    height: 52px;
+    margin-top: 12px;
+    padding: 0 32px 0 20px; /* marks line up with the cards' */
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .tree .host-badge {
+    font-size: 15px;
+    font-weight: 400;
+  }
+  .tree .row:is(.workspace, .agent) {
+    position: relative;
+    height: 52px;
+    margin-inline: 16px;
+    padding: 0 16px 0 12px;
+    background: var(--bg-elev);
+  }
+  .tree .row:is(.workspace, .agent):active {
+    background: var(--bg-hover);
+  }
+  .tree .row:is(.workspace, .agent).active {
+    background: var(--bg-active);
+  }
+  .tree .row.workspace:has(.workspace-branch) {
+    height: auto;
+    padding-block: 9px;
+  }
+  .tree .row.agent {
+    padding-left: 42px; /* under the workspace name: 12px + 20px chevron + 10px gap */
+  }
+  /* The card: rounded at its first and last rows (the project's row is the first .row), hairlines between, from the names. */
+  .tree .row:nth-child(2 of .row) {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+  }
+  .tree .row:is(.workspace, .agent):nth-last-child(1 of .row) {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
+  .tree .row:is(.workspace, .agent):not(.swiped, :nth-child(2 of .row))::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 42px;
+    border-top: 0.5px solid var(--border-strong);
+  }
+  .tree .row.active::before,
+  .tree .row.active + .row::before,
+  .tree .row.active + .menu + .row::before {
+    display: none; /* the selection's edges need none */
+  }
+  .tree .workspace-branch {
+    gap: 6px;
+    font-size: 15px;
+    line-height: 20px;
+  }
+  .tree .workspace-branch svg {
+    width: 15px;
+    height: 15px;
+  }
+  .tree .row .workspace-branch .icon-btn {
+    width: 36px;
+    height: 36px;
+    margin: -10.5px;
+  }
+}
 /* Phones: a menu is a sheet along the bottom over the dimmed app (wider, it drops from its button: !important beats the
    place placeMenu sets inline). It slides up; out too where a top-layer exit can animate (overlay). */
 @media (width < 600px) {

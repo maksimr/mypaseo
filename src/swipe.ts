@@ -44,7 +44,8 @@ export function useEdgeSwipe(
   useEffect(() => {
     const onStart = (e: TouchEvent) => {
       drag.current = undefined
-      if (e.touches.length !== 1 || swipe) return
+      // A row that swipes to show its actions ([data-swipe], sidebar/rowSwipe.ts) keeps its drags.
+      if (e.touches.length !== 1 || swipe || (e.target instanceof Element && e.target.closest('[data-swipe]'))) return
       const t = e.touches[0]
       const at = { x: t.clientX, y: t.clientY }
       // Panes are only in the DOM (or displayed) while open, so a touch in one is in an open pane.

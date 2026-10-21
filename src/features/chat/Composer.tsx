@@ -13,6 +13,7 @@ import { useAutocomplete } from './useAutocomplete'
 import { ContextMeter } from './ContextMeter'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import { Pick } from '../../components/Pick'
+import { modelOptions } from '../../modelOptions'
 import type { Target } from './target'
 
 type Draft = { provider?: string; model?: string; thinking?: string; mode?: string }
@@ -449,7 +450,7 @@ export function Composer({
           />
         )}
         {models.length > 0 && (
-          <Pick ref={modelSelect} icon={<Sparkles size={14} />} value={model?.id} onChange={(v) => change('model', v)} options={models.map((m) => [m.id, m.label, m.id.includes('/') ? m.id.split('/')[0] : undefined])} title="Model" />
+          <Pick ref={modelSelect} icon={<Sparkles size={14} />} value={model?.id} onChange={(v) => change('model', v)} options={modelOptions(models)} title="Model" />
         )}
         {thinkingOptions.length > 0 && (
           <Pick

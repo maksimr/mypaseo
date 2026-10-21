@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Options } from '../../components/Options'
+import { modelOptions } from '../../modelOptions'
 import { notificationsOn, notificationsSupported } from '../../notifications'
 import { useHost } from '../../store'
 import { setTheme, useTheme, type Theme } from '../../theme'
@@ -124,11 +126,7 @@ function DefaultAgent() {
       {models.length > 0 && (
         <select className="input select" aria-label="Default model" value={def.model ?? ''} onChange={(e) => save({ provider, model: e.target.value || undefined })}>
           <option value="">Provider default</option>
-          {models.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.label}
-            </option>
-          ))}
+          <Options options={modelOptions(models)} />
         </select>
       )}
       {thinkingOptions.length > 0 && (

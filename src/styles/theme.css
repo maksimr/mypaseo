@@ -55,6 +55,12 @@
   --permission-border: light-dark(#e3cf8f, #5c5032);
   --review-comment-bg: light-dark(#e6eef8, #2b3a4b);
 
+  /* Swipe actions on a sidebar row: iOS's system gray, blue and purple (Mail's More, Archive) */
+  --swipe-more-bg: light-dark(#8e8e93, #636366);
+  --swipe-push-bg: light-dark(#007aff, #0a84ff);
+  --swipe-archive-bg: light-dark(#af52de, #bf5af2);
+  --swipe-text: #fff;
+
   /* Search matches, git graph */
   --match-bg: rgba(222, 193, 132, 0.35);
   --graph-match-bg: rgba(222, 193, 132, 0.1);

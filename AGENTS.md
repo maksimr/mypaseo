@@ -66,6 +66,7 @@ stay flat in `src/`.
 | `.chunk[data-hunk][data-chunk]`, `.staged` | `changes/FileHunks.tsx` | `changes/Changes.tsx` (stage current / go to hunk) |
 | `.timeline` and `.chat-foot` inside `.chat-scroll` | `chat/Timeline.tsx`, `chat/Chat.tsx` | `Chat.tsx` (ResizeObserver), `components/Markdown.tsx` (IntersectionObserver root), `chat/reading.ts` (`.chat-foot`) |
 | `.sidebar`, `.panel` | `sidebar/Sidebar.tsx`, `tabs/Panel.tsx` | `swipe.ts` |
+| `[data-swipe]` on a row that swipes to show its actions (`.swipe-actions`) | `sidebar/WorkspaceRow.tsx` (`sidebar/rowSwipe.ts`) | `swipe.ts` (starts no pane drag on it) |
 | `.selection-action` | `review/SelectionAction.tsx` | itself (hover keep-alive) |
 | `[data-item]` (its timeline index) on each timeline item's root, `iframe[srcdoc]` | `chat/Timeline.tsx`, `components/Artifact.tsx` | `chat/Chat.tsx` (scroll to an artifact, or to the rail's pick), `chat/Rail.tsx` (`.timeline > [data-item]`: the item across the reading line) |
 | `.row[tabindex]` (`clickable`), current one `.active` or `[aria-current]`, `[aria-expanded]` on the row or its chevron, inside `.sidebar`, `.panel` | sidebar rows, `ProjectRow.tsx` (`aria-current`), `WorkspaceRow.tsx` (chevron), the panel's lists (changes, files, terminal, artifacts, git-graph) | `a11y.ts` (`focusRow`, `navigateRows`: arrow keys) |
@@ -81,6 +82,7 @@ stay flat in `src/`.
 - `chat/fold.ts` `PICK = 12`, `RUN = 20`, `LINE = 18` = `.rail-pick`, `.rail-run`, `.rail-step::before` widths
 - `components/menu.ts` `PHONE = '(width < 600px)'` = the phone media query in `styles/tablet.css` (`.menu::backdrop` scrim)
 - `swipe.ts` `SETTLE_MS = 200` = the settle transition in `styles/tablet.css`
+- `sidebar/rowSwipe.ts` `SETTLE_MS = 200` = the `.row.swiped` transition in `sidebar/sidebar.css`
 - `git-graph/CommitGraph.tsx` `LANES = 7` = `--lane-0` … `--lane-6` in `styles/theme.css`
 
 ### Colors and themes
