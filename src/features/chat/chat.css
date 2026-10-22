@@ -183,6 +183,7 @@
   text-align: left;
   white-space: pre-wrap;
   word-break: break-word;
+  cursor: pointer;
 }
 .tool-arg {
   color: var(--accent);

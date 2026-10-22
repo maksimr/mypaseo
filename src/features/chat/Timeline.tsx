@@ -110,7 +110,18 @@ function ToolRow({ index, tool, expanded }: { index: number; tool: ToolCall; exp
   const hidden = open ? 0 : Math.max(0, lines.length - PREVIEW_LINES)
   return (
     <div className={`tool ${tool.status}`} data-item={index}>
-      <button className="tool-head" onClick={toggle}>
+      {/* Not a <button>: browsers don't select text in one, and the command should copy. */}
+      <div
+        className="tool-head"
+        role="button"
+        tabIndex={0}
+        onClick={toggle}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return
+          e.preventDefault()
+          setOpen(!open)
+        }}
+      >
         {d.type === 'shell' ? (
           `$ ${d.command}`
         ) : (
@@ -118,7 +129,7 @@ function ToolRow({ index, tool, expanded }: { index: number; tool: ToolCall; exp
             <b>{tool.name}</b> <span className="tool-arg">{toolArg(tool)}</span>
           </>
         )}
-      </button>
+      </div>
       {out !== '' && (
         <div className="tool-body">
           {out == null ? (

@@ -109,8 +109,8 @@
   .menu button:active {
     background: var(--bg-hover);
   }
-  /* A long press on a control or a bar selects no text (the chat's tool calls stay selectable, to copy a command). */
-  button:not(.tool-head),
+  /* A long press on a control or a bar selects no text. */
+  button,
   .tab,
   .row,
   .sidebar-head,
