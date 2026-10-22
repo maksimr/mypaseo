@@ -1,62 +1,28 @@
-import {
-  Bot,
-  Brain,
-  Circle,
-  CircleAlert,
-  FilePen,
-  FilePlus,
-  FileText,
-  GitBranch,
-  Globe,
-  Info,
-  ListChecks,
-  ListTodo,
-  Loader2,
-  MessageSquare,
-  Scissors,
-  Search,
-  SquareTerminal,
-  User,
-  Wrench,
-  type LucideIcon,
-} from 'lucide-react'
-import {
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type PointerEvent,
-  type ReactNode,
-  type RefObject,
-} from 'react'
-import { flushSync } from 'react-dom'
-import type { TimelineItem, ToolDetail } from '../../daemon'
-import { fold } from './fold'
+import { Circle, Loader2 } from 'lucide-react'
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode, type RefObject } from 'react'
+import type { TimelineItem } from '../../daemon'
 import { readingLine } from './reading'
-import { toolArg } from './toolArg'
 
-type Step = { i: number; icon: LucideIcon; failed: boolean; minor: boolean }
-
-/** The agent's timeline as a row of icons under the composer, oldest on the left. What doesn't fit folds into crosses
- *  of dots (see `fold`); a click on one opens a card above it listing its run on a vertical rail. A click on a step
- *  calls `onPick` with its item's index; the last, a circle (a spinner while running), `onEnd`. The step across
- *  `scroller`'s reading line, or the circle at its bottom, is highlighted. */
+/** The chat's outline as a row of circles under the composer, oldest on the left: its start, the user's messages, and
+ *  its end (a spinner while running). A click on a message calls `onPick` with its item's index; on the start or end,
+ *  `onStart` or `onEnd`. The message whose turn is across the chat's reading line, or the end at its bottom, is
+ *  highlighted. */
 export function Rail({
   items,
   running,
   scroller,
   onPick,
+  onStart,
   onEnd,
 }: {
   items: TimelineItem[]
   running: boolean
   scroller: RefObject<HTMLElement | null>
   onPick: (i: number) => void
+  onStart: () => void
   onEnd: () => void
 }) {
-  const [current, setCurrent] = useState<number | 'end'>()
+  const [current, setCurrent] = useState<number | 'start' | 'end'>()
   // A pick shows its step even where the chat can't scroll it to the top, until the chat scrolls on from there.
   const pinned = useRef<number>(undefined)
   useEffect(() => {
@@ -71,120 +37,39 @@ export function Rail({
     el.addEventListener('scroll', update, { passive: true })
     return () => el.removeEventListener('scroll', update)
   }, [scroller])
-  const go = (to: number | 'end') => {
-    if (to === 'end') onEnd()
+  const go = (to: number | 'start' | 'end') => {
+    if (to === 'start') onStart()
+    else if (to === 'end') onEnd()
     else onPick(to)
     pinned.current = scroller.current?.scrollTop
     setCurrent(to)
   }
-  const rail = useRef<HTMLDivElement>(null)
-  const [width, setWidth] = useState(Infinity)
-  useLayoutEffect(() => {
-    // Synchronously, so it refolds before the resize paints. Hidden with the composer, it measures 0: keeps the last.
-    const ro = new ResizeObserver(([e]) => e.contentRect.width && flushSync(() => setWidth(e.contentRect.width)))
-    ro.observe(rail.current!)
-    return () => ro.disconnect()
-  }, [])
-  const cardId = useId()
-  const [shown, setShown] = useState<number>() // the card's run, by its first item's index
-  const [open, setOpen] = useState(false)
-  const [at, setAt] = useState({ x: 0, y: 0 }) // the center of its .rail-run, for the card's placement
-  const steps = items.flatMap((item, i): Step[] => {
-    const icon = stepIcon(item)
-    return icon ? [{ i, icon, failed: isFailed(item), minor: item.type !== 'user_message' }] : []
-  })
-  const folded = fold(steps, width)
-  const card = folded.find((n) => n.run && n.steps[0].i === shown)?.steps ?? []
-  const nodes = folded.map(({ run: isRun, steps: run }): ReactNode => {
-    const first = run[0].i
-    if (!isRun) return <StepIcon key={first} step={run[0]} current={first === current} title={summary(items[first])} onClick={() => go(first)} />
-    return (
-      <span key={`run${first}`} className={stepClass(run.some((s) => s.failed), run.some((s) => s.i === current))}>
-        <button
-          className="rail-run"
-          title={`${run.length} steps`}
-          popoverTarget={cardId}
-          aria-expanded={open && first === shown}
-          onClick={(e) => {
-            if (open && first !== shown) e.preventDefault() // shows this run in the open card, instead of closing it
-            const r = e.currentTarget.getBoundingClientRect()
-            setAt({ x: r.left + r.width / 2, y: r.top + r.height / 2 })
-            setShown(first)
-          }}
-        />
-      </span>
-    )
-  })
-  if (nodes.length || running)
-    nodes.push(
-      <span key="end" className={stepClass(false, current === 'end')}>
-        <button className="rail-pick" title="Jump to Latest Message" onClick={() => go('end')}>
-          {running ? <Loader2 size={10} className="spin" /> : <Circle size={10} />}
-        </button>
-      </span>,
-    )
+  const messages = items.flatMap((item, i) => (item.type === 'user_message' ? [{ i, title: firstLine(item.text) }] : []))
+  // The current item's message: the last at or before it.
+  const at = typeof current === 'number' ? (messages.findLast((m) => m.i <= current)?.i ?? 'start') : current
+  const step = (to: number | 'start' | 'end', title: string, icon: ReactNode = <Circle size={10} />) => (
+    <span key={to} className={`rail-step${at === to ? ' current' : ''}`}>
+      <button className="rail-pick" title={title} onClick={() => go(to)}>
+        {icon}
+      </button>
+    </span>
+  )
+  const nodes =
+    items.length || running
+      ? [
+          step('start', 'Jump to Start'),
+          ...messages.map((m) => step(m.i, m.title)),
+          step('end', 'Jump to Latest Message', running ? <Loader2 size={10} className="spin" /> : <Circle size={10} />),
+        ]
+      : []
   return (
-    <>
-      {/* Newest first in a row-reverse: the row opens scrolled to its right end, the newest step. */}
-      <div className="rail" ref={rail} onPointerMove={magnify} onPointerLeave={unmagnify}>
-        {nodes.reverse()}
-      </div>
-      <div
-        id={cardId}
-        popover="auto"
-        className="rail-card"
-        style={{ '--x': `${at.x}px`, '--y': `${at.y}px` } as CSSProperties}
-        onToggle={(e) => setOpen(e.newState === 'open')}
-      >
-        <div className="rail-card-box">
-          {card.map((s) => (
-            <button
-              key={s.i}
-              className={`rail-row${s.failed ? ' failed' : ''}${s.i === current ? ' current' : ''}`}
-              onClick={() => go(s.i)}
-            >
-              <s.icon size={12} />
-              <span className="truncate">{label(items[s.i])}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </>
+    <div className="rail" onPointerMove={magnify} onPointerLeave={unmagnify}>
+      {nodes.length > 0 && <div className="rail-sheet">{nodes}</div>}
+    </div>
   )
 }
 
-/** A card row's text. */
-function label(item: TimelineItem): ReactNode {
-  if (item.type === 'tool_call')
-    return (
-      <>
-        <b>{item.name}</b> {toolArg(item)}
-      </>
-    )
-  return item.type === 'reasoning' ? <i>{summary(item)}</i> : summary(item)
-}
-
-/** The item in a line. */
-function summary(item: TimelineItem): string {
-  const firstLine = (text: string) => text.replace(/\*\*|`/g, '').trim().split('\n')[0]
-  switch (item.type) {
-    case 'user_message':
-    case 'assistant_message':
-    case 'reasoning':
-      return firstLine(item.text)
-    case 'tool_call':
-      return `${item.name} ${toolArg(item)}`
-    case 'todo':
-      return `Todos ${item.items.filter((t) => t.completed).length}/${item.items.length}`
-    case 'error':
-    case 'notification':
-      return firstLine(item.message)
-    case 'compaction':
-      return 'Context compacted'
-    default:
-      return ''
-  }
-}
+const firstLine = (text: string) => text.replace(/\*\*|`/g, '').trim().split('\n')[0]
 
 /** The item across the chat's reading line, or its end once it's scrolled to the bottom (as `atBottom` in Chat.tsx). */
 function currentItem(scroller: HTMLElement): number | 'end' | undefined {
@@ -216,65 +101,3 @@ function magnify(e: PointerEvent<HTMLElement>) {
 function unmagnify(e: PointerEvent<HTMLElement>) {
   for (const b of e.currentTarget.querySelectorAll<HTMLElement>('.rail-step > button')) b.style.removeProperty('--s')
 }
-
-const stepClass = (failed: boolean, current: boolean) => `rail-step${failed ? ' failed' : ''}${current ? ' current' : ''}`
-
-function StepIcon({ step, current, title, onClick }: { step: Step; current: boolean; title: string; onClick: () => void }) {
-  return (
-    <span className={stepClass(step.failed, current)}>
-      <button className="rail-pick" title={title} onClick={onClick}>
-        <step.icon size={10} />
-      </button>
-    </span>
-  )
-}
-
-const TOOL_ICONS: Partial<Record<ToolDetail['type'], LucideIcon>> = {
-  shell: SquareTerminal,
-  read: FileText,
-  edit: FilePen,
-  write: FilePlus,
-  search: Search,
-  fetch: Globe,
-  sub_agent: Bot,
-  worktree_setup: GitBranch,
-  plan: ListTodo,
-}
-// Pi tools with untyped args arrive as `unknown`: go by the name.
-const TOOL_NAME_ICONS: [RegExp, LucideIcon][] = [
-  [/^bash/i, SquareTerminal],
-  [/^read/i, FileText],
-  [/^edit/i, FilePen],
-  [/^write/i, FilePlus],
-  [/grep|find|glob|search/i, Search],
-  [/fetch/i, Globe],
-]
-
-/** Null for items the timeline doesn't show. */
-function stepIcon(item: TimelineItem): LucideIcon | null {
-  switch (item.type) {
-    case 'user_message':
-      return User
-    case 'assistant_message':
-      return MessageSquare
-    case 'reasoning':
-      return Brain
-    case 'tool_call':
-      return TOOL_ICONS[item.detail.type] ?? TOOL_NAME_ICONS.find(([re]) => re.test(item.name))?.[1] ?? Wrench
-    case 'todo':
-      return ListChecks
-    case 'error':
-      return CircleAlert
-    case 'notification':
-      return item.level === 'error' ? CircleAlert : Info
-    case 'compaction':
-      return Scissors
-    default:
-      return null
-  }
-}
-
-const isFailed = (item: TimelineItem) =>
-  item.type === 'error' ||
-  (item.type === 'notification' && item.level === 'error') ||
-  (item.type === 'tool_call' && (item.status === 'failed' || item.status === 'canceled'))

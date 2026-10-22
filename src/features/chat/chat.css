@@ -42,18 +42,14 @@
 .jump-latest:hover {
   background: var(--bg-hover);
 }
-/* With the composer hidden, the pill clears the bottom by the composer's 16px margin. */
-.chat:has(.show-composer) .jump-latest {
-  bottom: 16px;
-}
 /* Brings back the composer that scrolling up hid. Sized like its .send button and in its column: the composer's
-   side margin (24px, or more past its 812px max width) + 1px border + 10px bar padding. Vertically centered on
-   .jump-latest, shown with it: its 16px offset - (28px - its 26px height) / 2, + 2px since the drop shadow makes it
-   look lower. */
+   side margin (24px, or more past its 812px max width) + 1px border + 10px bar padding. Above the rail, vertically
+   centered on .jump-latest, shown with it: its 4px offset - (28px - its 26px height) / 2, + 2px since the drop shadow
+   makes it look lower. */
 .show-composer {
   position: absolute;
   right: calc(max(24px, (100% - 812px) / 2) + 11px);
-  bottom: 17px;
+  bottom: calc(100% + 5px);
   display: grid;
   place-items: center;
   width: 28px;
@@ -66,10 +62,12 @@
 .show-composer:hover {
   background: var(--bg-hover);
 }
-/* The agent's timeline under the composer, across the chat: one icon per item, joined by a line. */
+/* The chat's outline under the composer: its start, the user's messages and its end, joined by a line. Centered, it
+   grows out both ways; once it overflows (safe), it starts at the newest and scrolls. */
 .rail {
   display: flex;
-  flex-direction: row-reverse; /* see Rail.tsx */
+  flex-direction: row-reverse; /* overflowing, it opens scrolled to its right end: the newest message */
+  justify-content: safe center;
   margin-top: -16px; /* takes the composer's bottom margin: the strip down to the page bottom is the rail's */
   /* Fixed, empty too. .sidebar-foot's height and top border: its icons line up with the settings button. */
   height: 38px;
@@ -77,153 +75,34 @@
   padding: 1px 12px 0;
   overflow-x: auto;
   scrollbar-width: none;
-  color: var(--border-strong); /* barely off the background, as if printed on it; so are its highlights */
-  /* Frosted, to stay readable over the messages scrolling under it. */
-  background: color-mix(in srgb, var(--bg) 70%, transparent);
-  backdrop-filter: blur(8px);
-}
-/* A folded run of the agent's steps: a cross of dots, spreading on hover. Open, a ring. Two layers, as box-shadow
-   can't blend the dots into the ring's inset shadow: the cross shrinks into the middle as the ring grows out of it. */
-.rail-run {
-  position: relative;
-  width: 20px;
-  height: 20px;
-  margin: 0 calc((var(--s, 1) - 1) * 5px);
-}
-.rail-run::before,
-.rail-run::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  border-radius: 50%;
-  transition:
-    transform 0.15s,
-    opacity 0.15s,
-    box-shadow 0.15s;
-}
-.rail-run::before {
-  width: 2px;
-  height: 2px;
-  background: currentColor;
-  box-shadow: 0 -3px, 3px 0, 0 3px, -3px 0;
-}
-.rail-run::after {
-  width: 8px;
-  height: 8px;
-  box-shadow: inset 0 0 0 1px;
-  opacity: 0;
-  transform: scale(0.25);
-}
-.rail-run:hover {
   color: var(--text-faint);
 }
-.rail-run:hover::before {
-  box-shadow: 0 -4px, 4px 0, 0 4px, -4px 0;
-}
-.rail-run[aria-expanded='true']::before {
-  opacity: 0;
-  transform: scale(0);
-}
-.rail-run[aria-expanded='true']::after {
-  opacity: 1;
-  transform: none;
-}
-/* The open run, above its .rail-run at (--x, --y): centered on it, but 8px inside the window. It grows out of the
-   run, from a point. */
-.rail-card {
-  --w: min(380px, 100vw - 16px);
-  --cx: clamp(8px + var(--w) / 2, var(--x), 100vw - 8px - var(--w) / 2);
-  --ox: calc(var(--x) - var(--cx) + var(--w) / 2); /* the run's x in the card */
-  inset: auto;
-  top: calc(var(--y) - 18px); /* 8px above the 20px .rail-run */
-  left: calc(var(--cx) - var(--w) / 2);
-  translate: 0 -100%;
-  width: var(--w);
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--text-muted);
-  transition:
-    display 0.25s allow-discrete,
-    overlay 0.25s allow-discrete;
-}
-.rail-card-box {
-  max-height: min(360px, 60vh);
-  overflow-y: auto;
-  padding: 8px 14px;
-  border: 1px solid var(--border-strong);
-  border-radius: 12px;
-  background: var(--bg-elev);
-  clip-path: inset(0 round 12px);
-  transition:
-    clip-path 0.25s ease,
-    opacity 0.25s ease;
-}
-/* Closed, and as it opens: the box a point at the run. */
-.rail-card:not(:popover-open) .rail-card-box {
-  clip-path: inset(100% calc(100% - var(--ox)) 0 var(--ox) round 12px);
-  opacity: 0;
-}
-@starting-style {
-  .rail-card:popover-open .rail-card-box {
-    clip-path: inset(100% calc(100% - var(--ox)) 0 var(--ox) round 12px);
-    opacity: 0;
-  }
-}
-/* The run on a vertical rail: a line joins each icon to the one above. */
-.rail-row {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  height: 28px;
-  font: 12px var(--mono);
-  text-align: left;
-}
-.rail-row:hover {
-  color: var(--text);
-}
-.rail-row + .rail-row::before {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: 5.5px;
-  width: 1px;
-  height: 10px;
-  background: var(--border-strong);
-}
-.rail-row b {
-  color: var(--text);
-  font-weight: 500;
-}
-.rail-row.failed svg {
-  color: var(--red);
+/* With the composer hidden, no margin to take. */
+[hidden] + .rail {
+  margin-top: 0;
 }
 .rail-step {
   display: flex;
   align-items: center;
   height: 20px;
 }
-/* The newest: a lone step has no line to stretch, and this keeps it on the left. */
-.rail-step:first-child {
-  margin-right: auto;
+/* Frosted, under the circles only: they stay readable over the messages scrolling under it. */
+.rail-sheet {
+  display: flex;
+  padding: 4px 8px;
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
 }
-/* The line from the step before; the oldest is the last child. The lines stretch the rail across the chat. */
-.rail-step:not(:last-child) {
-  flex-grow: 1;
-}
-.rail-step:not(:last-child)::before {
+/* The line from the step before. */
+.rail-step:not(:first-child)::before {
   content: '';
-  flex: 1 1 10px; /* below 10px only to make room for magnified icons */
+  flex: 0 1 16px; /* below 16px only to make room for magnified icons */
   height: 1px;
   margin: 0 4px;
-  background: color-mix(in srgb, var(--border) 60%, var(--bg));
+  background: var(--border-strong);
 }
 /* Magnified near the mouse by --s (Rail.tsx), as the Dock does: up from the line (the icon's bottom), and apart by
-   its margins (see .rail-pick, .rail-run), half the icon's growth each side. */
+   its margins (see .rail-pick), half the icon's growth each side. */
 .rail-step > button {
   scale: var(--s, 1);
   transform-origin: 50% 75%;
@@ -231,15 +110,9 @@
     scale 0.15s ease-out,
     margin 0.15s ease-out;
 }
-.rail-step.failed {
-  color: color-mix(in srgb, var(--red) 30%, var(--border-strong));
-}
-/* The step across the chat's reading line (on its button, over their hover color), and its row in the card. */
+/* The step across the chat's reading line (on its button, over their hover color). */
 .rail-step.current > button {
-  color: var(--text-faint);
-}
-.rail-row.current {
-  color: var(--text);
+  color: var(--text-muted);
 }
 /* A step's icon, scrolling the chat to it: a 20px hit area over the gaps to its lines. */
 .rail-pick {
@@ -248,7 +121,7 @@
   padding: 5px;
 }
 .rail-pick:hover {
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 .timeline {
   width: 100%;

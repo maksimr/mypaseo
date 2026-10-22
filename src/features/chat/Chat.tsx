@@ -80,6 +80,13 @@ export function Chat({
     place()
     lastTop.current = el.scrollTop // not a scroll up by the user: the composer, and the rail in it, stay shown
   }
+  const jumpToStart = () => {
+    const el = scroller.current
+    if (!el) return
+    atBottom.current = false
+    el.scrollTop = 0
+    lastTop.current = 0 // as in goTo
+  }
   const showComposer = () => {
     flushSync(() => setHide(false))
     foot.current?.querySelector('textarea')?.focus({ preventScroll: true }) // within the tap, so touch keyboards open
@@ -222,17 +229,19 @@ export function Chat({
               onDraftProvider={onDraftProvider}
               onShowComment={onShowComment}
             />
-            {/* Even empty, as for a new agent: its space stays, so the composer doesn't jump when steps arrive. Empty too
-                until the whole history is in: the tail page alone would fold, then refold as the rest arrives. */}
-            <Rail
-              key={agent?.id}
-              items={historyIn ? tl.items : []}
-              running={historyIn && running}
-              scroller={scroller}
-              onPick={goTo}
-              onEnd={jumpToLatest}
-            />
           </div>
+          {/* Shown with the composer hidden too. Even empty, as for a new agent: its space stays, so the composer doesn't
+              jump when steps arrive. Empty too until the whole history is in: the tail page alone would show, then grow
+              as the rest arrives. */}
+          <Rail
+            key={agent?.id}
+            items={historyIn ? tl.items : []}
+            running={historyIn && running}
+            scroller={scroller}
+            onPick={goTo}
+            onStart={jumpToStart}
+            onEnd={jumpToLatest}
+          />
           {composerHidden && (
             <button
               className="show-composer"
