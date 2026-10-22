@@ -2,10 +2,57 @@
 .palette-backdrop {
   align-items: flex-start;
   padding-top: 12vh;
+  background: none; /* no dimming: the glass shows the app under it, like Spotlight */
 }
 .dialog.palette {
   width: min(560px, 92vw);
   max-height: 60vh;
+  border-color: color-mix(in oklab, var(--text) 14%, transparent);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--text) 8%, transparent),
+    0 20px 60px var(--shadow-50);
+}
+/* Opens like Spotlight: fades in at once and settles from a bit larger; closes at once, as Spotlight does. Reduced
+   motion: the fade only. */
+.dialog.palette {
+  transition: opacity 0.06s ease-out;
+}
+@starting-style {
+  .dialog.palette {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dialog.palette {
+    transition:
+      opacity 0.06s ease-out,
+      scale 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @starting-style {
+    .dialog.palette {
+      scale: 1.1;
+    }
+  }
+}
+/* Frosted glass; without backdrop-filter the opaque .dialog background stays. */
+@supports (backdrop-filter: blur(1px)) {
+  .dialog.palette {
+    background: color-mix(in oklab, var(--bg) 35%, transparent);
+    backdrop-filter: blur(64px) saturate(2);
+  }
+}
+/* Over settings.css's header strip: no band of its own, a faint line under it. */
+.palette > .palette-head {
+  background: none;
+  border-bottom-color: color-mix(in oklab, var(--text) 10%, transparent);
+}
+/* Translucent rows, so the glass shows through them too. */
+.palette .autocomplete-item:hover {
+  background: color-mix(in oklab, var(--text) 7%, transparent);
+}
+.palette .autocomplete-item[aria-selected='true'] {
+  background: color-mix(in oklab, var(--text) 13%, transparent);
 }
 .palette-head {
   display: flex;
