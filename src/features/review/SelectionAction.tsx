@@ -9,9 +9,16 @@ export function SelectionAction({ title, onAdd }: { title: string; onAdd: (s: Se
     let hovered: SelectedLines | null = null
     const update = () => {
       const s = selectionRef() ?? (hovered?.line.isConnected ? hovered : null)
-      const r = s?.line.getBoundingClientRect()
+      if (!s) return setAt(null)
+      const r = s.line.getBoundingClientRect()
+      // The last selected line may be scrolled away: the button stays in the visible part, between the file's sticky header and the scroller's bottom.
+      const box = s.line.closest('[data-path]')
+      const head = box?.querySelector(':scope > .excerpt-head, :scope > .file-path')?.getBoundingClientRect().bottom ?? 0
+      const foot = box?.closest('[tabindex="-1"]')?.getBoundingClientRect().bottom ?? innerHeight
+      const half = r.height / 2
+      const top = Math.min(Math.max(r.top + half, head + half), foot - half)
       // A file view's lines scroll sideways in their <pre>; the button stays at its left edge like the sticky comment thread.
-      setAt(s && r ? { s, top: r.top + r.height / 2, left: Math.max(r.left, s.line.parentElement!.getBoundingClientRect().left) } : null)
+      setAt({ s, top, left: Math.max(r.left, s.line.parentElement!.getBoundingClientRect().left) })
     }
     const over = (e: MouseEvent) => {
       const t = e.target as Element

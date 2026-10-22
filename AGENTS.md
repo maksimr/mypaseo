@@ -62,6 +62,7 @@ stay flat in `src/`.
 | `.code-line > .ln + .lc` | `components/Code.tsx` | `review/selection.ts`, `review/review.ts` |
 | `.dl.add\|.remove\|.context > .ln .ln .dc` | `changes/FileHunks.tsx` | `review/selection.ts`, `review/review.ts` |
 | `[data-path]` on the file or diff container | `changes/Changes.tsx` (`.excerpt`), `files/Files.tsx` (`.file-view`) | `selection.ts`, `review.ts`, `Changes.tsx` (focus scroll) |
+| Sticky header `[data-path] > .excerpt-head\|.file-path`, scroller `[tabindex="-1"]` around it | `changes/Changes.tsx`, `files/Files.tsx` | `review/SelectionAction.tsx` (keeps the button in the visible part) |
 | `.review-thread` between lines | `review/ReviewThread.tsx` | `selection.ts`, `ReviewThread.tsx` (prev/next comment) |
 | `.chunk[data-hunk][data-chunk]`, `.staged` | `changes/FileHunks.tsx` | `changes/Changes.tsx` (stage current / go to hunk) |
 | `.timeline` and `.chat-foot` inside `.chat-scroll` | `chat/Timeline.tsx`, `chat/Chat.tsx` | `Chat.tsx` (ResizeObserver), `components/Markdown.tsx` (IntersectionObserver root) |
