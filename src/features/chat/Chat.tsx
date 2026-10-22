@@ -244,7 +244,7 @@ export function Chat({
               aria-label="Write Message"
               onClick={showComposer}
             >
-              <SquarePen size={14} />
+              <SquarePen size={12} />
             </button>
           )}
         </div>

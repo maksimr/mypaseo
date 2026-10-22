@@ -23,23 +23,23 @@
   z-index: 1;
   margin-top: auto;
 }
-/* Brings back the composer that scrolling up hid. Sized like its .send button and in its column: the composer's
-   side margin (24px, or more past its 812px max width) + 1px border + 10px bar padding. Just above the rail. */
+/* Brings back the composer that scrolling up hid. On the rail's line and frosted like .rail-latest, where the
+   composer's .send button sits: its side margin (24px, or more past its 812px max width) + 1px border + 10px bar
+   padding. */
 .show-composer {
   position: absolute;
   right: calc(max(24px, (100% - 812px) / 2) + 11px);
-  bottom: calc(100% + 5px);
+  bottom: 4.5px; /* centered in the rail's 38px, less its 1px top padding */
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
-  border: 1px solid var(--border-strong);
   border-radius: 50%;
-  background: var(--bg-elev);
-  box-shadow: 0 4px 12px var(--shadow-40);
+  color: var(--text-faint);
+  backdrop-filter: blur(8px);
 }
 .show-composer:hover {
-  background: var(--bg-hover);
+  color: var(--text-muted);
 }
 /* The chat's outline under the composer: its start, the user's messages and its end, joined by a line. Centered, it
    grows out both ways; once it overflows (safe), it starts at the newest and scrolls. */
@@ -56,9 +56,11 @@
   scrollbar-width: none;
   color: var(--text-faint);
 }
-/* With the composer hidden, no margin to take. */
+/* With the composer hidden, no margin to take, and .show-composer's room (its right + 28px + 4px) on both sides, so
+   the sheet stays centered and never scrolls under it. */
 [hidden] + .rail {
   margin-top: 0;
+  padding-inline: calc(max(24px, (100% - 812px) / 2) + 43px);
 }
 .rail-step {
   display: flex;
