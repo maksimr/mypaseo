@@ -64,7 +64,7 @@ stay flat in `src/`.
 | `[data-path]` on the file or diff container | `changes/Changes.tsx` (`.excerpt`), `files/Files.tsx` (`.file-view`) | `selection.ts`, `review.ts`, `Changes.tsx` (focus scroll) |
 | `.review-thread` between lines | `review/ReviewThread.tsx` | `selection.ts`, `ReviewThread.tsx` (prev/next comment) |
 | `.chunk[data-hunk][data-chunk]`, `.staged` | `changes/FileHunks.tsx` | `changes/Changes.tsx` (stage current / go to hunk) |
-| `.timeline` and `.chat-foot` inside `.chat-scroll` | `chat/Timeline.tsx`, `chat/Chat.tsx` | `Chat.tsx` (ResizeObserver), `components/Markdown.tsx` (IntersectionObserver root), `chat/reading.ts` (`.chat-foot`) |
+| `.timeline` and `.chat-foot` inside `.chat-scroll` | `chat/Timeline.tsx`, `chat/Chat.tsx` | `Chat.tsx` (ResizeObserver), `components/Markdown.tsx` (IntersectionObserver root) |
 | `.sidebar`, `.panel` | `sidebar/Sidebar.tsx`, `tabs/Panel.tsx` | `swipe.ts` |
 | `[data-swipe]` on a row that swipes to show its actions (`.swipe-actions`) | `sidebar/WorkspaceRow.tsx` (`sidebar/rowSwipe.ts`) | `swipe.ts` (starts no pane drag on it) |
 | `.selection-action` | `review/SelectionAction.tsx` | itself (hover keep-alive) |

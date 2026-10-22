@@ -23,29 +23,8 @@
   z-index: 1;
   margin-top: auto;
 }
-.jump-latest {
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 50%;
-  translate: -50%;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 6px;
-  background: var(--bg-panel);
-  opacity: 0.9;
-  font-family: var(--mono);
-  font-size: 12px;
-}
-.jump-latest:hover {
-  background: var(--bg-hover);
-}
 /* Brings back the composer that scrolling up hid. Sized like its .send button and in its column: the composer's
-   side margin (24px, or more past its 812px max width) + 1px border + 10px bar padding. Above the rail, vertically
-   centered on .jump-latest, shown with it: its 4px offset - (28px - its 26px height) / 2, + 2px since the drop shadow
-   makes it look lower. */
+   side margin (24px, or more past its 812px max width) + 1px border + 10px bar padding. Just above the rail. */
 .show-composer {
   position: absolute;
   right: calc(max(24px, (100% - 812px) / 2) + 11px);
@@ -72,7 +51,7 @@
   /* Fixed, empty too. .sidebar-foot's height and top border: its icons line up with the settings button. */
   height: 38px;
   align-items: center;
-  padding: 1px 12px 0;
+  padding: 1px 44px 0; /* room for .rail-latest on both sides, so the sheet stays centered */
   overflow-x: auto;
   scrollbar-width: none;
   color: var(--text-faint);
@@ -92,6 +71,22 @@
   padding: 4px 8px;
   border-radius: 14px;
   backdrop-filter: blur(8px);
+}
+/* Jumps to the latest message, away from it: beside the sheet and as frosted, but taking no room, so the sheet stays
+   put as it shows. First in the row-reverse: the rightmost. */
+.rail-latest {
+  order: -1;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: 0 -32px 0 4px;
+  border-radius: 50%;
+  backdrop-filter: blur(8px);
+}
+.rail-latest:hover {
+  color: var(--text-muted);
 }
 /* The line from the step before. */
 .rail-step:not(:first-child)::before {

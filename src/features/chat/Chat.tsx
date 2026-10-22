@@ -1,11 +1,11 @@
-import { ArrowDown, Import, SquarePen } from 'lucide-react'
+import { Import, SquarePen } from 'lucide-react'
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { ActiveViewContext } from '../../activeView'
 import { artifactDocs } from '../../artifact'
 import { parseNear } from '../../components/Markdown'
 import type { Agent } from '../../daemon'
-import { formatCombo, isShortcut, useShortcut } from '../../keymap'
+import { isShortcut } from '../../keymap'
 import type { ReviewComment } from '../review/review'
 import { isScratch, keptUnread, useDaemon } from '../../store'
 import { useTimeline } from './useTimeline'
@@ -59,7 +59,6 @@ export function Chat({
   const lastTop = useRef(0)
   const [hide, setHide] = useState(false)
   const composerHidden = hide && !agent?.pendingPermissions.length
-  const jumpKey = useShortcut('jumpToLatest')
   const jumpToLatest = () => {
     const el = scroller.current
     if (el) el.scrollTop = el.scrollHeight
@@ -211,11 +210,6 @@ export function Chat({
         )}
         {/* Measured here, not on the composer's div: its bottom margin collapses out of that one. */}
         <div className="chat-foot" ref={foot}>
-          {agent && away && (
-            <button className="jump-latest" onClick={jumpToLatest}>
-              <ArrowDown size={13} /> Jump to Latest Message ({formatCombo(jumpKey)})
-            </button>
-          )}
           {agent?.pendingPermissions.map((p) => <PermissionCard key={p.id} agentId={agent.id} request={p} />)}
           {/* Hidden, not unmounted: the draft and attachments stay. */}
           <div hidden={composerHidden}>
@@ -241,6 +235,7 @@ export function Chat({
             onPick={goTo}
             onStart={jumpToStart}
             onEnd={jumpToLatest}
+            away={away}
           />
           {composerHidden && (
             <button

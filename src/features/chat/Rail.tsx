@@ -1,12 +1,13 @@
-import { Circle, Loader2 } from 'lucide-react'
+import { ArrowDown, Circle, Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode, type RefObject } from 'react'
 import type { TimelineItem } from '../../daemon'
+import { formatCombo, useShortcut } from '../../keymap'
 import { readingLine } from './reading'
 
 /** The chat's outline as a row of circles under the composer, oldest on the left: its start, the user's messages, and
  *  its end (a spinner while running). A click on a message calls `onPick` with its item's index; on the start or end,
  *  `onStart` or `onEnd`. The message whose turn is across the chat's reading line, or the end at its bottom, is
- *  highlighted. */
+ *  highlighted. `away` from the bottom, an arrow beside the end jumps there too. */
 export function Rail({
   items,
   running,
@@ -14,6 +15,7 @@ export function Rail({
   onPick,
   onStart,
   onEnd,
+  away,
 }: {
   items: TimelineItem[]
   running: boolean
@@ -21,7 +23,9 @@ export function Rail({
   onPick: (i: number) => void
   onStart: () => void
   onEnd: () => void
+  away: boolean
 }) {
+  const jumpKey = useShortcut('jumpToLatest')
   const [current, setCurrent] = useState<number | 'start' | 'end'>()
   // A pick shows its step even where the chat can't scroll it to the top, until the chat scrolls on from there.
   const pinned = useRef<number>(undefined)
@@ -65,6 +69,11 @@ export function Rail({
   return (
     <div className="rail" onPointerMove={magnify} onPointerLeave={unmagnify}>
       {nodes.length > 0 && <div className="rail-sheet">{nodes}</div>}
+      {nodes.length > 0 && away && (
+        <button className="rail-latest" title={`Jump to Latest Message (${formatCombo(jumpKey)})`} onClick={() => go('end')}>
+          <ArrowDown size={12} />
+        </button>
+      )}
     </div>
   )
 }
