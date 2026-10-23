@@ -191,7 +191,7 @@ export function Chat({
           <>
             {tl.loading && <div className="empty">Loading…</div>}
             {tl.error && <div className="empty err">{tl.error}</div>}
-            <Timeline items={tl.items} running={running} error={agent.status === 'error' ? agent.lastError : null} />
+            <Timeline items={tl.items} running={running} since={agent.lastUserMessageAt} error={agent.status === 'error' ? agent.lastError : null} />
           </>
         ) : (
           <div className="empty-chat">

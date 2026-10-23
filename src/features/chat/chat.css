@@ -164,6 +164,70 @@
   color: var(--text-muted);
   font-style: italic;
 }
+/* A run of tool calls and thoughts in one row (WorkGroup.tsx). */
+.work {
+  margin: 6px 0;
+}
+/* Sticks while its steps scroll under it, so they close from anywhere in them. Full width, over them. */
+.work-head {
+  position: sticky;
+  top: 0;
+  z-index: 1; /* over .msg's position: relative */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+  background: var(--bg);
+  color: var(--text-faint);
+  list-style: none;
+  cursor: pointer;
+}
+.work-head::-webkit-details-marker {
+  display: none;
+}
+.work-head:hover {
+  color: var(--text-muted);
+}
+.work-chevron {
+  flex: none;
+  transition: rotate 0.15s;
+}
+.work[open] > .work-head > .work-chevron {
+  rotate: 90deg;
+}
+.work-time {
+  flex: none;
+}
+.work-failed {
+  color: var(--red);
+}
+/* What it's doing: slides in as it changes, a highlight sweeping across it. */
+.work-now {
+  background: linear-gradient(90deg, var(--text-faint) 40%, var(--text) 50%, var(--text-faint) 60%) 100% 0 / 300% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: work-shimmer 2s linear infinite;
+  transition:
+    opacity 0.2s,
+    translate 0.2s;
+}
+@starting-style {
+  .work-now {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+@keyframes work-shimmer {
+  to {
+    background-position: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .work-now {
+    animation: none;
+    translate: none;
+  }
+}
 .tool {
   margin: 6px 0;
   border-radius: 6px;

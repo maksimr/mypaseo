@@ -1,13 +1,26 @@
 import { Loader2 } from 'lucide-react'
-import { memo, useContext, useEffect, useState } from 'react'
+import { memo, useContext, useEffect, useMemo, useState } from 'react'
 import { ActiveViewContext } from '../../activeView'
 import type { TimelineItem, ToolCall, ToolDetail } from '../../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../../keymap'
 import { Code } from '../../components/Code'
 import { Markdown } from '../../components/Markdown'
 import { toolArg } from './toolArg'
+import { rows } from './work'
+import { WorkGroup } from './WorkGroup'
 
-export function Timeline({ items, running, error }: { items: TimelineItem[]; running: boolean; error?: string | null }) {
+export function Timeline({
+  items,
+  running,
+  since,
+  error,
+}: {
+  items: TimelineItem[]
+  running: boolean
+  /** When the user last sent a message: the running steps count their time from it. */
+  since?: string | null
+  error?: string | null
+}) {
   // Like pi's Ctrl+O (here Ctrl+" by default): expand or collapse every tool output at once.
   const [expanded, setExpanded] = useState(false)
   const active = useContext(ActiveViewContext)
@@ -21,12 +34,24 @@ export function Timeline({ items, running, error }: { items: TimelineItem[]; run
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [active])
+  const grouped = useMemo(() => rows(items), [items])
+  const last = grouped.at(-1)
+  // The last steps, while running, show it themselves.
+  const live = running && last && 'steps' in last ? last : null
   return (
     <div className="timeline">
-      {items.map((item, i) => (
-        <Item key={i} index={i} item={item} expanded={expanded} />
-      ))}
-      {running && (
+      {grouped.map((row) =>
+        'steps' in row ? (
+          <WorkGroup key={row.index} index={row.index} steps={row.steps} live={row === live} since={since} expanded={expanded}>
+            {row.steps.map((item, i) => (
+              <Item key={i} index={row.index + i} item={item} expanded={expanded} />
+            ))}
+          </WorkGroup>
+        ) : (
+          <Item key={row.index} index={row.index} item={row.item} expanded={expanded} />
+        ),
+      )}
+      {running && !live && (
         <div className="msg muted working">
           <Loader2 size={13} className="spin" /> Working…
         </div>
