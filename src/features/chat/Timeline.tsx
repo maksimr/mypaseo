@@ -71,7 +71,7 @@ const Item = memo(function Item({ index, item, expanded }: { index: number; item
       )
     case 'assistant_message':
       return (
-        <div className="msg" data-item={index}>
+        <div className="msg assistant" data-item={index}>
           <Markdown text={item.text} />
         </div>
       )

@@ -47,7 +47,9 @@
   /* Chat */
   --chat-grid: light-dark(rgba(0, 0, 0, 0.015), rgba(255, 255, 255, 0.012));
   --logo-ink: light-dark(#2257d6, #4f86f0); /* the stamped logo on the landing page */
-  --user-msg-bg: light-dark(#e2ebf7, #273947);
+  /* Translucent so the chat grid shows through; over --bg they look as the opaque #e2ebf7/#273947 and #f4f4f4/#292b31 did. */
+  --user-msg-bg: light-dark(rgba(202, 220, 244, 0.5), rgba(43, 77, 99, 0.5));
+  --assistant-msg-bg: light-dark(rgba(0, 0, 0, 0.025), rgba(255, 255, 255, 0.025));
   --tool-bg: light-dark(rgba(218, 219, 224, 0.5), rgba(45, 47, 54, 0.5)); /* translucent so the chat grid shows through */
   --tool-done-bg: light-dark(rgba(200, 228, 196, 0.5), rgba(48, 73, 54, 0.5));
   --tool-failed-bg: light-dark(rgba(244, 204, 202, 0.5), rgba(105, 44, 44, 0.5));
