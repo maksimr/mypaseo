@@ -29,6 +29,7 @@
 }
 .tabbar {
   padding: 0 8px 0 4px;
+  border-bottom: 0;
 }
 /* Only the tabs scroll, so the Open in Editor button stays at the bar's end. */
 .tabs {
