@@ -272,7 +272,6 @@
     flex-wrap: wrap;
     height: auto;
     padding-block: 6px 4px; /* the buttons line up with the corner X: (48 - 36) / 2 */
-    border-bottom: 0;
   }
   .sidebar-head > .icon-btn:first-of-type {
     margin-left: auto;

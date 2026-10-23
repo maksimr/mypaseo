@@ -444,7 +444,7 @@ export default function App() {
           />
 
           {!target ? (
-            <div className="empty-chat landing">
+            <div className="empty-chat">
               <div className="landing-logo" />
               <div className="landing-text">
                 {hosts.some((h) => byHost[h.id]?.status === 'connected') || !hosts.some((h) => byHost[h.id]?.error) ? (

@@ -1,4 +1,7 @@
 /* Sidebar & tree rows */
+.sidebar-head {
+  border-bottom: 0;
+}
 .row.workspace {
   padding-left: 14px;
 }

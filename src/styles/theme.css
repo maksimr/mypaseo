@@ -3,15 +3,16 @@
 :root {
   color-scheme: light dark;
 
-  /* Surfaces */
-  --bg: light-dark(#fafafa, #23252b);
-  --bg-panel: light-dark(#efeff0, #1f2125);
-  --bg-elev: light-dark(#ffffff, #2a2c33);
-  --bg-hover: light-dark(#e6e6e8, #2c2f36);
-  --bg-active: light-dark(#dbdbde, #33363e);
-  --bg-input: light-dark(#ffffff, #17191c);
-  --border: light-dark(#dfdfe1, #33363d);
-  --border-strong: light-dark(#c9c9cc, #43464f);
+  /* Surfaces; dark ones are neutral grays as in Claude: a gray sidebar, the center and the panel dark (--bg) */
+  --bg: light-dark(#fafafa, #1a1a1a);
+  --bg-sidebar: light-dark(#efeff0, #2a2a2a);
+  --bg-panel: light-dark(#efeff0, #151515);
+  --bg-elev: light-dark(#ffffff, #2a2a2a);
+  --bg-hover: light-dark(#e6e6e8, #323232);
+  --bg-active: light-dark(#dbdbde, #3a3a3a);
+  --bg-input: light-dark(#ffffff, #121212);
+  --border: light-dark(#dfdfe1, #333333);
+  --border-strong: light-dark(#c9c9cc, #444444);
 
   /* Text and status */
   --text: light-dark(#242529, #dce0e5);
@@ -45,12 +46,10 @@
   --staged-del-bg: rgba(224, 108, 117, 0.06);
 
   /* Chat */
-  --chat-grid: light-dark(rgba(0, 0, 0, 0.015), rgba(255, 255, 255, 0.012));
   --logo-ink: light-dark(#2257d6, #4f86f0); /* the stamped logo on the landing page */
-  /* Translucent so the chat grid shows through; over --bg they look as the opaque #e2ebf7/#273947 and #f4f4f4/#292b31 did. */
+  /* Translucent; over --bg they look as the opaque #e2ebf7/#273947 did. */
   --user-msg-bg: light-dark(rgba(202, 220, 244, 0.5), rgba(43, 77, 99, 0.5));
-  --assistant-msg-bg: light-dark(rgba(0, 0, 0, 0.025), rgba(255, 255, 255, 0.025));
-  --tool-bg: light-dark(rgba(218, 219, 224, 0.5), rgba(45, 47, 54, 0.5)); /* translucent so the chat grid shows through */
+  --tool-bg: light-dark(rgba(218, 219, 224, 0.5), rgba(45, 47, 54, 0.5));
   --tool-done-bg: light-dark(rgba(200, 228, 196, 0.5), rgba(48, 73, 54, 0.5));
   --tool-failed-bg: light-dark(rgba(244, 204, 202, 0.5), rgba(105, 44, 44, 0.5));
   --permission-bg: light-dark(#fcf5df, #2b2a26);

@@ -235,10 +235,13 @@ code.inline {
 /* Panes, tree rows, menus (shared) */
 .sidebar,
 .panel {
-  background: var(--bg-panel);
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+.sidebar {
+  background: var(--bg-sidebar);
 }
 .sidebar {
   border-right: 1px solid var(--border);

@@ -5,10 +5,6 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background-image:
-    linear-gradient(var(--chat-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--chat-grid) 1px, transparent 1px);
-  background-size: 16px 16px;
 }
 .chat-scroll {
   flex: 1;
@@ -149,45 +145,45 @@
 .msg.error {
   color: var(--red);
 }
-.msg:is(.user, .assistant) {
-  margin-top: 10px;
-  margin-bottom: 7px; /* the tail's overhang */
-  padding: 10px 12px;
-  border-radius: 6px;
-}
-/* A tail hanging from the bottom corner on the speaker's side, as in iMessage. Drawn for the agent's (left) corner and
-   mirrored for the user's. Its 13px square starts 6px up, at the corner's rounding (the box's 6px radius): the path
-   leaves that arc, curves down to the tip and back up to the box's bottom, then runs back along the arc, so it fills
-   only what the box doesn't and the translucent backgrounds don't overlap. */
-.msg:is(.user, .assistant)::after {
+/* A tail hanging from the user's bottom corner, as in iMessage, drawn for the left corner and mirrored. Its 13px square
+   starts 6px up, at the corner's rounding (the box's 6px radius): the path leaves that arc, curves down to the tip and
+   back up to the box's bottom, then runs back along the arc, so it fills only what the box doesn't and the translucent
+   backgrounds don't overlap. */
+.msg.user::after {
   content: '';
   position: absolute;
+  right: 0;
   bottom: -7px;
   width: 13px;
   height: 13px;
   background: inherit;
   mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 -6 13 13'><path d='M2.03 -1.5C3.1 -0.5 3 3 2.2 5.6 1.9 6.4 2.4 6.9 3.1 6.6 6.5 5.2 9.5 0 13 0L6 0A6 6 0 0 1 2.03 -1.5Z'/></svg>") 0 0 / 100% 100% no-repeat;
-}
-.msg.user {
-  background: var(--user-msg-bg);
-}
-.msg.user::after {
-  right: 0;
   scale: -1 1;
 }
+/* On the right, as wide as its text, set apart by equal space above and below (its neighbors' text rows all carry
+   2px block padding: .msg.assistant, .work-head). */
+.msg.user {
+  width: fit-content;
+  max-width: 85%;
+  margin: 32px 0 32px auto;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--user-msg-bg);
+}
+.msg.user:first-child {
+  margin-top: 0;
+}
+/* No box around it: its text lines up with the work runs, and its padding matches .work-head's. */
 .msg.assistant {
-  background: var(--assistant-msg-bg);
+  margin-block: 12px;
+  padding: 2px 0;
 }
-.msg.assistant::after {
-  left: 0;
+/* The reply hangs right under the work run that led to it. */
+.work:has(+ .msg.assistant) {
+  margin-bottom: 0;
 }
-/* Markdown's chip and table colors are opaque ones picked for --bg: on the agent's tint the chip (--bg-elev) turns
-   darker than its line and the borders (--border) vanish. A second layer of the tint lifts the chip. */
-.msg.assistant code.inline {
-  background: var(--assistant-msg-bg);
-}
-.msg.assistant :is(th, td) {
-  border-color: var(--border-strong);
+.work + .msg.assistant {
+  margin-top: 0;
 }
 .user-text {
   white-space: pre-wrap;

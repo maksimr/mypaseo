@@ -43,7 +43,7 @@ export function useTabStatus(name: string | undefined, agents: Agent[]) {
         g.fillStyle = badge
         g.fill()
         g.lineWidth = 5
-        g.strokeStyle = '#23252b' // --bg ring keeps the dot apart from the blue icon
+        g.strokeStyle = '#1a1a1a' // --bg ring keeps the dot apart from the blue icon
         g.stroke()
         link.href = canvas.toDataURL()
       },
