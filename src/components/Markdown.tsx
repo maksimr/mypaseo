@@ -1,7 +1,9 @@
+import { Check, Copy } from 'lucide-react'
 import { createContext, memo, useContext, useLayoutEffect, useRef, useState } from 'react'
 import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { artifactDoc, fenceClosed } from '../artifact'
+import { errorText } from '../daemon'
 import { OpenFileContext } from '../openFile'
 import { Artifact } from './Artifact'
 import { Code } from './Code'
@@ -43,7 +45,30 @@ function CodeBlock({ className, children, node }: React.ComponentProps<'code'> &
   const pos = node?.position
   // A page still streaming in would reload on every chunk: it shows as code until its closing fence arrives.
   if (doc && pos && fenceClosed(source.slice(pos.start.offset, pos.end.offset))) return <Artifact doc={doc} />
-  return <Code code={text} filename={`snippet.${lang ?? 'txt'}`} />
+  return (
+    <div className="code-block">
+      <Code code={text} filename={`snippet.${lang ?? 'txt'}`} />
+      <CopyButton text={text.replace(/\n$/, '')} />
+    </div>
+  )
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch (err) {
+      return alert(`Could not copy: ${errorText(err)}`)
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1200)
+  }
+  return (
+    <button className="icon-btn code-copy" title="Copy" onClick={copy}>
+      {copied ? <Check size={13} /> : <Copy size={13} />}
+    </button>
+  )
 }
 
 const components: Components = {

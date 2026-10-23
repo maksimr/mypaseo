@@ -62,19 +62,30 @@
   outline-offset: -1px;
   background: var(--bg-panel);
 }
-/* Over the page, so it has its own background; shown while the page is hovered or focused, always on touch. */
-.artifact-open {
+/* The margin moves to the wrapper, so `.md > :last-child` still drops it. */
+.code-block {
+  position: relative;
+  margin: 0 0 12px;
+}
+.code-block > .code {
+  margin: 0;
+}
+/* Over the page or code, so it has its own background; shown while that is hovered or focused, always on touch. */
+.artifact-open,
+.code-copy {
   position: absolute;
   top: 6px;
   right: 6px;
   background: var(--bg-elev);
   visibility: hidden;
 }
-.artifact:is(:hover, :focus-within) .artifact-open {
+.artifact:is(:hover, :focus-within) .artifact-open,
+.code-block:is(:hover, :focus-within) .code-copy {
   visibility: visible;
 }
 @media (hover: none) {
-  .artifact-open {
+  .artifact-open,
+  .code-copy {
     visibility: visible;
   }
 }
