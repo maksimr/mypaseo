@@ -71,7 +71,11 @@ function Done({ steps }: { steps: Step[] }) {
   return (
     <span className="truncate">
       {text}
-      {failed > 0 && <span className="work-failed">, {failed} failed</span>}
+      {failed > 0 && (
+        <>
+          , <span className="work-failed">{failed} failed</span>
+        </>
+      )}
     </span>
   )
 }
