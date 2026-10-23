@@ -18,26 +18,33 @@ export function focusRow(pane: HTMLElement | null | undefined) {
   ;(pane?.querySelector<HTMLElement>('.row[tabindex]:is(.active, [aria-current])') ?? pane?.querySelector<HTMLElement>('.row[tabindex]') ?? pane)?.focus()
 }
 
+/** Vim's h/j/k/l by physical key (code), as in keymap.ts, so they work on a Cyrillic layout too. */
+const VIM: Record<string, string> = { KeyH: 'ArrowLeft', KeyJ: 'ArrowDown', KeyK: 'ArrowUp', KeyL: 'ArrowRight' }
+/** The arrow key pressed, or the one h/j/k/l stand for outside a text field, where they type. */
+const arrow = (e: KeyboardEvent, t: HTMLElement) =>
+  e.key.startsWith('Arrow') ? e.key : t.matches('input, textarea, select') || t.isContentEditable ? undefined : VIM[e.code]
+
 /**
- * A side pane's onKeyDown, like a tree: ↑/↓ move the focus to the row above or below (from the pane itself, to its first or
- * last row); →/← expand/collapse the row, through whichever of it or its chevron carries aria-expanded.
+ * A side pane's onKeyDown, like a tree: ↑/↓ (or k/j) move the focus to the row above or below (from the pane itself, to its
+ * first or last row); →/← (or l/h) expand/collapse the row, through whichever of it or its chevron carries aria-expanded.
  */
 export function navigateRows(e: KeyboardEvent<HTMLElement>) {
   if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || !(e.target instanceof HTMLElement)) return
   const rows = [...e.currentTarget.querySelectorAll<HTMLElement>('.row[tabindex]')]
   const row = e.target.closest<HTMLElement>('.row') // the focus is on a row or a button in it
   const i = row ? rows.indexOf(row) : -1
-  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-    const step = e.key === 'ArrowDown' ? 1 : -1
+  const key = arrow(e, e.target)
+  if (key === 'ArrowDown' || key === 'ArrowUp') {
+    const step = key === 'ArrowDown' ? 1 : -1
     const next = e.target === e.currentTarget ? rows.at(step > 0 ? 0 : -1) : i >= 0 ? rows[i + step] : undefined
     if (!next) return
     e.preventDefault() // no scroll on top of the focus move
     next.focus()
-  } else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && i >= 0) {
+  } else if ((key === 'ArrowRight' || key === 'ArrowLeft') && i >= 0) {
     const toggle = rows[i].matches('[aria-expanded]') ? rows[i] : rows[i].querySelector<HTMLElement>('[aria-expanded]')
     if (!toggle) return
     e.preventDefault()
-    if ((toggle.getAttribute('aria-expanded') === 'true') !== (e.key === 'ArrowRight')) toggle.click()
+    if ((toggle.getAttribute('aria-expanded') === 'true') !== (key === 'ArrowRight')) toggle.click()
   }
 }
 
@@ -54,10 +61,11 @@ export function focusBar(bar: Element) {
   ;(controls.find((el) => el.matches('.tab.on, .panel-tab.on')) ?? controls[0])?.focus()
 }
 
-/** The app's onKeyDown: ←/→ in a `role="toolbar"` move the focus to the previous or next control; in a text field, the caret. */
+/** The app's onKeyDown: ←/→ (or h/l) in a `role="toolbar"` move the focus to the previous or next control; in a text field, the caret. */
 export function navigateBars(e: KeyboardEvent<HTMLElement>) {
-  const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
   const t = e.target instanceof HTMLElement ? e.target : null
+  const key = t && arrow(e, t)
+  const step = key === 'ArrowRight' ? 1 : key === 'ArrowLeft' ? -1 : 0
   const bar = t && !t.matches('input, textarea') && !t.closest('.menu') ? t.closest('[role="toolbar"]') : null
   if (!step || !t || !bar || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
   const controls = barControls(bar)
