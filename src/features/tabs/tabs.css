@@ -82,6 +82,43 @@
   background: var(--bg-active);
   color: var(--text);
 }
+/* The open tab's background slides to the next one, in the tab bar and the file panel's tabs (.panel-tab in base.css):
+   a pill behind the tabs, tethered to the open one, so it follows a resize at once; useSlide.ts animates the switch.
+   Without anchor positioning the open tab keeps its own. */
+@supports (anchor-name: --a) {
+  .tabs,
+  .panel-tabs {
+    position: relative; /* the pill's containing block, so it scrolls with the tabs */
+    isolation: isolate; /* the pill's z-index: -1 stays in front of the bar's background */
+  }
+  .tab.on {
+    anchor-name: --tab-on;
+    background: none;
+  }
+  .panel-tab.on {
+    anchor-name: --panel-tab-on;
+    background: none;
+  }
+  /* Not gated on :has(> .on): Safari recreates the pill when :has() changes, so it jumps. With no open tab the empty
+     pill has no size. */
+  .tabs::before,
+  .panel-tabs::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: anchor(top) anchor(right) anchor(bottom) anchor(left);
+  }
+  .tabs::before {
+    position-anchor: --tab-on;
+    border-radius: 5px;
+    background: var(--bg-active);
+  }
+  .panel-tabs::before {
+    position-anchor: --panel-tab-on;
+    border-radius: 6px;
+    background: var(--bg-hover);
+  }
+}
 /* The X glyph has ~3px of empty box around it: line its edge up with the 10px padding. */
 .tab:has(.tab-close) {
   padding-right: 7px;

@@ -8,6 +8,7 @@ import { formatCombo, useShortcut } from '../../keymap'
 import { totals, type DiffState } from '../changes/useCheckoutDiff'
 import type { useTerminals } from '../terminal/useTerminals'
 import type { Tabs } from './useTabs'
+import { useSlide } from './useSlide'
 
 export function TabBar({
   tabs,
@@ -35,10 +36,11 @@ export function TabBar({
   const { tab, setTab, changesTab, closeChanges, graphTab, graphPath, closeGraph, commitTab, closeCommit, files, closeFile, artifacts, closeArtifact } = tabs
   const closeAgentKey = useShortcut('closeAgent')
   const t = totals(diff.files)
+  const slide = useSlide(tab === 'chat' ? `chat:${agent?.id}` : tab)
   return (
     <div className="tabbar" role="toolbar" aria-label="Tabs">
       {/* On phones, a popover listing every tab (the bar shows only the open one); picking one closes it. */}
-      <div className="tabs" id="tab-list" popover="auto" onClick={(e) => e.currentTarget.hidePopover()}>
+      <div ref={slide} className="tabs" id="tab-list" popover="auto" onClick={(e) => e.currentTarget.hidePopover()}>
         {chatTabs.map((a) => (
           <div key={a?.id ?? 'new'} className={`tab agent-tab ${tab === 'chat' && a === agent ? 'on' : ''}`} {...clickable(() => onOpenChat(a))}>
             <ProviderIcon provider={a ? a.provider : draftProvider} size={13} />
