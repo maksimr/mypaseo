@@ -25,7 +25,7 @@ import { OpenFileContext } from './openFile'
 import { selectionRef } from './features/review/selection'
 import { SelectionAction } from './features/review/SelectionAction'
 import { reviewKey, startComment } from './features/review/review'
-import { archiveAgent, archiveWorkspace, byRecent, HostContext, projectName, sidebarWorkspaces, startSync, useStore } from './store'
+import { archiveAgent, archiveWorkspace, byRecent, HostContext, projectName, projectWorkspaces, sidebarWorkspaces, startSync, useStore } from './store'
 import { useEdgeSwipe } from './swipe'
 import { useMenuScrim } from './components/menu'
 import { useTabStatus } from './tabStatus'
@@ -519,7 +519,20 @@ export default function App() {
             <Settings initialSection={settings.section} onClose={() => setSettings(null)} />
           </HostContext>
         )}
-        {palette && <CommandPalette cwd={cwd} onClose={() => setPalette(false)} />}
+        {palette && (
+          <CommandPalette
+            cwd={cwd}
+            projectId={workspace?.projectId}
+            // The project's own folder, else its first workspace; with none, its New Agent composer.
+            onProject={(id) => {
+              const ws = projectWorkspaces(id, workspaces, agents)
+              const w = ws.find((x) => x.workspaceDirectory === x.projectRootPath) ?? ws[0]
+              if (w) openWorkspace(w)
+              else select({ projectId: id })
+            }}
+            onClose={() => setPalette(false)}
+          />
+        )}
         <UpdateBanner />
         <ListSearch />
         {importTarget && (

@@ -1,11 +1,13 @@
-import { Eye } from 'lucide-react'
+import { Eye, Folder } from 'lucide-react'
 import { useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { useEscape } from '../../a11y'
 import { listAllFiles, rankPaths } from '../chat/autocomplete'
+import { Pick } from '../../components/Pick'
 import { errorText } from '../../daemon'
+import { focusView } from '../../focus'
 import { SHORTCUTS, SHORTCUT_IDS, binding, comboOf, formatCombo, keysOf, pauseShortcuts, type ShortcutId } from '../../keymap'
 import { OpenFileContext } from '../../openFile'
-import { useDaemon } from '../../store'
+import { hostLabel, projectName, useDaemon, useStore } from '../../store'
 
 // Only the composer or commit dialog handles these, and Add to Chat needs the selection the palette's input takes.
 const HIDDEN: ShortcutId[] = ['commandPalette', 'send', 'cycleThinking', 'pickModel', 'pickProject', 'amend', 'addToChat', 'listSearch']
@@ -14,8 +16,20 @@ const HIDDEN: ShortcutId[] = ['commandPalette', 'send', 'cycleThinking', 'pickMo
  * Lists the shortcut commands. Running one replays its key combo on window, so whichever component owns it handles it.
  * A query starting with `@` searches the workspace's files instead and opens the picked one. The daemon's search skips
  * hidden and gitignored files, so with those switched on the palette lists the whole workspace once and ranks it itself.
+ * The project picker opens another project's workspace behind the palette, so its files and commands act there; it is
+ * unset with no workspace open, as in a New Agent composer that starts a new workspace.
  */
-export function CommandPalette({ cwd, onClose }: { cwd?: string; onClose: () => void }) {
+export function CommandPalette({
+  cwd,
+  projectId,
+  onProject,
+  onClose,
+}: {
+  cwd?: string
+  projectId?: string
+  onProject: (projectId: string) => void
+  onClose: () => void
+}) {
   useEscape(onClose)
   const input = useRef<HTMLInputElement>(null)
   // Focus moves here and back by hand, not autoFocus, so StrictMode's remount lands in the input again.
@@ -26,7 +40,9 @@ export function CommandPalette({ cwd, onClose }: { cwd?: string; onClose: () => 
     pauseShortcuts(true)
     return () => {
       pauseShortcuts(false)
-      prev?.focus()
+      // Picking a project unmounts the old workspace's views: the new one's open tab takes the focus instead.
+      if (prev?.isConnected) prev.focus()
+      else focusView(document.body)
     }
   }, [])
   const listId = useId()
@@ -40,6 +56,14 @@ export function CommandPalette({ cwd, onClose }: { cwd?: string; onClose: () => 
   const [files, setFiles] = useState<string[] | string>()
   const [hidden, setHidden] = useState(() => localStorage.mypaseoPaletteHidden === 'on')
   const [allFiles, setAllFiles] = useState<string[] | string>()
+  // Results belong to the workspace they came from: picking another project drops them.
+  const [filesCwd, setFilesCwd] = useState(cwd)
+  if (filesCwd !== cwd) {
+    setFilesCwd(cwd)
+    setFiles(undefined)
+    setAllFiles(undefined)
+  }
+  const { projects, hosts } = useStore()
   const listAll = hidden && fileQuery !== undefined && !!cwd && allFiles === undefined
   useEffect(() => {
     if (!listAll) return
@@ -94,7 +118,7 @@ export function CommandPalette({ cwd, onClose }: { cwd?: string; onClose: () => 
           }))
         : []
   const status =
-    fileQuery === undefined ? 'No matching commands' : !cwd ? 'No workspace open' : typeof shown === 'string' ? shown : !shown ? 'Loading…' : 'No matching files'
+    fileQuery === undefined ? 'No matching commands' : !cwd ? 'No workspace open: pick a project' : typeof shown === 'string' ? shown : !shown ? 'Loading…' : 'No matching files'
   const selected = Math.min(sel, items.length - 1)
 
   return (
@@ -144,6 +168,17 @@ export function CommandPalette({ cwd, onClose }: { cwd?: string; onClose: () => 
               <Eye size={15} />
             </button>
           )}
+          <Pick
+            icon={<Folder size={14} />}
+            value={projectId}
+            onChange={(id) => {
+              onProject(id)
+              setSel(0)
+              input.current?.focus() // keep typing in the input
+            }}
+            options={projects.map((p) => [p.projectId, `${projectName(p)}${hosts.length > 1 ? ` · ${hostLabel(p.hostId)}` : ''}`])}
+            title="Project"
+          />
         </div>
         <div className="palette-list" id={listId} role="listbox" aria-label={fileQuery === undefined ? 'Commands' : 'Files'}>
           {items.length === 0 && <div className="autocomplete-status">{status}</div>}
