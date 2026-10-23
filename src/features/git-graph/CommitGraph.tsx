@@ -1,6 +1,6 @@
 import { CaseSensitive, Check, ChevronDown, ChevronUp, GitBranch, Hash, Mail, Tag } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { clickable } from '../../a11y'
+import { clickable, navigateRows } from '../../a11y'
 import { errorText, type DiffFile, type Workspace } from '../../daemon'
 import * as git from '../../git'
 import { isShortcut } from '../../keymap'
@@ -208,7 +208,8 @@ export function CommitGraph({
     <div
       className="graph"
       ref={pane}
-      tabIndex={-1} // App focuses the shown view when a side pane closes, so arrow keys scroll it
+      tabIndex={-1} // App focuses the shown view when a side pane closes, so ↓/↑ (or j/k) reach the rows
+      onKeyDown={(e) => navigateRows(e, '.graph-row')}
       style={{ '--graph-w': `${graphW}px`, '--refs-w': `${refsW}px`, '--date-w': `${cols.date}px`, '--author-w': `${cols.author}px`, '--sha-w': `${cols.sha}px` } as CSSProperties}
     >
       <div className="graph-toolbar" role="toolbar" aria-label="Git Graph">

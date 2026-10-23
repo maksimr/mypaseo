@@ -27,11 +27,12 @@ const arrow = (e: KeyboardEvent, t: HTMLElement) =>
 /**
  * A side pane's onKeyDown, like a tree: ↑/↓ (or k/j) move the focus to the row above or below (from the pane itself, to its
  * first or last row); →/← (or l/h) expand/collapse the row, through whichever of it or its chevron carries aria-expanded.
+ * `rowClass` picks the rows, for a list whose rows aren't `.row`s (the git graph's).
  */
-export function navigateRows(e: KeyboardEvent<HTMLElement>) {
+export function navigateRows(e: KeyboardEvent<HTMLElement>, rowClass = '.row') {
   if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || !(e.target instanceof HTMLElement)) return
-  const rows = [...e.currentTarget.querySelectorAll<HTMLElement>('.row[tabindex]')]
-  const row = e.target.closest<HTMLElement>('.row') // the focus is on a row or a button in it
+  const rows = [...e.currentTarget.querySelectorAll<HTMLElement>(`${rowClass}[tabindex]`)]
+  const row = e.target.closest<HTMLElement>(rowClass) // the focus is on a row or a button in it
   const i = row ? rows.indexOf(row) : -1
   const key = arrow(e, e.target)
   if (key === 'ArrowDown' || key === 'ArrowUp') {
