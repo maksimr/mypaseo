@@ -326,6 +326,26 @@ code.inline {
   overflow: auto;
   padding: 4px 0;
 }
+/* A scroller's content fades out under the bar above it once scrolled: the fade grows over the first 16px of scroll.
+   Without scroll-driven animations, a hard edge. */
+@property --scroll-fade {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@supports (animation-timeline: scroll()) {
+  .scroll-fade {
+    mask-image: linear-gradient(transparent, #000 var(--scroll-fade));
+    animation: scroll-fade linear both;
+    animation-timeline: scroll(self);
+    animation-range: 0 16px;
+  }
+}
+@keyframes scroll-fade {
+  to {
+    --scroll-fade: 16px;
+  }
+}
 /* The project being dragged, at the place it would drop. */
 .tree .dragging {
   opacity: 0.5;

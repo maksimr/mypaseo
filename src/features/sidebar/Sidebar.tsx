@@ -146,7 +146,7 @@ export function Sidebar({
             <ListFilter size={15} />
           </button>
         </div>
-        <nav className="tree">
+        <nav className="tree scroll-fade">
           {projects.length === 0 && (
             <div className="sidebar-empty">
               <span className="muted">No projects</span>

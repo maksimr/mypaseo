@@ -170,7 +170,7 @@ export function Chat({
   return (
     <div className="chat">
       <div
-        className="chat-scroll"
+        className="chat-scroll scroll-fade"
         ref={scroller}
         onScroll={(e) => {
           const el = e.currentTarget
