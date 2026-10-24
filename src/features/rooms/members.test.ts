@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { handleOf, isLead, roomId, roomMembers } from './members.ts'
+import { colorOf, handleOf, isLead, roomId, roomMembers } from './members.ts'
 
 const agent = (id: string, labels: Record<string, string>, archivedAt: string | null = null) => ({ id, labels, archivedAt })
 
@@ -23,4 +23,11 @@ test('handleOf: the label, else the profile slug, else agent', () => {
   assert.equal(handleOf(single, profiles), 'code-reviewer')
   assert.equal(handleOf(single, []), 'agent')
   assert.equal(handleOf(elsewhere, profiles), 'agent')
+})
+
+test("colorOf: its profile's known color, else none", () => {
+  assert.equal(colorOf(reviewer, [{ id: 'p1', color: 'teal' }]), 'var(--identity-teal)')
+  assert.equal(colorOf(reviewer, [{ id: 'p1', color: 'none' }]), undefined)
+  assert.equal(colorOf(reviewer, [{ id: 'p1' }]), undefined)
+  assert.equal(colorOf(lead, [{ id: 'p1', color: 'teal' }]), undefined)
 })

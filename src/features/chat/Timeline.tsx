@@ -14,7 +14,8 @@ import { toolArg } from './toolArg'
 import { rows, type Row } from './work'
 import { WorkGroup } from './WorkGroup'
 
-type Member = { agent: Agent; handle: string }
+/** color: its profile's, a CSS color. */
+type Member = { agent: Agent; handle: string; color?: string }
 
 // A member's direct replies run apart from its public ones.
 const authorKey = (r: RoomItem) => `${r.agentId}${r.private ? ' dm' : ''}`
@@ -69,6 +70,30 @@ export function Timeline({
   const to = (row: Row) => (room?.[row.index].author === 'user' ? `to @${byId.get(room[row.index].agentId)?.handle}` : undefined)
   const resumed = items.findLastIndex((x) => x.type === 'plugin' && x.kind === 'room.resumed')
   const share = (i: number) => !!onShare && !!marks?.[i]
+  // A member's run sits in its own box, so its name sticks on top only while the run scrolls by.
+  const runs: { who?: RoomItem; rows: Row[] }[] = []
+  for (const row of grouped) {
+    const who = speaker(row)
+    const last = runs.at(-1)
+    if (who && last?.who && authorKey(last.who) === authorKey(who)) last.rows.push(row)
+    else runs.push({ who, rows: [row] })
+  }
+  const render = (row: Row) => (
+    // Keyed by the room's key: other members' items arriving shift the indices.
+    <Fragment key={room ? room[row.index].key : row.index}>
+      {'steps' in row ? (
+        <WorkGroup index={row.index} steps={row.steps} live={live.has(row)} since={live.get(row)?.agent.lastUserMessageAt} expanded={expanded}>
+          {row.steps.map((item, i) => (
+            <Item key={i} index={row.index + i} item={item} expanded={expanded} />
+          ))}
+        </WorkGroup>
+      ) : room && row.item.type === 'plugin' ? (
+        <RoomEvent index={row.index} roomId={room[row.index].agentId} item={row.item} open={row.index > resumed} share={share(row.index)} />
+      ) : (
+        <Item index={row.index} item={row.item} expanded={expanded} to={to(row)} share={share(row.index)} />
+      )}
+    </Fragment>
+  )
   return (
     // Share From Here clicks are handled here: the memoized items take no callback, which would change with the marks.
     <div
@@ -79,31 +104,20 @@ export function Timeline({
         if (m) onShare?.(m, e.shiftKey)
       }}
     >
-      {grouped.map((row, k) => {
-        const who = speaker(row)
-        const prev = speaker(grouped[k - 1])
-        const author = who && (!prev || authorKey(who) !== authorKey(prev)) ? byId.get(who.agentId) : undefined
+      {runs.flatMap(({ who, rows }) => {
+        if (!who) return rows.map(render)
+        const author = byId.get(who.agentId)
         return (
-          // Keyed by the room's key: other members' items arriving shift the indices.
-          <Fragment key={room ? room[row.index].key : row.index}>
+          <div key={who.key} className="msg-run">
             {author && (
               <div className="msg-author">
-                <ProviderIcon provider={author.agent.provider} size={13} />@{author.handle}
-                {who?.private && <> · <Direct /></>}
+                <ProviderIcon provider={author.agent.provider} size={13} />
+                <span style={{ color: author.color }}>@{author.handle}</span>
+                {who.private && <> · <Direct /></>}
               </div>
             )}
-            {'steps' in row ? (
-              <WorkGroup index={row.index} steps={row.steps} live={live.has(row)} since={live.get(row)?.agent.lastUserMessageAt} expanded={expanded}>
-                {row.steps.map((item, i) => (
-                  <Item key={i} index={row.index + i} item={item} expanded={expanded} />
-                ))}
-              </WorkGroup>
-            ) : room && row.item.type === 'plugin' ? (
-              <RoomEvent index={row.index} roomId={room[row.index].agentId} item={row.item} open={row.index > resumed} share={share(row.index)} />
-            ) : (
-              <Item index={row.index} item={row.item} expanded={expanded} to={to(row)} share={share(row.index)} />
-            )}
-          </Fragment>
+            {rows.map(render)}
+          </div>
         )
       })}
       {working.map((m) => (

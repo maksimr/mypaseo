@@ -275,6 +275,42 @@
 .profile-empty {
   padding: 14px 0;
 }
+.profile-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: 1px;
+}
+.profile-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 3px;
+}
+.profile-colors input {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--swatch-ring);
+  cursor: pointer;
+}
+/* No Color: a ring struck through */
+.profile-colors input:not([style]) {
+  background: linear-gradient(to top right, transparent 45%, var(--swatch-ring) 45% 55%, transparent 55%);
+}
+.profile-colors input:checked {
+  box-shadow:
+    inset 0 0 0 1px var(--swatch-ring),
+    0 0 0 2px var(--bg),
+    0 0 0 3px var(--text);
+}
+.profile-colors input:focus-visible {
+  outline-offset: 4px;
+}
 .profile-actions {
   display: flex;
   gap: 6px;

@@ -6,7 +6,7 @@ export function readingLine(scroller: HTMLElement): number {
 
 /** The index (`data-item`) of the timeline item across the reading line. */
 export function itemAcross(scroller: HTMLElement): number | undefined {
-  const items = scroller.querySelectorAll<HTMLElement>('.timeline > [data-item]')
+  const items = scroller.querySelectorAll<HTMLElement>('.timeline > [data-item], .msg-run > [data-item]')
   const line = readingLine(scroller)
   // The last item starting above the line: they're in order, so a binary search.
   let lo = 0

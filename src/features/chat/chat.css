@@ -192,12 +192,23 @@
   color: var(--text-faint);
   font-size: 12px;
 }
-/* In a room: the member a run of messages and steps comes from. */
+/* In a room: the member a run of messages and steps comes from, held on top while its run (.msg-run) scrolls by, past
+   .scroll-fade's 16px (its text starts ~4px into its line). Frosted like .rail-sheet, under the name only, and tinted
+   so the text behind doesn't show through it; the padding sits in the negative margin, so the name stays lined up with
+   the text. */
 .msg-author {
+  position: sticky;
+  top: 12px;
+  z-index: 2; /* over the positioned .msg, .share-here and the .work-head its run's end pushes up */
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 12px;
+  width: fit-content;
+  margin: 12px -8px 0;
+  padding: 0 8px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(8px);
   color: var(--text-muted);
 }
 /* The lock badge of a direct message and its replies; top-aligned so its text sits on the line's baseline. */
@@ -249,6 +260,10 @@
   color: var(--text-faint);
   list-style: none;
   cursor: pointer;
+}
+/* In a room, under its member's name (.msg-author: 12px down, one line of the same font). */
+.msg-run .work-head {
+  top: calc(12px + 1lh);
 }
 .work-head::-webkit-details-marker {
   display: none;
@@ -389,7 +404,7 @@
    stays put while the chat scrolls under it, and floats over the text without moving it. */
 .member-card {
   position: absolute;
-  z-index: 2; /* over the timeline's and the composer's 1 */
+  z-index: 3; /* over the timeline's 1 and 2 and the composer's 1 */
   top: 8px;
   right: 16px;
   display: grid;

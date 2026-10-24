@@ -1,5 +1,6 @@
 import type { Agent } from '../../daemon'
 import { ROOM_LABELS } from '../../rooms.ts'
+import { colorVar } from './colors.ts'
 import { slug } from './handles.ts'
 
 const { room: ROOM, handle: HANDLE, profile: PROFILE } = ROOM_LABELS
@@ -19,3 +20,7 @@ export function handleOf(agent: Labeled, profiles: readonly { id: string; name: 
   const profile = profiles.find((p) => p.id === agent.labels[PROFILE])
   return agent.labels[HANDLE] ?? (profile ? slug(profile.name) : 'agent')
 }
+
+/** Its profile's color (a CSS color), if it was started from a profile that has one. */
+export const colorOf = (agent: Labeled, profiles: readonly { id: string; color?: string }[]) =>
+  colorVar(profiles.find((p) => p.id === agent.labels[PROFILE])?.color)

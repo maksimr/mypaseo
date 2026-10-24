@@ -9,7 +9,7 @@ import type { Agent, TimelineItem } from '../../daemon'
 import { isShortcut } from '../../keymap'
 import type { ReviewComment } from '../review/review'
 import { MemberCard } from '../rooms/MemberCard'
-import { handleOf, isLead, roomId, roomMembers } from '../rooms/members'
+import { colorOf, handleOf, isLead, roomId, roomMembers } from '../rooms/members'
 import { isScratch, keptUnread, useDaemon, useHost } from '../../store'
 import { useRoomTimeline } from './useRoomTimeline'
 import { useTimeline } from './useTimeline'
@@ -56,7 +56,7 @@ export function Chat({
   // A room's lead shows the room; any other agent, a member included (its own chat), its own timeline.
   const lead = agent && isLead(agent) ? agent : undefined
   const members = lead ? [lead, ...roomMembers(agents, lead.id).filter((m) => m.id !== lead.id)] : agent ? [agent] : []
-  const named = members.map((m) => ({ agent: m, handle: handleOf(m, profiles) }))
+  const named = members.map((m) => ({ agent: m, handle: handleOf(m, profiles), color: colorOf(m, profiles) }))
   const roomTl = useRoomTimeline(lead?.id ?? null, named.map((m) => ({ agentId: m.agent.id, handle: m.handle })))
   const ownTl = useTimeline(lead ? null : (agent?.id ?? null))
   const tl: { items: TimelineItem[]; loading: boolean; error: string | null; partial?: boolean } = lead ? roomTl : ownTl

@@ -77,6 +77,18 @@
   --lane-5: light-dark(#0184bc, #56b6c2);
   --lane-6: light-dark(#e45649, #e06c75);
 
+  /* Agent profile colors: Paseo desktop's identity colors, by its names (rooms/colors.ts COLORS) */
+  --identity-violet: light-dark(#6d49b5, #a392d5);
+  --identity-sky: light-dark(#3d6985, #6aa6ce);
+  --identity-emerald: light-dark(#3e6e5d, #6cae96);
+  --identity-orange: light-dark(#845838, #cc8f64);
+  --identity-pink: light-dark(#974168, #d87da3);
+  --identity-indigo: light-dark(#5251c2, #9299d5);
+  --identity-teal: light-dark(#3e6d6c, #6cacab);
+  --identity-red: light-dark(#9c4243, #d88381);
+  --identity-amber: light-dark(#716239, #b29d64);
+  --identity-blue: light-dark(#39649e, #7ba1d5);
+
   /* Syntax */
   --syntax-keyword: light-dark(#a626a4, #b477cf);
   --syntax-comment: light-dark(#a0a1a7, #5d636f);

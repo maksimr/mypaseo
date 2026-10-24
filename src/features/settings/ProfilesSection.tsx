@@ -5,11 +5,12 @@ import { ProviderIcon } from '../../components/ProviderIcon'
 import type { AgentProfile, ProviderEntry } from '../../daemon'
 import { modelOptions } from '../../modelOptions'
 import { setProfiles, useHost, useHostId } from '../../store'
+import { COLORS, colorVar } from '../rooms/colors'
 import { slug } from '../rooms/handles'
 import { handleError } from './profiles'
 import { matches, type SectionProps } from './section'
 
-const KEYWORDS = 'profiles agents roles mention group chat'
+const KEYWORDS = 'profiles agents roles mention group chat color'
 
 /** The daemon's agentProfiles: Paseo desktop and agents' list_profiles tool read the same list. */
 export function Profiles({ config, patch, q, error }: SectionProps) {
@@ -41,6 +42,7 @@ export function Profiles({ config, patch, q, error }: SectionProps) {
             <ProviderIcon provider={p.provider} size={18} />
             <div className="grow min0">
               <div className="setting-title">
+                {colorVar(p.color) && <span className="profile-dot" style={{ background: colorVar(p.color) }} />}
                 {p.name} <span className="muted">@{slug(p.name)}</span>
               </div>
               <div className="setting-desc truncate">{summary(p, providers)}</div>
@@ -91,7 +93,7 @@ function ProfileEditor({
   const { providers } = useHost()
   // A saved provider that isn't ready stays pickable, so editing other fields doesn't change it.
   const usable = providers.filter((p) => (p.enabled && p.status === 'ready') || p.provider === profile?.provider)
-  // Keeps the fields Paseo desktop sets and this form doesn't (icon, color, featureValues).
+  // Keeps the fields Paseo desktop sets and this form doesn't (icon, featureValues).
   const [d, setD] = useState<AgentProfile>(profile ?? { id: '', name: '', provider: usable[0]?.provider ?? '' })
   const set = (patch: Partial<AgentProfile>) => setD({ ...d, ...patch })
   const entry = providers.find((p) => p.provider === d.provider)
@@ -101,6 +103,7 @@ function ProfileEditor({
   const invalid = handleError(d.name, d.id, profiles)
   const shown = d.name ? invalid : null
   const hint = useId()
+  const colorLabel = useId()
   return (
     <form
       className="profile-editor"
@@ -157,6 +160,28 @@ function ProfileEditor({
               <Options options={modes.map((m) => [m.id, m.label])} />
             </select>
           )}
+        </div>
+      </div>
+      <div className="field">
+        <div id={colorLabel} className="field-label">
+          Color
+        </div>
+        <div className="profile-colors" role="radiogroup" aria-labelledby={colorLabel}>
+          {['', ...COLORS].map((c) => {
+            const label = c ? c[0].toUpperCase() + c.slice(1) : 'No Color'
+            return (
+              <input
+                key={c}
+                type="radio"
+                name="profileColor"
+                title={label}
+                aria-label={label}
+                style={c ? { background: colorVar(c) } : undefined}
+                checked={c ? d.color === c : !colorVar(d.color)}
+                onChange={() => set({ color: c || undefined })}
+              />
+            )
+          })}
         </div>
       </div>
       <label className="field">
