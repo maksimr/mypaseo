@@ -4,7 +4,7 @@ import { readdirSync } from 'node:fs'
 
 const seen = new Map()
 let failed = false
-for (const dir of ['src', 'paseo-plugin'])
+for (const dir of ['src', 'paseo-plugin', 'rooms-plugin'])
   for (const file of readdirSync(dir, { recursive: true })) {
     if (!/\.[cm]?[jt]sx?$/.test(file)) continue
     const key = `${dir}/${file}`.replace(/\.[cm]?[jt]sx?$/, '').toLowerCase()

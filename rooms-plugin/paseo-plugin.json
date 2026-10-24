@@ -1,0 +1,6 @@
+{
+  "id": "mypaseo-rooms",
+  "name": "mypaseo rooms",
+  "description": "Group chats for mypaseo: routes messages between the agents of a room by their @mentions, with a digest of what each one missed, and keeps the room log.",
+  "requirements": { "paseo": ">=0.11.2" }
+}

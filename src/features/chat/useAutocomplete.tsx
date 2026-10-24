@@ -3,11 +3,12 @@ import { useEffect, useId, useState, type KeyboardEvent, type RefObject } from '
 import { activeTrigger, completion, rankCommands } from './autocomplete'
 import { errorText, type DraftConfig, type SlashCommand } from '../../daemon'
 import { useDaemon } from '../../store'
+import { ProviderIcon } from '../../components/ProviderIcon'
 
-type Option = { id: string; label: string; value: string; kind: 'command' | 'file' | 'directory'; hint?: string; description?: string }
+type Option = { id: string; label: string; value: string; kind: 'command' | 'file' | 'directory' | 'agent'; hint?: string; description?: string; provider?: string }
 type Entry = { path: string; kind: 'file' | 'directory' }
 
-/** `/` command and `@` file autocomplete for the composer textarea, like the desktop app. */
+/** `/` command and `@` agent and file autocomplete for the composer textarea, like the desktop app. */
 export function useAutocomplete({
   input,
   text,
@@ -15,6 +16,7 @@ export function useAutocomplete({
   cwd,
   agentId,
   draftConfig,
+  agents,
 }: {
   input: RefObject<HTMLTextAreaElement | null>
   text: string
@@ -23,6 +25,8 @@ export function useAutocomplete({
   agentId?: string
   /** Lists commands before the agent exists. No agent and no config: no command list. */
   draftConfig?: DraftConfig
+  /** Listed before the files, in this order. */
+  agents: { handle: string; provider?: string; description?: string }[]
 }) {
   const daemon = useDaemon()
   const listId = useId()
@@ -76,8 +80,13 @@ export function useAutocomplete({
           hint: c.argumentHint,
           description: c.description,
         }))
-      : trigger?.kind === '@' && Array.isArray(files)
-        ? files.map((e) => ({ id: e.path, label: e.path, value: e.path, kind: e.kind }))
+      : trigger?.kind === '@'
+        ? [
+            ...agents
+              .filter((a) => a.handle.includes(trigger.query.toLowerCase()))
+              .map((a): Option => ({ id: `@${a.handle}`, label: `@${a.handle}`, value: a.handle, kind: 'agent', provider: a.provider, description: a.description })),
+            ...(Array.isArray(files) ? files.map((e) => ({ id: e.path, label: e.path, value: e.path, kind: e.kind })) : []),
+          ]
         : []
   const loaded = trigger?.kind === '/' ? cmds : files
   const status = typeof loaded === 'string' ? loaded : !loaded ? 'Loading…' : trigger?.kind === '/' ? 'No commands' : 'No files'
@@ -89,7 +98,7 @@ export function useAutocomplete({
   const pick = (o: Option) => {
     const el = input.current
     if (!el || !trigger) return
-    const insert = completion(trigger, o.value, text)
+    const insert = o.kind === 'agent' ? `@${o.value} ` : completion(trigger, o.value, text)
     el.focus()
     el.setSelectionRange(trigger.start, trigger.end)
     // execCommand is deprecated but the only edit that lands on the native undo stack; its input event runs onChange.
@@ -126,7 +135,7 @@ export function useAutocomplete({
     },
     popup: open && trigger && (
       // preventDefault keeps focus in the textarea.
-      <div className="autocomplete" id={listId} role="listbox" aria-label={trigger.kind === '/' ? 'Commands' : 'Files'} onMouseDown={(e) => e.preventDefault()}>
+      <div className="autocomplete" id={listId} role="listbox" aria-label={trigger.kind === '/' ? 'Commands' : 'Mentions'} onMouseDown={(e) => e.preventDefault()}>
         {options.length === 0 && <div className="autocomplete-status">{status}</div>}
         {options.map((o, i) => (
           <div
@@ -139,7 +148,13 @@ export function useAutocomplete({
             title={o.description}
             onClick={() => pick(o)}
           >
-            {o.kind === 'directory' ? <Folder size={14} className="muted" /> : o.kind === 'file' ? <File size={14} className="muted" /> : null}
+            {o.kind === 'agent' ? (
+              <ProviderIcon provider={o.provider} />
+            ) : o.kind === 'directory' ? (
+              <Folder size={14} className="muted" />
+            ) : o.kind === 'file' ? (
+              <File size={14} className="muted" />
+            ) : null}
             <span className="autocomplete-label">{o.label}</span>
             {o.hint && <span className="autocomplete-hint">{o.hint}</span>}
             {o.description && <span className="muted truncate">{o.description}</span>}

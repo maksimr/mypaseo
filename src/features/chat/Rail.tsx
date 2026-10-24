@@ -2,7 +2,7 @@ import { ArrowDown, Circle, Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode, type RefObject } from 'react'
 import type { TimelineItem } from '../../daemon'
 import { formatCombo, useShortcut } from '../../keymap'
-import { readingLine } from './reading'
+import { itemAcross } from './reading'
 
 /** The chat's outline as a row of circles under the composer, oldest on the left: its start, the user's messages, and
  *  its end (a spinner while running). A click on a message calls `onPick` with its item's index; on the start or end,
@@ -83,17 +83,7 @@ const firstLine = (text: string) => text.replace(/\*\*|`/g, '').trim().split('\n
 /** The item across the chat's reading line, or its end once it's scrolled to the bottom (as `atBottom` in Chat.tsx). */
 function currentItem(scroller: HTMLElement): number | 'end' | undefined {
   if (scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 40) return 'end'
-  const items = scroller.querySelectorAll<HTMLElement>('.timeline > [data-item]')
-  const line = readingLine(scroller)
-  // The last item starting above the line: they're in order, so a binary search.
-  let lo = 0
-  let hi = items.length - 1
-  while (lo < hi) {
-    const mid = (lo + hi + 1) >> 1
-    if (items[mid].getBoundingClientRect().top <= line) lo = mid
-    else hi = mid - 1
-  }
-  return items.length ? Number(items[lo].dataset.item) : undefined
+  return itemAcross(scroller)
 }
 
 // Magnifies the icons near the mouse, as macOS's Dock does: 2x at the pointer, easing off in a bell over 80px either

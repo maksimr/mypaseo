@@ -7,6 +7,7 @@ import {
   LOCAL_URL,
   PROXY_URL,
   type Agent,
+  type AgentProfile,
   type DaemonClient,
   type Host,
   type Project,
@@ -29,8 +30,10 @@ type HostState = {
   workspaces: Workspace[]
   agents: Agent[]
   providers: ProviderEntry[]
+  /** The daemon config's agentProfiles; Settings → Profiles edits them. */
+  profiles: AgentProfile[]
 }
-const EMPTY: HostState = { status: 'idle', error: null, projects: [], workspaces: [], agents: [], providers: [] }
+const EMPTY: HostState = { status: 'idle', error: null, projects: [], workspaces: [], agents: [], providers: [], profiles: [] }
 
 type State = {
   hosts: Host[]
@@ -132,10 +135,11 @@ function connect(host: Host) {
     clients.get(id) === c && patchHost(id, typeof patch === 'function' ? patch : () => patch)
   const tag = <T>(x: T) => ({ ...x, hostId: id })
 
-  const loadProjectsAndProviders = async () => {
-    const [projects, providers] = await Promise.allSettled([c.listProjects(), c.getProvidersSnapshot()])
+  const loadLists = async () => {
+    const [projects, providers, config] = await Promise.allSettled([c.listProjects(), c.getProvidersSnapshot(), c.getDaemonConfig()])
     if (projects.status === 'fulfilled') put({ projects: projects.value.projects.map(tag) })
     if (providers.status === 'fulfilled') put({ providers: providers.value.entries })
+    if (config.status === 'fulfilled') put({ profiles: config.value.config.agentProfiles ?? [] })
   }
 
   c.subscribeConnectionStatus((s) => {
@@ -143,7 +147,7 @@ function connect(host: Host) {
     if (s.status !== 'connected') return
     const info = c.getLastServerInfoMessage()
     put({ serverId: info?.serverId, hostname: info?.hostname ?? undefined })
-    void loadProjectsAndProviders()
+    void loadLists()
   })
 
   // Owned subscriptions start once connected and re-deliver a snapshot after every reconnect.
@@ -324,3 +328,6 @@ export function rememberAgent(hostId: string, raw: RawAgent) {
   patchHost(hostId, (h) => ({ agents: withAgent(h.agents, agent) }))
   return agent
 }
+
+/** After Settings saves the daemon's agentProfiles; the daemon sends no event for config changes. */
+export const setProfiles = (hostId: string, profiles: AgentProfile[]) => patchHost(hostId, () => ({ profiles }))

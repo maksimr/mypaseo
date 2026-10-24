@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { activeTrigger, completion, listAllFiles, rankCommands, rankPaths } from './autocomplete.ts'
+import { activeTrigger, completion, listAllFiles, mentionAt, rankCommands, rankPaths, unmention } from './autocomplete.ts'
 
 test('@ triggers anywhere, up to the cursor, and stops at whitespace or quotes', () => {
   assert.deepEqual(activeTrigger('see @src/ch', 11), { kind: '@', start: 4, end: 11, query: 'src/ch' })
@@ -47,4 +47,17 @@ test('listAllFiles walks hidden directories, skips heavy ones and unreadable sub
 test('rankPaths ranks the best and shortest matches first', () => {
   assert.deepEqual(rankPaths(['src/pi.ts', '.pi/b/settings.json', '.pi/a.md', 'README.md'], '.pi/', 10), ['.pi/a.md', '.pi/b/settings.json', 'src/pi.ts'])
   assert.deepEqual(rankPaths(['b/c', 'a', 'd/e/f'], '', 2), ['a', 'b/c'])
+})
+
+test('mentionAt finds the @word around the caret', () => {
+  assert.equal(mentionAt('ask @Code-Rev now', 9), 'code-rev')
+  assert.equal(mentionAt('ask @code-reviewer now', 18), 'code-reviewer')
+  assert.equal(mentionAt('ask @agent now', 5), 'agent')
+  assert.equal(mentionAt('ask @agent now', 11), undefined)
+  assert.equal(mentionAt('ask @agent now', 4), undefined)
+})
+
+test('unmention keeps the word, drops only real mentions of the handle', () => {
+  assert.equal(unmention('@Agent fix it, (@agent) and @agentic or bob@agent.com', 'agent'), 'Agent fix it, (agent) and @agentic or bob@agent.com')
+  assert.equal(unmention('@code-reviewer-2 and @code-reviewer.', 'code-reviewer'), '@code-reviewer-2 and code-reviewer.')
 })

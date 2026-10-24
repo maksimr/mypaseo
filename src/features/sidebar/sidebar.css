@@ -143,6 +143,20 @@
 .row.agent.active {
   color: var(--text);
 }
+/* A room's other members nest one step under its lead's row (roomTree.ts); the lead shows the member count. */
+.row.agent.member > :first-child {
+  margin-left: 14px;
+}
+.room-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.85em;
+}
+.tree .row .room-count svg {
+  width: 1em;
+  height: 1em;
+}
 .chevron {
   display: inline-flex;
   width: 14px;

@@ -65,3 +65,15 @@ export const rankPaths = (paths: string[], query: string, limit: number) =>
     .sort((a, b) => compareMatchScores(a.score, b.score) || a.path.length - b.path.length || a.path.localeCompare(b.path))
     .slice(0, limit)
     .map((m) => m.path)
+
+/** The `@word` the caret is in or right after, lowercased, without the `@`. */
+export function mentionAt(text: string, caret: number) {
+  const head = /@([a-z0-9-]*)$/i.exec(text.slice(0, caret))
+  return head ? (head[1] + /^[a-z0-9-]*/i.exec(text.slice(caret))![0]).toLowerCase() : undefined
+}
+
+/**
+ * Drops the `@` of each mention of handle (rooms/mentions.ts rules), so the word stays and mentions no one.
+ * shortcut: also inside code, where mentions don't count; skip code spans if someone mentions a handle in code.
+ */
+export const unmention = (text: string, handle: string) => text.replace(new RegExp(`(?<![\\p{L}\\p{N}_./@-])@(${handle})(?![a-z0-9-])`, 'giu'), '$1')

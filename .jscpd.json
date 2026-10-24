@@ -1,5 +1,5 @@
 {
-  "path": ["src", "paseo-plugin"],
+  "path": ["src", "paseo-plugin", "rooms-plugin"],
   "format": ["typescript", "tsx", "css"],
   "crossFormats": ["typescript,tsx"],
   "minTokens": 75,

@@ -9,12 +9,13 @@ export type Row = { index: number; item: TimelineItem } | { index: number; steps
 
 const isStep = (item: TimelineItem): item is Step => item.type === 'tool_call' || item.type === 'reasoning'
 
-export function rows(items: TimelineItem[]): Row[] {
+/** `author`: in a room, who wrote the item at an index; a run of steps splits where it changes. */
+export function rows(items: TimelineItem[], author?: (index: number) => string): Row[] {
   const out: Row[] = []
   items.forEach((item, index) => {
     const last = out.at(-1)
     if (!isStep(item)) out.push({ index, item })
-    else if (last && 'steps' in last) last.steps.push(item)
+    else if (last && 'steps' in last && author?.(last.index) === author?.(index)) last.steps.push(item)
     else out.push({ index, steps: [item] })
   })
   return out

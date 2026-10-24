@@ -159,6 +159,29 @@
   font-size: 12px;
   color: var(--text-muted);
 }
+/* Agents the message's mentions add on send (rooms/JoinChip). */
+.join-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 12px 0;
+}
+.join-chip {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 2px 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+}
+.join-chip > svg {
+  flex: none;
+}
+.join-handle {
+  margin: 0 4px 0 6px;
+  font-family: var(--mono);
+}
 .composer-image button {
   position: absolute;
   top: -6px;
@@ -207,7 +230,8 @@
   gap: 2px;
   padding: 4px 10px 10px;
 }
-.composer-add {
+.composer-add,
+.composer-lock {
   width: 28px;
   height: 28px;
   border-radius: 8px;

@@ -1,19 +1,25 @@
 import { Import, SquarePen } from 'lucide-react'
-import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { ActiveViewContext } from '../../activeView'
 import { artifactDocs } from '../../artifact'
 import { parseNear } from '../../components/Markdown'
-import type { Agent } from '../../daemon'
+import { ProviderIcon } from '../../components/ProviderIcon'
+import type { Agent, TimelineItem } from '../../daemon'
 import { isShortcut } from '../../keymap'
 import type { ReviewComment } from '../review/review'
-import { isScratch, keptUnread, useDaemon } from '../../store'
+import type { RoomItem } from '../rooms/roomView'
+import { MemberBar } from '../rooms/MemberBar'
+import { handleOf, isLead, roomMembers } from '../rooms/members'
+import { isScratch, keptUnread, useDaemon, useHost } from '../../store'
+import { useRoomTimeline } from './useRoomTimeline'
 import { useTimeline } from './useTimeline'
 import { Timeline } from './Timeline'
 import { Composer } from './Composer'
 import { PermissionCard } from './PermissionCard'
 import { Rail } from './Rail'
-import { readingLine } from './reading'
+import { itemAcross, readingLine } from './reading'
+import { markOf, shareable, type Mark } from './share'
 import type { Target } from './target'
 
 /** Whether the user is writing in the composer: it has focus and unsent text. */
@@ -47,8 +53,21 @@ export function Chat({
   reveal?: { doc: string }
 }) {
   const daemon = useDaemon()
-  const tl = useTimeline(agent?.id ?? null)
-  const running = agent?.status === 'running'
+  const { agents, profiles } = useHost()
+  // A room's lead shows the room; any other agent, a member included (its own chat), its own timeline.
+  const lead = agent && isLead(agent) ? agent : undefined
+  const members = lead ? [lead, ...roomMembers(agents, lead.id).filter((m) => m.id !== lead.id)] : agent ? [agent] : []
+  const named = members.map((m) => ({ agent: m, handle: handleOf(m, profiles) }))
+  const roomTl = useRoomTimeline(lead?.id ?? null, named.map((m) => ({ agentId: m.agent.id, handle: m.handle })))
+  const ownTl = useTimeline(lead ? null : (agent?.id ?? null))
+  const tl: { items: TimelineItem[]; loading: boolean; error: string | null; partial?: boolean } = lead ? roomTl : ownTl
+  // The rail's circles are the user's messages: in a room, its posts.
+  const railItems = useMemo(
+    () => tl.items.map((x): TimelineItem => (x.type === 'plugin' && x.kind === 'room.post' ? { type: 'user_message', text: (x.data as { text: string }).text } : x)),
+    [tl.items],
+  )
+  const running = members.some((m) => m.status === 'running')
+  const permissions = named.flatMap((m) => m.agent.pendingPermissions.map((request) => ({ ...m, request })))
   const historyIn = !tl.loading && !tl.partial
   const scroller = useRef<HTMLDivElement>(null)
   const atBottom = useRef(true)
@@ -58,7 +77,7 @@ export function Chat({
   const foot = useRef<HTMLDivElement>(null)
   const lastTop = useRef(0)
   const [hide, setHide] = useState(false)
-  const composerHidden = hide && !agent?.pendingPermissions.length
+  const composerHidden = hide && !permissions.length
   const jumpToLatest = () => {
     const el = scroller.current
     if (el) el.scrollTop = el.scrollHeight
@@ -105,6 +124,27 @@ export function Chat({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [active])
+  // Share From Here: the composer sets its joining chips' context from the message, so it shows to take them.
+  const [share, setShare] = useState<{ mark: Mark; end: boolean }>()
+  const shareFrom = (r: RoomItem, end: boolean) => {
+    setShare({ mark: markOf(r), end })
+    showComposer()
+  }
+  // Its shortcut takes the room message across the reading line, or the last one before it; with Shift, the end.
+  const room = lead ? roomTl.room : undefined
+  useEffect(() => {
+    if (!active || !room) return
+    const onKey = (e: KeyboardEvent) => {
+      const plain = isShortcut(e, 'shareFromHere')
+      if (!plain && !(e.shiftKey && isShortcut({ code: e.code, ctrlKey: e.ctrlKey, altKey: e.altKey, shiftKey: false, metaKey: e.metaKey }, 'shareFromHere'))) return
+      e.preventDefault()
+      const at = scroller.current && itemAcross(scroller.current)
+      const r = at == null ? undefined : room.findLast((r, i) => i <= at && shareable(r))
+      if (r) shareFrom(r, !plain)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [active, room]) // eslint-disable-line react-hooks/exhaustive-deps -- shareFrom only sets state and focuses
 
   // Stick to the bottom while streaming unless the user scrolled up.
   useLayoutEffect(() => {
@@ -112,7 +152,7 @@ export function Chat({
     if (!el) return
     if (atBottom.current) el.scrollTop = el.scrollHeight
     parseNear(el) // else opening a chat paints its messages raw for a frame, then parsed
-  }, [tl.items, agent?.pendingPermissions.length])
+  }, [tl.items, permissions.length])
   // And while the chat or its timeline resizes, as when the composer slides in or grows, or markdown near the bottom gets parsed.
   useEffect(() => {
     const el = scroller.current
@@ -166,9 +206,18 @@ export function Chat({
     if (agentId && !agent?.requiresAttention) keptUnread.delete(agentId) // so finishing again while open reads it
     else if (agent?.requiresAttention && !agent.pendingPermissions.length && !keptUnread.has(agentId!)) void daemon.clearAgentAttention(agentId!).catch(() => {})
   }, [active, daemon, agentId, agent?.requiresAttention, agent?.pendingPermissions.length])
+  // The room shows its members' replies: viewing it reads them too.
+  const unreadMembers = members
+    .filter((m) => m !== agent && m.requiresAttention && !m.pendingPermissions.length && !keptUnread.has(m.id))
+    .map((m) => m.id)
+    .join()
+  useEffect(() => {
+    if (active && unreadMembers) for (const id of unreadMembers.split(',')) void daemon.clearAgentAttention(id).catch(() => {})
+  }, [active, daemon, unreadMembers])
 
   return (
     <div className="chat">
+      {lead && <MemberBar members={named} />}
       <div
         className="chat-scroll scroll-fade"
         ref={scroller}
@@ -191,7 +240,7 @@ export function Chat({
           <>
             {tl.loading && <div className="empty">Loading…</div>}
             {tl.error && <div className="empty err">{tl.error}</div>}
-            <Timeline items={tl.items} running={running} since={agent.lastUserMessageAt} error={agent.status === 'error' ? agent.lastError : null} />
+            <Timeline items={tl.items} members={named} room={room} onShare={room && shareFrom} />
           </>
         ) : (
           <div className="empty-chat">
@@ -210,7 +259,16 @@ export function Chat({
         )}
         {/* Measured here, not on the composer's div: its bottom margin collapses out of that one. */}
         <div className="chat-foot" ref={foot}>
-          {agent?.pendingPermissions.map((p) => <PermissionCard key={p.id} agentId={agent.id} request={p} />)}
+          {permissions.map(({ request, agent: m, handle }) => (
+            <Fragment key={`${m.id}:${request.id}`}>
+              {lead && (
+                <div className="permission-from">
+                  <ProviderIcon provider={m.provider} size={13} />@{handle}
+                </div>
+              )}
+              <PermissionCard agentId={m.id} request={request} />
+            </Fragment>
+          ))}
           {/* Hidden, not unmounted: the draft and attachments stay. */}
           <div hidden={composerHidden}>
             <Composer
@@ -222,6 +280,7 @@ export function Chat({
               onProjectChange={onProjectChange}
               onDraftProvider={onDraftProvider}
               onShowComment={onShowComment}
+              share={share}
             />
           </div>
           {/* Shown with the composer hidden too. Even empty, as for a new agent: its space stays, so the composer doesn't
@@ -229,7 +288,7 @@ export function Chat({
               as the rest arrives. */}
           <Rail
             key={agent?.id}
-            items={historyIn ? tl.items : []}
+            items={historyIn ? railItems : []}
             running={historyIn && running}
             scroller={scroller}
             onPick={goTo}

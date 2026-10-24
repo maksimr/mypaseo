@@ -163,6 +163,8 @@
 /* On the right, as wide as its text, set apart by equal space above and below (its neighbors' text rows all carry
    2px block padding: .msg.assistant, .work-head). */
 .msg.user {
+  flex-direction: column; /* .msg-to above the text */
+  gap: 2px;
   width: fit-content;
   max-width: 85%;
   margin: 32px 0 32px auto;
@@ -184,6 +186,42 @@
 }
 .work + .msg.assistant {
   margin-top: 0;
+}
+/* In a room: whom the user's message went to, and what came with it. */
+.msg-to {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+/* In a room: the member a run of messages and steps comes from. */
+.msg-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--text-muted);
+}
+/* The lock badge of a direct message and its replies; top-aligned so its text sits on the line's baseline. */
+.direct {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  vertical-align: top;
+}
+/* Share From Here on a room message: left of the user's bubble, over the agent's text's top right corner. Shown on
+   hover or focus; always without hover. */
+.share-here {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--bg);
+}
+.msg.user > .share-here {
+  right: calc(100% + 4px);
+}
+@media (hover: hover) {
+  .msg:not(:hover, :focus-within) > .share-here {
+    opacity: 0;
+  }
 }
 .user-text {
   white-space: pre-wrap;
@@ -337,9 +375,45 @@
   color: var(--text-faint);
   font-size: 12px;
 }
+/* The room's Continue, on its paused line. */
+.divider .btn {
+  color: var(--text);
+}
 .divider::before,
 .divider::after {
   content: '';
   flex: 1;
   border-top: 1px solid var(--border);
+}
+/* A room's members over its chat (rooms/MemberBar.tsx); scrolls sideways when they don't fit. */
+.member-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 38px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+.room-member {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.member-handle {
+  font-family: var(--mono);
+}
+/* Whose permission request the card under it is, in a room: on the card's column (.permission in composer.css). */
+.permission-from {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: calc(100% - 48px);
+  max-width: 812px;
+  margin: 0 auto 4px;
+  color: var(--text-muted);
 }

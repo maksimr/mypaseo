@@ -6,14 +6,14 @@ const { readdirSync } = require('node:fs')
 const FEATURE_DEPS = {
   artifacts: ['chat'],
   changes: ['review'],
-  chat: ['review'],
+  chat: ['review', 'rooms'],
   files: ['review'],
   'git-graph': ['changes'],
   palette: ['chat'],
-  settings: ['hosts'],
-  sidebar: ['hosts'],
+  settings: ['hosts', 'rooms'],
+  sidebar: ['hosts', 'rooms'],
   // The layout that puts the views into tabs and the side panel.
-  tabs: ['artifacts', 'changes', 'files', 'git-graph', 'review', 'terminal'],
+  tabs: ['artifacts', 'changes', 'files', 'git-graph', 'review', 'rooms', 'terminal'],
 }
 
 const features = readdirSync(`${__dirname}/src/features`)
@@ -51,10 +51,10 @@ module.exports = {
     },
     {
       name: 'plugin-apart',
-      comment: 'paseo-plugin/ runs in the daemon and installs on its own: no imports between it and src/ (src/git.ts mirrors its types).',
+      comment: 'paseo-plugin/ and rooms-plugin/ run in the daemon and install on their own: no imports between them and src/ (src/git.ts and src/rooms.ts mirror their types).',
       severity: 'error',
-      from: { path: '^(src|paseo-plugin)/' },
-      to: { path: '^(src|paseo-plugin)/', pathNot: '^$1/' },
+      from: { path: '^(src|paseo-plugin|rooms-plugin)/' },
+      to: { path: '^(src|paseo-plugin|rooms-plugin)/', pathNot: '^$1/' },
     },
   ],
   options: {

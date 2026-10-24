@@ -1,4 +1,4 @@
-import { Archive, Check, ChevronDown, ChevronRight, Copy, Ellipsis, GitBranch, Loader2, Mail, MailOpen, Pencil, Pin, PinOff, Plus, Trash2, X } from 'lucide-react'
+import { Archive, Check, ChevronDown, ChevronRight, Copy, Ellipsis, GitBranch, Loader2, Mail, MailOpen, Pencil, Pin, PinOff, Plus, Trash2, Users, X } from 'lucide-react'
 import { useState, type MouseEvent } from 'react'
 import { errorText, type Agent, type Workspace } from '../../daemon'
 import { clickable } from '../../a11y'
@@ -10,6 +10,7 @@ import { Pull, Push } from '../../components/icons'
 import { placeMenu } from '../../components/menu'
 import { StatusMark } from './StatusMark'
 import { useRowSwipe } from './rowSwipe'
+import { roomTree } from './roomTree'
 import type { Selection } from './Sidebar'
 
 export function WorkspaceRow({
@@ -69,6 +70,8 @@ export function WorkspaceRow({
   const [editing, setEditing] = useState(false)
   const [copied, setCopied] = useState(false)
   const swipe = useRowSwipe()
+  // Rooms nest their members under the lead; the row opens the newest top-level agent, not a member.
+  const tree = roomTree(agents)
   const saveName = (value: string) => {
     setEditing(false)
     // The daemon trims it, and an empty title clears the override.
@@ -77,7 +80,7 @@ export function WorkspaceRow({
 
   return (
     <>
-      <div className={`row workspace ${active ? 'active' : ''} ${swipe.className}`} {...clickable(() => select(agents[0]?.id))} {...swipe.props}>
+      <div className={`row workspace ${active ? 'active' : ''} ${swipe.className}`} {...clickable(() => select(tree[0]?.agent.id))} {...swipe.props}>
         {agents.length > 1 ? (
           <button
             className="chevron"
@@ -224,14 +227,20 @@ export function WorkspaceRow({
         </button>
       </div>
       {!collapsed &&
-        agents.map((a) => (
+        tree.map(({ agent: a, nested, room }) => (
           <div
             key={a.id}
-            className={`row agent ${selection.agentId === a.id ? 'active' : ''}`}
+            className={`row agent ${nested ? 'member' : ''} ${selection.agentId === a.id ? 'active' : ''}`}
             {...clickable(() => select(a.id))}
           >
             <ProviderIcon provider={a.provider} size={9} />
             <span className="grow truncate">{a.title || 'New agent'}</span>
+            {room > 0 && (
+              <span className="room-count muted" title={`${room} members`}>
+                <Users size={11} strokeWidth={1.75} aria-hidden />
+                {room}
+              </span>
+            )}
             {(a.requiresAttention || a === pick) && (
               <button
                 className="icon-btn hover-swap"

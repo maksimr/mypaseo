@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  // The vite and node test plugins find src/main.tsx and src/**/*.test.ts; the daemon loads the plugin.
-  "entry": ["paseo-plugin/index.server.ts"],
+  // The vite and node test plugins find src/main.tsx and the *.test.ts files; the daemon loads the plugins.
+  "entry": ["paseo-plugin/index.server.ts", "rooms-plugin/index.server.ts"],
   // The daemon (@getpaseo/server) provides these to the plugin at runtime.
   // depcruise loads @swc/core by name (`parser: 'swc'` in .dependency-cruiser.cjs).
   "ignoreDependencies": ["@getpaseo/plugin", "zod", "@swc/core"],

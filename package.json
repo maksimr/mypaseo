@@ -9,11 +9,11 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "daemon": "paseo daemon run",
-    "test": "node --test 'src/**/*.test.ts'",
+    "test": "node --test 'src/**/*.test.ts' 'rooms-plugin/**/*.test.ts'",
     "knip": "knip",
     "cpd": "jscpd",
-    "deps": "depcruise src paseo-plugin",
-    "check": "tsc -b && oxlint && knip && jscpd --silent && depcruise src paseo-plugin && node scripts/check-case.mjs && node --test 'src/**/*.test.ts'"
+    "deps": "depcruise src paseo-plugin rooms-plugin",
+    "check": "tsc -b && oxlint && knip && jscpd --silent && depcruise src paseo-plugin rooms-plugin && node scripts/check-case.mjs && node --test 'src/**/*.test.ts' 'rooms-plugin/**/*.test.ts'"
   },
   "dependencies": {
     "@getpaseo/client": "^0.11.2",

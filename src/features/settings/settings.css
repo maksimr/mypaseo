@@ -254,6 +254,38 @@
   display: flex;
   gap: 6px;
 }
+/* Profiles */
+.profile .setting-row {
+  gap: 10px;
+}
+.profile-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  /* icon 18 + gap 10: aligns with the profile name */
+  padding: 0 0 18px 28px;
+}
+.profile-editor .setting-selects {
+  justify-content: flex-start;
+}
+.field-hint {
+  margin-top: 4px;
+  font-size: 12px;
+}
+.profile-empty {
+  padding: 14px 0;
+}
+.profile-actions {
+  display: flex;
+  gap: 6px;
+}
+/* The new profile's form and its button sit under the list, not under a row. */
+.settings-section > .profile-editor {
+  padding: 14px 0 0;
+}
+.settings-section > .btn.ghost {
+  margin-top: 10px;
+}
 .row:focus-within .hover-only {
   visibility: visible;
 }

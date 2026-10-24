@@ -68,6 +68,8 @@ export const SHORTCUTS = {
   focusComposer: { group: 'Chat', label: 'Focus Composer', description: 'Move the focus to the chat composer, showing it if scrolling hid it.', default: 'Ctrl+KeyL' },
   // Browsers keep ⌘L / Ctrl+L (address bar) for themselves.
   addToChat: { group: 'Chat', label: 'Add Selection to Chat', description: 'Insert the selected lines of a file or diff into the chat composer as path:start-end.', default: isMac ? 'Ctrl+KeyL' : 'Alt+KeyL' },
+  // Alt like Choose Model. Shift added to it ends the range, so bind it without Shift.
+  shareFromHere: { group: 'Chat', label: 'Share From Here', description: 'In a group chat, share the room from the message across the middle of the chat with the agents your message adds, or add the default agent. With Shift, or a Shift-click on the Share From Here button of a message, end the shared range at that message.', default: 'Alt+KeyS' },
 
   // Git
   // VS Code's Source Control binding; H for history.

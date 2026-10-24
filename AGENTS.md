@@ -3,7 +3,7 @@
 ### Working rules
 1. One task → one feature folder under `src/features/`. Add files freely inside it. Two concurrent agents never get
    tasks in the same folder.
-2. Shared files are append-one-block: `App.tsx`, `keymap.ts`, `store.ts`, `daemon.ts`, `git.ts`, `styles/*.css`,
+2. Shared files are append-one-block: `App.tsx`, `keymap.ts`, `store.ts`, `daemon.ts`, `git.ts`, `rooms.ts`, `styles/*.css`,
    `index.css`, `.dependency-cruiser.cjs`. Insert inside your feature's existing group; never reorder or reformat. More than one block in shared
    files → do it in a serial step after the parallel work merges.
 3. A feature's shortcuts are handled in the feature's component with its own `window` `keydown` listener (as
@@ -22,28 +22,31 @@
    of 75+ tokens (about 8 lines): import the original or move it to a shared module instead of copying it.
    `depcruise` (`.dependency-cruiser.cjs`) enforces the import rules: a feature imports another only if `FEATURE_DEPS`
    lists it; `src/*.ts` and `src/components/` never import a feature (only `App.tsx` composes them); our CSS loads only
-   through `index.css`; `src/` imports no Node built-ins outside tests; `src/` and `paseo-plugin/` never import each other.
+   through `index.css`; `src/` imports no Node built-ins outside tests; `src/` and the daemon plugins (`paseo-plugin/`,
+   `rooms-plugin/`) never import each other.
 6. No two modules in one folder may differ only in case (`review.ts` + `Review.tsx`): on macOS `./Review` resolves
    to `review.ts`. `scripts/check-case.mjs` checks this.
 
 ### Feature map
 | Feature | Folder | Shared touch points it may need |
 |---|---|---|
-| Sidebar (projects, workspaces, agents rows, drag order, pin, read/unread, pull/push) | `features/sidebar/` | `store.ts` (actions), `keymap.ts` |
+| Sidebar (projects, workspaces, agents rows, drag order, pin, read/unread, pull/push; a room's members nest under its lead, `roomTree.ts`) | `features/sidebar/` | `store.ts` (actions), `keymap.ts`, `rooms/members` |
 | Hosts (add/remove daemons, host menu) | `features/hosts/` | `store.ts` (`addHost`…), `settings/HostSection.tsx` |
-| Chat (timeline, composer, permissions, attachments, usage meter, import session) | `features/chat/` | `store.ts` (`rememberAgent`), `keymap.ts`, `components/Pick` |
+| Chat (timeline, composer, permissions, attachments, usage meter, import session; a lead's chat is its room view: `@` mentions, joining chips, Direct Message lock, Share From Here) | `features/chat/` | `store.ts` (`rememberAgent`, `profiles`), `keymap.ts` (`shareFromHere`), `components/Pick`, `rooms.ts`, `features/rooms/` |
 | Changes (diff view, staging, commit dialog, discard/restore) | `features/changes/` | `git.ts`, `paseo-plugin/`, `keymap.ts` |
 | Review comments (threads, editor, Add Comment, selection refs) | `features/review/` | markup contract below; `Composer` sends them |
 | Git graph / file history / commit details | `features/git-graph/` | `git.ts`, `changes/Stat`, `changes.css` row styles |
 | Files (tree, file view, open in editor) | `features/files/` | markup contract below |
 | Terminals | `features/terminal/` | `keymap.ts` (`appKey` passes app shortcuts through xterm automatically) |
-| Settings | `features/settings/` | `keymap.ts` (`SHORTCUT_GROUPS`), `notifications.ts` |
+| Settings (incl. Profiles: the daemon's `agentProfiles`) | `features/settings/` | `keymap.ts` (`SHORTCUT_GROUPS`), `notifications.ts`, `store.ts` (`setProfiles`), `daemon.ts` (`AgentProfile`), `rooms/handles` |
 | Command palette | `features/palette/` | `keymap.ts` (`HIDDEN` list) |
-| Tabs / panel layout | `features/tabs/` + `App.tsx` | — |
+| Tabs / panel layout (a room's members hide behind its lead's tab; closing a lead closes the room) | `features/tabs/` + `App.tsx` | `rooms/members` |
 | Update banner (new deploy cached by the service worker in `vite.config.ts`) | `features/update/` | — |
 | List search (`/` in the sidebar, file panel or an open menu: type to jump to a matching row) | `features/list-search/` | `keymap.ts` (`listSearch`), markup contract below; the git graph sends `/` to its own search box |
 | Artifacts panel (lists the workspace's `artifact`/`mermaid` blocks, a click opens the chat at one; fences, prompt and iframe in `src/artifact.ts`, `components/Artifact`) | `features/artifacts/` | `chat/useTimeline`, `chat/Chat` (`reveal`), `tabs/Panel.tsx`, `App.tsx` |
-| Git daemon plugin | `paseo-plugin/` | `git.ts` is its only client (oxlint fails on `invokePluginRpc` anywhere else); its zod schemas are the source of truth for the types |
+| Git daemon plugin | `paseo-plugin/` | `git.ts` is its only client (oxlint fails on `invokePluginRpc` anywhere but `git.ts` and `rooms.ts`); its zod schemas are the source of truth for the types |
+| Group chats (rooms): handles, mention parser, membership labels, room view merge (`mergeRoom`), `JoinChip`, `MemberBar`. Design and Contract: `doc/multi-agent-chat.md` | `features/rooms/` | `rooms.ts`, `store.ts` (`profiles`); `FEATURE_DEPS` lets chat, settings, sidebar and tabs import it, `App.tsx` too |
+| Rooms daemon plugin `mypaseo-rooms` (routes room posts into members' sessions, digests, loop guard, room log) | `rooms-plugin/` | `rooms.ts` is its only client, as `git.ts` is for `paseo-plugin/`; its zod schemas in `index.server.ts` are the source of truth for the types. Modules sit in `server/` (the daemon's plugin build refuses others); `server/route.ts` copies the mention parser of `rooms/mentions.ts`: keep both passing the Contract's table |
 
 Shared leaves live in `src/components/` (`ProviderIcon`, `Markdown`, `Code`, `Pick`, `icons`, `menu`); shared modules
 stay flat in `src/`.
@@ -69,12 +72,12 @@ stay flat in `src/`.
 | `.sidebar`, `.panel` | `sidebar/Sidebar.tsx`, `tabs/Panel.tsx` | `swipe.ts` |
 | `[data-swipe]` on a row that swipes to show its actions (`.swipe-actions`) | `sidebar/WorkspaceRow.tsx` (`sidebar/rowSwipe.ts`) | `swipe.ts` (starts no pane drag on it) |
 | `.selection-action` | `review/SelectionAction.tsx` | itself (hover keep-alive) |
-| `[data-item]` (its timeline index) on each timeline item's root (a `details.work` run of tool calls and thoughts carries its first item's, and holds theirs), `iframe[srcdoc]` | `chat/Timeline.tsx`, `chat/WorkGroup.tsx`, `components/Artifact.tsx` | `chat/Chat.tsx` (scroll to an artifact, or to the rail's pick), `chat/Rail.tsx` (`.timeline > [data-item]`: the item across the reading line) |
+| `[data-item]` (its timeline index; in a room view, its index in the merged room, `mergeRoom`) on each timeline item's root (a `details.work` run of tool calls and thoughts carries its first item's, and holds theirs), `iframe[srcdoc]` | `chat/Timeline.tsx`, `chat/WorkGroup.tsx`, `components/Artifact.tsx` | `chat/Chat.tsx` (scroll to an artifact, or to the rail's pick), `chat/reading.ts` (`itemAcross`, `.timeline > [data-item]`: the item across the reading line, for the Rail and Share From Here) |
 | `.row[tabindex]` (`clickable`), current one `.active` or `[aria-current]`, `[aria-expanded]` on the row or its chevron, inside `.sidebar`, `.panel` | sidebar rows, `ProjectRow.tsx` (`aria-current`), `WorkspaceRow.tsx` (chevron), the panel's lists (changes, files, terminal, artifacts, git-graph) | `a11y.ts` (`focusRow`, `navigateRows`: arrow keys) |
 | Searchable items `.row[tabindex]` and `.menu > button` (menus `.menu[popover]`), each labelled by its first `.truncate` (else all its text); the box sits over `.sidebar > .tree`, `.panel > .panel-tabs + *` | sidebar rows, the panel's lists, `menu`s (`WorkspaceRow`, `ProjectRow`, `Hosts`, `Files` crumbs, `CommitDialog`, `OpenInEditor`) | `list-search/ListSearch.tsx` |
 | `.view:not([inert])` holding `.chat-foot textarea`, `.term-view textarea` or a `[tabindex="-1"]` scroller (`.changes`, `.graph`, `.file-view`) | `App.tsx`, `chat/Chat.tsx`, `terminal/Terminal.tsx`, `changes/Changes.tsx`, `git-graph/CommitGraph.tsx`, `files/Files.tsx` | `focus.ts` (`focusView`: a side pane closes, or Move Focus lands in the main area) |
 | Columns `.sidebar`, `.center`, `.panel`; their content `.sidebar > .tree`, `.panel > .panel-tabs + *`, `.view:not([inert])` | `sidebar/Sidebar.tsx`, `App.tsx`, `tabs/Panel.tsx` | `focus.ts` (`moveFocus`: Ctrl+Alt+arrows) |
-| `[role="toolbar"]` bars (`.sidebar-head`, `.sidebar-foot`, `.tabbar`, `.panel-tabs`, `.changes-toolbar`, `.graph-toolbar`, `.file-path`), open tab `.tab.on`, `.panel-tab.on`, menus `.menu` skipped | `sidebar/Sidebar.tsx`, `tabs/TabBar.tsx`, `tabs/Panel.tsx`, `changes/Changes.tsx`, `git-graph/CommitGraph.tsx`, `files/Files.tsx` | `a11y.ts` (`navigateBars`: left/right, `focusBar`), `focus.ts` (`moveFocus`) |
+| `[role="toolbar"]` bars (`.sidebar-head`, `.sidebar-foot`, `.tabbar`, `.panel-tabs`, `.changes-toolbar`, `.graph-toolbar`, `.file-path`, `.member-bar`), open tab `.tab.on`, `.panel-tab.on`, menus `.menu` skipped | `sidebar/Sidebar.tsx`, `tabs/TabBar.tsx`, `tabs/Panel.tsx`, `changes/Changes.tsx`, `git-graph/CommitGraph.tsx`, `files/Files.tsx`, `rooms/MemberBar.tsx` | `a11y.ts` (`navigateBars`: left/right, `focusBar`), `focus.ts` (`moveFocus`) |
 
 ### CSS ↔ TS constants (keep in sync; the TS comment names the CSS rule)
 - `changes/Changes.tsx` `HEADERS = 72` = `.changes-toolbar` 38px + `.excerpt-head` 34px

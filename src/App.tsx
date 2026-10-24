@@ -14,7 +14,9 @@ import { FileView } from './features/files/Files'
 import { ImportSession } from './features/chat/ImportSession'
 import { ListSearch } from './features/list-search/ListSearch'
 import { Settings, type Section } from './features/settings/Settings'
+import { isLead, roomMembers } from './features/rooms/members'
 import { Sidebar, type Selection } from './features/sidebar/Sidebar'
+import { roomTree } from './features/sidebar/roomTree'
 import { TerminalView } from './features/terminal/Terminal'
 import { UpdateBanner } from './features/update/UpdateBanner'
 import { errorText, type Agent, type Workspace } from './daemon'
@@ -92,8 +94,9 @@ export default function App() {
     setBack(s.agentId ? undefined : sel.agentId ? sel : back)
     localStorage.mypaseoSelection = JSON.stringify(s)
   }
+  // The newest top-level agent, as the sidebar's workspace row: a room opens at its lead, not a member.
   const openWorkspace = (w: Workspace) =>
-    select({ projectId: w.projectId, workspaceId: w.id, agentId: agents.filter((a) => a.workspaceId === w.id).sort(byRecent)[0]?.id })
+    select({ projectId: w.projectId, workspaceId: w.id, agentId: roomTree(agents.filter((a) => a.workspaceId === w.id).sort(byRecent))[0]?.agent.id })
   const [activeOnly, setActiveOnly] = useState(() => localStorage.mypaseoActiveOnly === 'true')
   const listed = () => sidebarWorkspaces(projects, workspaces, agents, pinned, activeOnly, sel.workspaceId)
   /** Archives or removes a workspace; if it was selected, selects the one above it in the sidebar. */
@@ -105,13 +108,18 @@ export default function App() {
     if (near) openWorkspace(near)
     else select({ projectId: w.projectId })
   }
-  /** Archives an agent; if it was selected, selects the next one in its workspace (or the composer). */
+  /**
+   * Archives an agent, or, once confirmed, a room's lead and every member: closing the lead closes the room. If the
+   * selected agent goes, selects the next one left in its workspace (or the composer).
+   */
   const closeAgent = async (a: Agent) => {
+    const closing = isLead(a) ? roomMembers(agents, a.id) : [a]
+    if (closing.length > 1 && !confirm(`Close the room? Its ${closing.length} agents are archived.`)) return
     const list = agents.filter((x) => x.workspaceId === a.workspaceId).sort(byRecent)
     const i = list.findIndex((x) => x.id === a.id)
-    const near = list[i + 1] ?? list[i - 1]
-    if (!(await archiveAgent(a)) || sel.agentId !== a.id) return
-    select({ ...sel, agentId: near?.id })
+    const near = [...list.slice(i + 1), ...list.slice(0, i).reverse()].find((x) => !closing.includes(x))
+    const closed = await Promise.all(closing.map(archiveAgent))
+    if (closing.some((x, k) => closed[k] && x.id === sel.agentId)) select({ ...sel, agentId: near?.id })
   }
   const workspace = workspaces.find((w) => w.id === sel.workspaceId)
   const project = projects.find((p) => p.projectId === (workspace?.projectId ?? sel.projectId))

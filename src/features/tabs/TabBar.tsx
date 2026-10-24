@@ -4,6 +4,7 @@ import { GitGraphIcon } from '../../components/icons'
 import { OpenInEditor } from '../files/OpenInEditor'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import type { Agent } from '../../daemon'
+import { handleOf, isLead, roomId } from '../rooms/members'
 import { formatCombo, useShortcut } from '../../keymap'
 import { totals, type DiffState } from '../changes/useCheckoutDiff'
 import type { useTerminals } from '../terminal/useTerminals'
@@ -37,14 +38,16 @@ export function TabBar({
   const closeAgentKey = useShortcut('closeAgent')
   const t = totals(diff.files)
   const slide = useSlide(tab === 'chat' ? `chat:${agent?.id}` : tab)
+  // A room's other members show in its lead's chat: only the open one keeps a tab, named by its handle if untitled.
+  const shown = chatTabs.filter((a) => !a || a === agent || isLead(a) || !chatTabs.some((x) => x && x.id === roomId(a)))
   return (
     <div className="tabbar" role="toolbar" aria-label="Tabs">
       {/* On phones, a popover listing every tab (the bar shows only the open one); picking one closes it. */}
       <div ref={slide} className="tabs" id="tab-list" popover="auto" onClick={(e) => e.currentTarget.hidePopover()}>
-        {chatTabs.map((a) => (
+        {shown.map((a) => (
           <div key={a?.id ?? 'new'} className={`tab agent-tab ${tab === 'chat' && a === agent ? 'on' : ''}`} {...clickable(() => onOpenChat(a))}>
             <ProviderIcon provider={a ? a.provider : draftProvider} size={13} />
-            <span className="truncate">{a ? a.title || 'Agent' : 'New agent'}</span>
+            <span className="truncate">{a ? a.title || (roomId(a) ? `@${handleOf(a, [])}` : 'Agent') : 'New agent'}</span>
             {a && (
               <button
                 className="tab-close hover-swap"

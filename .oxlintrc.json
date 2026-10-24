@@ -6,8 +6,8 @@
     "react/only-export-components": ["warn", { "allowConstantExport": true }],
     "no-restricted-properties": [
       "error",
-      { "property": "invokePluginRpc", "message": "Call the mypaseo-git plugin through src/git.ts, its only client." }
+      { "property": "invokePluginRpc", "message": "Call a daemon plugin through its only client: src/git.ts (mypaseo-git) or src/rooms.ts (mypaseo-rooms)." }
     ]
   },
-  "overrides": [{ "files": ["src/git.ts"], "rules": { "no-restricted-properties": "off" } }]
+  "overrides": [{ "files": ["src/git.ts", "src/rooms.ts"], "rules": { "no-restricted-properties": "off" } }]
 }

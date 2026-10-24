@@ -4,7 +4,7 @@ Custom web UI for [Paseo](https://github.com/getpaseo/paseo). The backend is the
 (`@getpaseo/cli`); the UI talks to it over WebSocket with the official SDK (`@getpaseo/client`).
 
 Features: project → workspace → agent sidebar (drag projects, or Alt+↑/↓ on one, to reorder), agent chat (streaming timeline, permissions, model/mode/thinking
-pickers), workspace terminals (xterm.js tabs, like Paseo desktop's), file browser, Zed-style multibuffer of uncommitted /
+pickers), group chats of several agents (below), workspace terminals (xterm.js tabs, like Paseo desktop's), file browser, Zed-style multibuffer of uncommitted /
 branch changes, and settings for daemon + providers. Scratches (New Scratch in the sidebar head) are workspaces outside your projects:
 each gets a fresh folder in `~/.paseo/scratches`, which the daemon lists as one project, since it ties every workspace to one.
 
@@ -12,7 +12,7 @@ each gets a fresh folder in `~/.paseo/scratches`, which the daemon lists as one 
 npm install
 npm run daemon   # official daemon, foreground, uses ~/.paseo (skip if Paseo desktop is already running)
 npm run dev      # Vite on :5173, proxies /ws -> 127.0.0.1:6767
-npm test         # node:test unit tests (src/**/*.test.ts)
+npm test         # node:test unit tests (src/**/*.test.ts, rooms-plugin/**/*.test.ts)
 npm run check    # tsc, oxlint, knip (unused code, circular imports), jscpd (copy-paste), depcruise (import rules), file-name case, tests
 ```
 
@@ -35,6 +35,35 @@ Hosts: the sidebar's server button lists daemons with their status; Add Host con
 `ws(s)://…`), and their projects merge into the sidebar. The browser connects to each directly, so a remote daemon
 must listen on a reachable address (`PASEO_LISTEN`) and allow this UI's origin (`PASEO_CORS_ORIGINS` or
 `daemon.cors.allowedOrigins`). Hosts and their passwords are saved in this browser's localStorage.
+
+## Group chats
+
+Mention an agent in a chat (`@` lists them) and it joins: the chat becomes a room of agents in one workspace, each in
+its own provider session. `@agent` is the default agent (Settings → General); the others are profiles from Settings →
+Profiles (provider, model, thinking, and a role the agent gets in a room), the same list Paseo desktop shows. A
+message without a mention goes to every member, one with mentions only to those. An agent hands work on by mentioning
+another; a reply without a mention is for you. After 6 hand-offs per message of yours the room pauses until you press
+Continue. A joining agent sees only what you share: its chip's Context is None, the room from a message on (Share From
+Here, Alt+S), the whole room, or a fork of another member's session. The sidebar nests members under the first agent,
+the lead, whose chat shows the room; closing the lead archives them all.
+
+Rooms need the `mypaseo-rooms` daemon plugin in [rooms-plugin/](rooms-plugin/) (its only client is `src/rooms.ts`).
+It routes the messages, so a room keeps going with the browser closed, and keeps each room's log in
+`~/.paseo/mypaseo-rooms/`. Without it, single chats work as before and adding a second agent fails with a pointer
+here. Install it like `mypaseo-git`, with plugins enabled:
+
+```bash
+npx paseo plugin install github:maksimr/mypaseo:rooms-plugin   # later: npx paseo plugin update mypaseo-rooms
+```
+
+To work on it, install this checkout instead: `npx paseo plugin install ./rooms-plugin`, then
+`npx paseo plugin reload mypaseo-rooms` after each edit. Its rules (labels, deliveries, RPCs) are the Contract in
+[doc/multi-agent-chat.md](doc/multi-agent-chat.md).
+
+Direct Message (the lock left of Send, needs a mention) sends only to the mentioned members, and their replies stay
+private: the plugin ignores their mentions and never sends them to the other members. That hides the conversation from
+the routing, not from the agents. Members share the workspace's files, and with Paseo Tools for
+Agents on (Settings → General) an agent can read any other agent's session.
 
 ## GitHub Pages
 

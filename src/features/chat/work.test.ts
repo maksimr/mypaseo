@@ -16,6 +16,14 @@ test('groups the runs of tool calls and thoughts between the other items', () =>
   )
 })
 
+test('in a room, a run of steps splits where its author changes', () => {
+  const by = ['a', 'a', 'b', 'b']
+  assert.deepEqual(
+    rows([thought, tool({ type: 'shell', command: 'ls' }), thought, thought], (i) => by[i]).map((r) => ('steps' in r ? [r.index, r.steps.length] : r.index)),
+    [[0, 2], [2, 2]],
+  )
+})
+
 test('says what the last step is doing', () => {
   assert.equal(doing(tool({ type: 'read', filePath: '/a/b/models.py' }, 'running')), 'Reading models.py')
   assert.equal(doing(tool({ type: 'shell', command: 'npm test\necho done' })), 'Running npm test')
