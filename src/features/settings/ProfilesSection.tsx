@@ -5,7 +5,7 @@ import { ProviderIcon } from '../../components/ProviderIcon'
 import type { AgentProfile, ProviderEntry } from '../../daemon'
 import { modelOptions } from '../../modelOptions'
 import { setProfiles, useHost, useHostId } from '../../store'
-import { COLORS, colorVar } from '../rooms/colors'
+import { COLORS, colorVar, isCustom } from '../rooms/colors'
 import { slug } from '../rooms/handles'
 import { handleError } from './profiles'
 import { matches, type SectionProps } from './section'
@@ -166,22 +166,35 @@ function ProfileEditor({
         <div id={colorLabel} className="field-label">
           Color
         </div>
-        <div className="profile-colors" role="radiogroup" aria-labelledby={colorLabel}>
-          {['', ...COLORS].map((c) => {
-            const label = c ? c[0].toUpperCase() + c.slice(1) : 'No Color'
-            return (
-              <input
-                key={c}
-                type="radio"
-                name="profileColor"
-                title={label}
-                aria-label={label}
-                style={c ? { background: colorVar(c) } : undefined}
-                checked={c ? d.color === c : !colorVar(d.color)}
-                onChange={() => set({ color: c || undefined })}
-              />
-            )
-          })}
+        <div className="profile-colors">
+          <div role="radiogroup" aria-labelledby={colorLabel}>
+            {['', ...COLORS].map((c) => {
+              const label = c ? c[0].toUpperCase() + c.slice(1) : 'No Color'
+              return (
+                <input
+                  key={c}
+                  type="radio"
+                  name="profileColor"
+                  className={c ? undefined : 'no-color'}
+                  title={label}
+                  aria-label={label}
+                  style={c ? { background: colorVar(c) } : undefined}
+                  checked={c ? d.color === c : !colorVar(d.color)}
+                  onChange={() => set({ color: c || undefined })}
+                />
+              )
+            })}
+          </div>
+          {/* A click picks the custom color shown, then the picker changes it. */}
+          <input
+            type="color"
+            className={isCustom(d.color) ? 'custom on' : 'custom'}
+            title="Custom Color"
+            aria-label="Custom Color"
+            value={isCustom(d.color) ? d.color : '#808080'}
+            onClick={(e) => set({ color: e.currentTarget.value })}
+            onChange={(e) => set({ color: e.target.value })}
+          />
         </div>
       </div>
       <label className="field">

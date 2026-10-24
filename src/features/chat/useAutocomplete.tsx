@@ -3,6 +3,7 @@ import { useEffect, useId, useState, type KeyboardEvent, type RefObject } from '
 import { activeTrigger, completion, rankCommands } from './autocomplete'
 import { errorText, type DraftConfig, type SlashCommand } from '../../daemon'
 import { useDaemon } from '../../store'
+import { comboOf } from '../../keymap'
 import { ProviderIcon } from '../../components/ProviderIcon'
 
 type Option = { id: string; label: string; value: string; kind: 'command' | 'file' | 'directory' | 'agent'; hint?: string; description?: string; provider?: string }
@@ -112,14 +113,18 @@ export function useAutocomplete({
   /** Handles the key if the popup uses it. */
   const onKeyDown = (e: KeyboardEvent): boolean => {
     if (!open || !trigger) return false
+    // Ctrl+N/P like Emacs and Zed; physical keys, like the keymap.
+    // The list renders bottom-up, best match next to the input: up is the next option.
+    const keys = comboOf(e)
+    const step = keys === 'ArrowUp' || keys === 'Ctrl+KeyP' ? 1 : keys === 'ArrowDown' || keys === 'Ctrl+KeyN' ? -1 : 0
     if (e.key === 'Escape') setClosedAt(trigger.start)
-    else if (!options.length || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return false
-    // The list renders bottom-up, best match next to the input.
-    else if (e.key === 'ArrowUp' || e.key === 'ArrowDown')
-      setSel({ key: selKey, i: (selected + (e.key === 'ArrowUp' ? 1 : options.length - 1)) % options.length })
+    else if (!options.length) return false
+    else if (step) setSel({ key: selKey, i: (selected + step + options.length) % options.length })
+    else if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return false
     else if (e.key === 'Enter' || e.key === 'Tab') pick(options[selected])
     else return false
     e.preventDefault()
+    e.stopPropagation() // keeps app shortcuts on the same keys (Ctrl+N: New Workspace on Mac) from running too
     return true
   }
 

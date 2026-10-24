@@ -283,10 +283,13 @@
   border-radius: 50%;
   vertical-align: 1px;
 }
-.profile-colors {
+.profile-colors,
+.profile-colors > [role='radiogroup'] {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+.profile-colors {
   padding: 3px;
 }
 .profile-colors input {
@@ -294,15 +297,53 @@
   width: 18px;
   height: 18px;
   margin: 0;
+  padding: 0;
+  border: 0;
   border-radius: 50%;
   box-shadow: inset 0 0 0 1px var(--swatch-ring);
   cursor: pointer;
+  forced-color-adjust: none; /* the swatch is the information */
 }
 /* No Color: a ring struck through */
-.profile-colors input:not([style]) {
+.profile-colors .no-color {
   background: linear-gradient(to top right, transparent 45%, var(--swatch-ring) 45% 55%, transparent 55%);
 }
-.profile-colors input:checked {
+/* Custom Color: a ring of the named colors, its color inside once picked */
+.profile-colors .custom {
+  padding: 4px;
+  background: conic-gradient(
+    var(--identity-red),
+    var(--identity-orange),
+    var(--identity-amber),
+    var(--identity-emerald),
+    var(--identity-teal),
+    var(--identity-sky),
+    var(--identity-blue),
+    var(--identity-indigo),
+    var(--identity-violet),
+    var(--identity-pink),
+    var(--identity-red)
+  );
+}
+.profile-colors .custom::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.profile-colors .custom::-webkit-color-swatch {
+  border: 0;
+  border-radius: 50%;
+}
+.profile-colors .custom::-moz-color-swatch {
+  border: 0;
+  border-radius: 50%;
+}
+.profile-colors .custom:not(.on)::-webkit-color-swatch {
+  visibility: hidden;
+}
+.profile-colors .custom:not(.on)::-moz-color-swatch {
+  visibility: hidden;
+}
+.profile-colors input:checked,
+.profile-colors .custom.on {
   box-shadow:
     inset 0 0 0 1px var(--swatch-ring),
     0 0 0 2px var(--bg),

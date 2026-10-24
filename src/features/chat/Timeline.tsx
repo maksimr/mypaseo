@@ -111,7 +111,7 @@ export function Timeline({
           <div key={who.key} className="msg-run">
             {author && (
               <div className="msg-author">
-                <ProviderIcon provider={author.agent.provider} size={13} />
+                <ProviderIcon provider={author.agent.provider} size={13} color={author.color} />
                 <span style={{ color: author.color }}>@{author.handle}</span>
                 {who.private && <> · <Direct /></>}
               </div>

@@ -25,8 +25,10 @@ test('handleOf: the label, else the profile slug, else agent', () => {
   assert.equal(handleOf(elsewhere, profiles), 'agent')
 })
 
-test("colorOf: its profile's known color, else none", () => {
+test("colorOf: its profile's color name or #rrggbb, else none", () => {
   assert.equal(colorOf(reviewer, [{ id: 'p1', color: 'teal' }]), 'var(--identity-teal)')
+  assert.equal(colorOf(reviewer, [{ id: 'p1', color: '#12abEF' }]), '#12abEF')
+  assert.equal(colorOf(reviewer, [{ id: 'p1', color: 'lime' }]), undefined)
   assert.equal(colorOf(reviewer, [{ id: 'p1', color: 'none' }]), undefined)
   assert.equal(colorOf(reviewer, [{ id: 'p1' }]), undefined)
   assert.equal(colorOf(lead, [{ id: 'p1', color: 'teal' }]), undefined)

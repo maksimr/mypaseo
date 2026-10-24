@@ -53,11 +53,11 @@ const ICONS: Record<string, { viewBox: string; fillRule?: 'nonzero'; paths: { d:
 }
 
 /** Brand icon for a builtin provider; Bot for anything else. Renders a single <svg> so `.pick svg:first-child` positions it. */
-export function ProviderIcon({ provider, size = 14 }: { provider: string | undefined; size?: number }) {
+export function ProviderIcon({ provider, size = 14, color }: { provider: string | undefined; size?: number; color?: string }) {
   const icon = provider ? ICONS[provider] : undefined
-  if (!icon) return <Bot size={size} />
+  if (!icon) return <Bot size={size} color={color} />
   return (
-    <svg width={size} height={size} viewBox={icon.viewBox} fill="currentColor" fillRule={icon.fillRule ?? 'evenodd'} aria-hidden="true">
+    <svg width={size} height={size} viewBox={icon.viewBox} fill={color ?? 'currentColor'} fillRule={icon.fillRule ?? 'evenodd'} aria-hidden="true">
       {icon.paths.map((p) => (
         <path key={p.d} d={p.d} opacity={p.opacity} />
       ))}
