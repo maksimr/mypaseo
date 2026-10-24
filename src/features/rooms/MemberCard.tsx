@@ -50,10 +50,10 @@ export function MemberCard({ members }: { members: { agent: Agent; handle: strin
         const model = a.runtimeInfo?.model ?? a.model ?? undefined
         const levels = models.find((m) => m.id === model)?.thinkingOptions ?? []
         return (
-          <div key={a.id} role="group" aria-label={`@${handle}`}>
-            <div className="member-line">
-              <ProviderIcon provider={a.provider} size={13} />
-              <span className="member-handle truncate grow">@{handle}</span>
+          <div key={a.id} className="member-line" role="group" aria-label={`@${handle}`}>
+            <ProviderIcon provider={a.provider} size={13} />
+            <span className="member-name">
+              <span className="member-handle truncate">@{handle}</span>
               {/* As the sidebar's StatusMark. */}
               {a.pendingPermissions.length > 0 ? (
                 <ShieldQuestion size={13} color="var(--yellow)" aria-label="Needs your action" />
@@ -62,31 +62,29 @@ export function MemberCard({ members }: { members: { agent: Agent; handle: strin
               ) : a.status === 'error' ? (
                 <span className="dot failed" title={a.lastError ?? 'Error'} />
               ) : null}
-              {i > 0 && (
-                <button
-                  className="icon-btn"
-                  title="Remove"
-                  aria-label={`Remove @${handle}`}
-                  onClick={() => confirm(`Remove @${handle} from the room? Its agent is archived.`) && void archiveAgent(a)}
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-            <div className="member-picks">
-              {models.length > 0 && (
-                <Pick icon={<Sparkles size={14} />} value={model} onChange={(v) => report(daemon.setAgentModel(a.id, v))} options={modelOptions(models)} title="Model" />
-              )}
-              {levels.length > 0 && (
-                <Pick
-                  icon={<Brain size={14} />}
-                  value={a.thinkingOptionId ?? a.effectiveThinkingOptionId ?? undefined}
-                  onChange={(v) => report(daemon.setAgentThinkingOption(a.id, v))}
-                  options={levels.map((o) => [o.id, o.label])}
-                  title="Thinking"
-                />
-              )}
-            </div>
+            </span>
+            {models.length > 0 && (
+              <Pick icon={<Sparkles size={14} />} value={model} onChange={(v) => report(daemon.setAgentModel(a.id, v))} options={modelOptions(models)} title="Model" />
+            )}
+            {levels.length > 0 && (
+              <Pick
+                icon={<Brain size={14} />}
+                value={a.thinkingOptionId ?? a.effectiveThinkingOptionId ?? undefined}
+                onChange={(v) => report(daemon.setAgentThinkingOption(a.id, v))}
+                options={levels.map((o) => [o.id, o.label])}
+                title="Thinking"
+              />
+            )}
+            {i > 0 && (
+              <button
+                className="icon-btn"
+                title="Remove"
+                aria-label={`Remove @${handle}`}
+                onClick={() => confirm(`Remove @${handle} from the room? Its agent is archived.`) && void archiveAgent(a)}
+              >
+                <X size={13} />
+              </button>
+            )}
           </div>
         )
       })}
