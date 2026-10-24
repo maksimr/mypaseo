@@ -19,3 +19,9 @@ export function applyStreamItem(items: TimelineItem[], item: TimelineItem): Time
     return items
   return [...items, item]
 }
+
+export type Entry = { item: TimelineItem; timestamp: string }
+
+/** applyStreamItem on entries: an entry it adds or changes takes the event's time, as the daemon stamps fetched ones. */
+export const applyEntry = (entries: Entry[], { item, timestamp }: Entry) =>
+  applyStreamItem(entries.map((e) => e.item), item).map((it, i) => (it === entries[i]?.item ? entries[i] : { item: it, timestamp }))

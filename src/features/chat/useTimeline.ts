@@ -1,29 +1,31 @@
 import { useEffect, useState } from 'react'
 import { errorText, type TimelineItem } from '../../daemon'
 import { useDaemon } from '../../store'
-import { applyStreamItem } from './streamItems'
+import { applyEntry, type Entry } from './streamItems'
 
-/** partial: only the first, tail page is in yet. */
-type Timeline = { items: TimelineItem[]; loading: boolean; error: string | null; partial?: boolean }
+/** partial: only the first, tail page is in yet. times[i]: when items[i] was stamped (a streamed one: its last chunk). */
+type Timeline = { items: TimelineItem[]; times: string[]; loading: boolean; error: string | null; partial?: boolean }
+
+const split = (entries: Entry[]) => ({ items: entries.map((e) => e.item), times: entries.map((e) => e.timestamp) })
 
 export function useTimeline(agentId: string | null) {
   const daemon = useDaemon()
   // Callers remount per agent (key), so initial state never needs resetting.
-  const [tl, setTl] = useState<Timeline>({ items: [], loading: !!agentId, error: null })
+  const [tl, setTl] = useState<Timeline>({ items: [], times: [], loading: !!agentId, error: null })
 
   useEffect(() => {
     if (!agentId) return
     let alive = true
-    let items: TimelineItem[] = []
+    let entries: Entry[] = []
     let lastSeq = 0
     let fetching = true
-    let buffered: { seq?: number; item: TimelineItem }[] = []
+    let buffered: (Entry & { seq?: number })[] = []
 
-    const apply = (seq: number | undefined, item: TimelineItem) => {
+    const apply = ({ seq, ...e }: Entry & { seq?: number }) => {
       // Events already covered by the fetched page carry seq <= lastSeq.
       if (seq !== undefined && seq <= lastSeq) return
       if (seq !== undefined) lastSeq = seq
-      items = applyStreamItem(items, item)
+      entries = applyEntry(entries, e)
     }
 
     const load = async () => {
@@ -31,21 +33,21 @@ export function useTimeline(agentId: string | null) {
       const opts = { direction: 'tail', projection: 'projected' } as const
       // First load: the last 10 entries arrive well before a long timeline, so show them until it does.
       // Sent first so the daemon answers it first. Stream events stay buffered for the full page.
-      if (!items.length)
+      if (!entries.length)
         daemon.fetchAgentTimeline(agentId, { ...opts, limit: 10 }).then(
-          (page) => alive && fetching && setTl({ items: page.entries.map((e) => e.item), loading: false, error: null, partial: true }),
+          (page) => alive && fetching && setTl({ ...split(page.entries), loading: false, error: null, partial: true }),
           () => {},
         )
       try {
         // limit 0 = the whole timeline.
         const page = await daemon.fetchAgentTimeline(agentId, { ...opts, limit: 0 })
         if (!alive) return
-        items = page.entries.map((e) => e.item)
+        entries = page.entries.map(({ item, timestamp }) => ({ item, timestamp }))
         lastSeq = page.endCursor?.seq ?? 0
         fetching = false
-        buffered.forEach((b) => apply(b.seq, b.item))
+        buffered.forEach(apply)
         buffered = []
-        setTl({ items, loading: false, error: null })
+        setTl({ ...split(entries), loading: false, error: null })
       } catch (e) {
         fetching = false
         if (alive) setTl((t) => ({ ...t, loading: false, error: errorText(e) }))
@@ -54,12 +56,12 @@ export function useTimeline(agentId: string | null) {
 
     const sub = daemon.subscribeAgentTimeline(agentId, (m) => {
       if (m.type !== 'agent_stream') return void load() // replacement / restored after reconnect / error
-      const { event, seq } = m.payload
+      const { event, seq, timestamp } = m.payload
       if (event.type !== 'timeline') return
-      if (fetching) buffered.push({ seq, item: event.item })
+      if (fetching) buffered.push({ seq, item: event.item, timestamp })
       else {
-        apply(seq, event.item)
-        setTl((t) => ({ ...t, items }))
+        apply({ seq, item: event.item, timestamp })
+        setTl((t) => ({ ...t, ...split(entries) }))
       }
     })
     sub.ready.then(load, load)

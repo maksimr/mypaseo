@@ -8,9 +8,8 @@ import { ProviderIcon } from '../../components/ProviderIcon'
 import type { Agent, TimelineItem } from '../../daemon'
 import { isShortcut } from '../../keymap'
 import type { ReviewComment } from '../review/review'
-import type { RoomItem } from '../rooms/roomView'
 import { MemberCard } from '../rooms/MemberCard'
-import { handleOf, isLead, roomMembers } from '../rooms/members'
+import { handleOf, isLead, roomId, roomMembers } from '../rooms/members'
 import { isScratch, keptUnread, useDaemon, useHost } from '../../store'
 import { useRoomTimeline } from './useRoomTimeline'
 import { useTimeline } from './useTimeline'
@@ -19,7 +18,7 @@ import { Composer } from './Composer'
 import { PermissionCard } from './PermissionCard'
 import { Rail } from './Rail'
 import { itemAcross, readingLine } from './reading'
-import { markOf, shareable, type Mark } from './share'
+import { ownMarks, roomMarks, type Mark } from './share'
 import type { Target } from './target'
 
 /** Whether the user is writing in the composer: it has focus and unsent text. */
@@ -126,25 +125,32 @@ export function Chat({
   }, [active])
   // Share From Here: the composer sets its joining chips' context from the message, so it shows to take them.
   const [share, setShare] = useState<{ mark: Mark; end: boolean }>()
-  const shareFrom = (r: RoomItem, end: boolean) => {
-    setShare({ mark: markOf(r), end })
+  const shareFrom = (mark: Mark, end: boolean) => {
+    setShare({ mark, end })
     showComposer()
   }
-  // Its shortcut takes the room message across the reading line, or the last one before it; with Shift, the end.
+  // It works in a room, and in a chat without one (for a fork); not in a member's own chat.
   const room = lead ? roomTl.room : undefined
+  const solo = agent && !lead && !roomId(agent) ? { id: agent.id, handle: handleOf(agent, profiles) } : undefined
+  const own = useMemo(
+    () => (solo ? ownMarks(ownTl.items, ownTl.times, solo.id, solo.handle) : undefined),
+    [solo?.id, solo?.handle, ownTl], // eslint-disable-line react-hooks/exhaustive-deps -- solo, by its fields
+  )
+  const marks = useMemo(() => (room ? roomMarks(room) : own), [room, own])
+  // Its shortcut takes the message across the reading line, or the last one before it; with Shift, the end.
   useEffect(() => {
-    if (!active || !room) return
+    if (!active || !marks) return
     const onKey = (e: KeyboardEvent) => {
       const plain = isShortcut(e, 'shareFromHere')
       if (!plain && !(e.shiftKey && isShortcut({ code: e.code, ctrlKey: e.ctrlKey, altKey: e.altKey, shiftKey: false, metaKey: e.metaKey }, 'shareFromHere'))) return
       e.preventDefault()
       const at = scroller.current && itemAcross(scroller.current)
-      const r = at == null ? undefined : room.findLast((r, i) => i <= at && shareable(r))
-      if (r) shareFrom(r, !plain)
+      const m = at == null ? undefined : marks.findLast((m, i) => i <= at && m)
+      if (m) shareFrom(m, !plain)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [active, room]) // eslint-disable-line react-hooks/exhaustive-deps -- shareFrom only sets state and focuses
+  }, [active, marks]) // eslint-disable-line react-hooks/exhaustive-deps -- shareFrom only sets state and focuses
 
   // Stick to the bottom while streaming unless the user scrolled up.
   useLayoutEffect(() => {
@@ -240,7 +246,7 @@ export function Chat({
           <>
             {tl.loading && <div className="empty">Loading…</div>}
             {tl.error && <div className="empty err">{tl.error}</div>}
-            <Timeline items={tl.items} members={named} room={room} onShare={room && shareFrom} />
+            <Timeline items={tl.items} members={named} room={room} marks={marks} onShare={shareFrom} />
           </>
         ) : (
           <div className="empty-chat">
@@ -281,6 +287,7 @@ export function Chat({
               onDraftProvider={onDraftProvider}
               onShowComment={onShowComment}
               share={share}
+              forks={own?.filter((f) => f !== undefined)}
             />
           </div>
           {/* Shown with the composer hidden too. Even empty, as for a new agent: its space stays, so the composer doesn't

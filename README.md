@@ -44,8 +44,9 @@ Profiles (provider, model, thinking, and a role the agent gets in a room), the s
 message without a mention goes to every member, one with mentions only to those. An agent hands work on by mentioning
 another; a reply without a mention is for you. After 6 hand-offs per message of yours the room pauses until you press
 Continue. A joining agent sees only what you share: its chip's Context is None, the room from a message on (Share From
-Here, Alt+S), the whole room, or a fork of another member's session. The sidebar nests members under the first agent,
-the lead, whose chat shows the room; closing the lead archives them all.
+Here, Alt+S), the whole room, or a fork of another member's session. In a chat that isn't a room yet, Context lists a
+fork of the agent's session at each of its replies, the latest first (Share From Here on a reply picks its fork). The
+sidebar nests members under the first agent, the lead, whose chat shows the room; closing the lead archives them all.
 
 Rooms need the `mypaseo-rooms` daemon plugin in [rooms-plugin/](rooms-plugin/) (its only client is `src/rooms.ts`).
 It routes the messages, so a room keeps going with the browser closed, and keeps each room's log in

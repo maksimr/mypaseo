@@ -9,7 +9,7 @@ import { JoinChip } from '../rooms/JoinChip'
 import { handleOf, roomId, roomMembers } from '../rooms/members'
 import { mentions } from '../rooms/mentions'
 import { mentionAt, unmention } from './autocomplete'
-import { contextOptions, forkEnd, hhmm, pickRange, type Mark, type Share } from './share'
+import { contextOptions, forkEnd, forkId, hhmm, pickRange, type ForkPoint, type Mark, type Share } from './share'
 import { dropImageRef, imageRef } from './imageRefs'
 import { ImageEditor, type PastedImage } from './ImageEditor'
 import { formatCombo, isShortcut, useShortcut } from '../../keymap'
@@ -88,6 +88,7 @@ export function Composer({
   onDraftProvider,
   onShowComment,
   share,
+  forks = [],
 }: {
   agent?: Agent
   target: Target
@@ -97,8 +98,10 @@ export function Composer({
   onProjectChange: (projectId: string) => void
   onDraftProvider?: (provider: string | undefined) => void
   onShowComment: (c: ReviewComment) => void
-  /** Share From Here on a room message (Chat); a new object each time. */
+  /** Share From Here on a message (Chat); a new object each time. */
   share?: { mark: Mark; end: boolean }
+  /** In a chat without a room: the messages a fork of its agent can end at, oldest first. */
+  forks?: ForkPoint[]
 }) {
   const daemon = useDaemon()
   const hostId = useHostId()
@@ -191,7 +194,7 @@ export function Composer({
     if (s) shareDrafts.set(draftKey, s)
     else shareDrafts.delete(draftKey)
   }
-  const contexts = contextOptions(shared, !!room)
+  const contexts = contextOptions(shared, !!room, forks)
   const joining = mentioned
     .flatMap((h) => candidates.filter((c) => c.handle === h))
     .map(({ profile: p, ...c }) => {
@@ -227,10 +230,10 @@ export function Composer({
   // What a joining member gets with its first delivery: the picked range, the whole room, or its author's session up to
   // the range's last message.
   const contextOf = async (id: string) => {
-    const end = forkEnd(shared)
+    const end = id === 'fork' ? forkEnd(shared) : forks.find((f) => forkId(f) === id)
     if (id === 'range' && shared) return { kind: 'range' as const, from: shared.from.at, to: shared.to?.at }
     if (id === 'all') return { kind: 'all' as const }
-    if (id === 'fork' && end?.messageId) {
+    if (end?.messageId) {
       const { attachment } = await daemon.buildAgentForkContext(end.agentId, { boundaryMessageId: end.messageId })
       const { text, contextKind } = attachment!
       return { kind: 'attachment' as const, attachment: { type: 'text' as const, mimeType: 'text/plain' as const, title: `fork of @${end.handle} up to ${hhmm(end.at)}`, text, contextKind } }
@@ -238,12 +241,14 @@ export function Composer({
     return { kind: 'none' as const }
   }
   // Share From Here: the message sets every joining chip's context, or a mention adds the default agent to take it.
+  // Without a room there are no posts to range over: a fork at the range's end.
   useEffect(() => {
     if (!share) return
+    const next = pickRange(shared, share.mark, share.end)
     // eslint-disable-next-line react/set-state-in-effect -- a hand-off from Chat, a new object per pick
-    setShared(pickRange(shared, share.mark, share.end))
+    setShared(next)
     if (!joining.length) setText(`@${defaultHandle} ${text}`)
-    for (const h of joining.length ? joining.map((j) => j.handle) : [defaultHandle]) pickJoin(h, { context: 'range' })
+    for (const h of joining.length ? joining.map((j) => j.handle) : [defaultHandle]) pickJoin(h, { context: room ? 'range' : forkId(next.to ?? next.from) })
   }, [share]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const cwd = agent?.cwd ?? target.workspace?.workspaceDirectory ?? target.rootPath

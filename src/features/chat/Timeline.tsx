@@ -9,7 +9,7 @@ import { ProviderIcon } from '../../components/ProviderIcon'
 import * as rooms from '../../rooms'
 import { useDaemon } from '../../store'
 import type { RoomItem } from '../rooms/roomView'
-import { shareable } from './share'
+import type { Mark } from './share'
 import { toolArg } from './toolArg'
 import { rows, type Row } from './work'
 import { WorkGroup } from './WorkGroup'
@@ -23,6 +23,7 @@ export function Timeline({
   items,
   members,
   room,
+  marks,
   onShare,
 }: {
   items: TimelineItem[]
@@ -31,8 +32,9 @@ export function Timeline({
   members: Member[]
   /** In a room: who wrote each item, at the same index as items. */
   room?: RoomItem[]
-  /** In a room: Share From Here on a message; `end` with Shift. */
-  onShare?: (r: RoomItem, end: boolean) => void
+  /** Share From Here: each item's mark, at the same index as items, where it works; the pick, `end` with Shift. */
+  marks?: (Mark | undefined)[]
+  onShare?: (m: Mark, end: boolean) => void
 }) {
   // Like pi's Ctrl+O (here Ctrl+" by default): expand or collapse every tool output at once.
   const [expanded, setExpanded] = useState(false)
@@ -66,14 +68,15 @@ export function Timeline({
   // What the user wrote straight into a member's chat went to that member.
   const to = (row: Row) => (room?.[row.index].author === 'user' ? `to @${byId.get(room[row.index].agentId)?.handle}` : undefined)
   const resumed = items.findLastIndex((x) => x.type === 'plugin' && x.kind === 'room.resumed')
-  const share = (i: number) => !!onShare && !!room && shareable(room[i])
+  const share = (i: number) => !!onShare && !!marks?.[i]
   return (
-    // Share From Here clicks are handled here: the memoized items take no callback, which would change with the room.
+    // Share From Here clicks are handled here: the memoized items take no callback, which would change with the marks.
     <div
       className="timeline"
       onClick={(e) => {
         const at = (e.target as Element).closest('.share-here')?.closest<HTMLElement>('[data-item]')
-        if (at && room) onShare?.(room[Number(at.dataset.item)], e.shiftKey)
+        const m = at && marks?.[Number(at.dataset.item)]
+        if (m) onShare?.(m, e.shiftKey)
       }}
     >
       {grouped.map((row, k) => {
@@ -129,7 +132,7 @@ const Direct = () => (
   </span>
 )
 
-/** Share From Here on a room message; Timeline handles its click. */
+/** Share From Here on a message; Timeline handles its click. */
 function ShareButton() {
   const key = useShortcut('shareFromHere')
   return (
