@@ -9,7 +9,7 @@ import type { Agent, TimelineItem } from '../../daemon'
 import { isShortcut } from '../../keymap'
 import type { ReviewComment } from '../review/review'
 import type { RoomItem } from '../rooms/roomView'
-import { MemberBar } from '../rooms/MemberBar'
+import { MemberCard } from '../rooms/MemberCard'
 import { handleOf, isLead, roomMembers } from '../rooms/members'
 import { isScratch, keptUnread, useDaemon, useHost } from '../../store'
 import { useRoomTimeline } from './useRoomTimeline'
@@ -217,7 +217,7 @@ export function Chat({
 
   return (
     <div className="chat">
-      {lead && <MemberBar members={named} />}
+      {lead && <MemberCard members={named} />}
       <div
         className="chat-scroll scroll-fade"
         ref={scroller}

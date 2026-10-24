@@ -4,6 +4,7 @@ import { GitGraphIcon } from '../../components/icons'
 import { OpenInEditor } from '../files/OpenInEditor'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import type { Agent } from '../../daemon'
+import { MembersToggle } from '../rooms/MemberCard'
 import { handleOf, isLead, roomId } from '../rooms/members'
 import { formatCombo, useShortcut } from '../../keymap'
 import { totals, type DiffState } from '../changes/useCheckoutDiff'
@@ -179,6 +180,7 @@ export function TabBar({
       <button className="icon-btn tab-list-btn" title="All Tabs" popoverTarget="tab-list">
         <ChevronDown size={15} />
       </button>
+      {tab === 'chat' && agent && isLead(agent) && <MembersToggle />}
       {cwd && <OpenInEditor path={cwd} />}
     </div>
   )

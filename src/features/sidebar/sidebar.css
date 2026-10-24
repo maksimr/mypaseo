@@ -153,6 +153,10 @@
   gap: 2px;
   font-size: 0.85em;
 }
+/* A room lead's chevron, in place of its 9px provider icon: shifted left so the title lines up with other agents'. */
+.room-chevron {
+  margin-left: -5px;
+}
 .tree .row .room-count svg {
   width: 1em;
   height: 1em;

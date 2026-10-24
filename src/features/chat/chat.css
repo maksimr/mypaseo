@@ -385,27 +385,44 @@
   flex: 1;
   border-top: 1px solid var(--border);
 }
-/* A room's members over its chat (rooms/MemberBar.tsx); scrolls sideways when they don't fit. */
-.member-bar {
-  flex: none;
+/* A room's members floating at the chat's top right (rooms/MemberCard.tsx), shown by the tab bar's Show Members; it
+   stays put while the chat scrolls under it, and floats over the text without moving it. */
+.member-card {
+  position: absolute;
+  z-index: 2; /* over the timeline's and the composer's 1 */
+  top: 8px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: max-content;
+  min-width: 220px;
+  max-width: min(280px, 100% - 32px);
+  max-height: calc(100% - 16px);
+  overflow-y: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg-elev);
+  box-shadow: 0 8px 24px var(--shadow-40);
+}
+.member-card-head {
+  color: var(--text-muted);
+}
+.member-line {
   display: flex;
   align-items: center;
-  gap: 16px;
-  height: 38px;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-  scrollbar-width: none;
-  white-space: nowrap;
-}
-.room-member {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  gap: 8px;
+  height: 24px;
 }
 .member-handle {
   font-family: var(--mono);
+}
+/* Under the handle: the picks' icons line up with it (13px provider icon + 8px gap - the pick's 8px inset). */
+.member-picks {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: 13px;
 }
 /* Whose permission request the card under it is, in a room: on the card's column (.permission in composer.css). */
 .permission-from {

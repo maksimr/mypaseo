@@ -11,6 +11,7 @@ import { placeMenu } from '../../components/menu'
 import { StatusMark } from './StatusMark'
 import { useRowSwipe } from './rowSwipe'
 import { roomTree } from './roomTree'
+import { roomId } from '../rooms/members'
 import type { Selection } from './Sidebar'
 
 export function WorkspaceRow({
@@ -72,6 +73,14 @@ export function WorkspaceRow({
   const swipe = useRowSwipe()
   // Rooms nest their members under the lead; the row opens the newest top-level agent, not a member.
   const tree = roomTree(agents)
+  // A room shows only its lead's row until its chevron opens it.
+  const [openRooms, setOpenRooms] = useState<ReadonlySet<string>>(new Set())
+  const toggleRoom = (id: string) =>
+    setOpenRooms((s) => {
+      const next = new Set(s)
+      if (!next.delete(id)) next.add(id)
+      return next
+    })
   const saveName = (value: string) => {
     setEditing(false)
     // The daemon trims it, and an empty title clears the override.
@@ -227,45 +236,65 @@ export function WorkspaceRow({
         </button>
       </div>
       {!collapsed &&
-        tree.map(({ agent: a, nested, room }) => (
-          <div
-            key={a.id}
-            className={`row agent ${nested ? 'member' : ''} ${selection.agentId === a.id ? 'active' : ''}`}
-            {...clickable(() => select(a.id))}
-          >
-            <ProviderIcon provider={a.provider} size={9} />
-            <span className="grow truncate">{a.title || 'New agent'}</span>
-            {room > 0 && (
-              <span className="room-count muted" title={`${room} members`}>
-                <Users size={11} strokeWidth={1.75} aria-hidden />
-                {room}
-              </span>
-            )}
-            {(a.requiresAttention || a === pick) && (
+        tree.map(({ agent: a, nested, room }) => {
+          if (nested && !openRooms.has(roomId(a)!)) return null
+          const open = openRooms.has(a.id)
+          // A closed room's row stands for its hidden members too: their selection and status.
+          const shown = room > 0 && !open ? agents.filter((m) => roomId(m) === a.id) : [a]
+          return (
+            <div
+              key={a.id}
+              className={`row agent ${nested ? 'member' : ''} ${shown.some((m) => m.id === selection.agentId) ? 'active' : ''}`}
+              {...clickable(() => select(a.id))}
+            >
+              {room > 0 ? (
+                <button
+                  className="chevron room-chevron"
+                  aria-label={open ? 'Collapse' : 'Expand'}
+                  aria-expanded={open}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleRoom(a.id)
+                  }}
+                >
+                  {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                </button>
+              ) : (
+                <ProviderIcon provider={a.provider} size={9} />
+              )}
+              <span className="grow truncate">{a.title || 'New agent'}</span>
+              {room > 0 && (
+                <span className="room-count muted" title={`${room} members`}>
+                  <Users size={11} strokeWidth={1.75} aria-hidden />
+                  {room}
+                </span>
+              )}
+              {(a.requiresAttention || a === pick) && (
+                <button
+                  className="icon-btn hover-swap"
+                  title={`${a.requiresAttention ? 'Mark Read' : 'Mark Unread'} (${formatCombo(readKey)})`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    void (a.requiresAttention ? markRead(w, a) : markUnread(w, a))
+                  }}
+                >
+                  {a.requiresAttention ? <MailOpen size={11} strokeWidth={1.75} /> : <Mail size={11} strokeWidth={1.75} />}
+                </button>
+              )}
               <button
                 className="icon-btn hover-swap"
-                title={`${a.requiresAttention ? 'Mark Read' : 'Mark Unread'} (${formatCombo(readKey)})`}
+                title="Close"
                 onClick={(e) => {
                   e.stopPropagation()
-                  void (a.requiresAttention ? markRead(w, a) : markUnread(w, a))
+                  onCloseAgent(a)
                 }}
               >
-                {a.requiresAttention ? <MailOpen size={11} strokeWidth={1.75} /> : <Mail size={11} strokeWidth={1.75} />}
+                <X size={11} strokeWidth={1.75} />
               </button>
-            )}
-            <button
-              className="icon-btn hover-swap"
-              title="Close"
-              onClick={(e) => {
-                e.stopPropagation()
-                onCloseAgent(a)
-              }}
-            >
-              <X size={11} strokeWidth={1.75} />
-            </button>
-            <StatusMark agents={[a]} />
-          </div>
-        ))}
+              <StatusMark agents={shown} />
+            </div>
+          )
+        })}
     </>
   )
 }

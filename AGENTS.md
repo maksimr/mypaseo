@@ -40,12 +40,12 @@
 | Terminals | `features/terminal/` | `keymap.ts` (`appKey` passes app shortcuts through xterm automatically) |
 | Settings (incl. Profiles: the daemon's `agentProfiles`) | `features/settings/` | `keymap.ts` (`SHORTCUT_GROUPS`), `notifications.ts`, `store.ts` (`setProfiles`), `daemon.ts` (`AgentProfile`), `rooms/handles` |
 | Command palette | `features/palette/` | `keymap.ts` (`HIDDEN` list) |
-| Tabs / panel layout (a room's members hide behind its lead's tab; closing a lead closes the room) | `features/tabs/` + `App.tsx` | `rooms/members` |
+| Tabs / panel layout (a room's members hide behind its lead's tab; closing a lead closes the room) | `features/tabs/` + `App.tsx` | `rooms/members`, `rooms/MemberCard` (`MembersToggle`) |
 | Update banner (new deploy cached by the service worker in `vite.config.ts`) | `features/update/` | — |
 | List search (`/` in the sidebar, file panel or an open menu: type to jump to a matching row) | `features/list-search/` | `keymap.ts` (`listSearch`), markup contract below; the git graph sends `/` to its own search box |
 | Artifacts panel (lists the workspace's `artifact`/`mermaid` blocks, a click opens the chat at one; fences, prompt and iframe in `src/artifact.ts`, `components/Artifact`) | `features/artifacts/` | `chat/useTimeline`, `chat/Chat` (`reveal`), `tabs/Panel.tsx`, `App.tsx` |
 | Git daemon plugin | `paseo-plugin/` | `git.ts` is its only client (oxlint fails on `invokePluginRpc` anywhere but `git.ts` and `rooms.ts`); its zod schemas are the source of truth for the types |
-| Group chats (rooms): handles, mention parser, membership labels, room view merge (`mergeRoom`), `JoinChip`, `MemberBar`. Design and Contract: `doc/multi-agent-chat.md` | `features/rooms/` | `rooms.ts`, `store.ts` (`profiles`); `FEATURE_DEPS` lets chat, settings, sidebar and tabs import it, `App.tsx` too |
+| Group chats (rooms): handles, mention parser, membership labels, room view merge (`mergeRoom`), `JoinChip`, `MemberCard` (floating over a room's chat, shown by the tab bar's `MembersToggle`). Design and Contract: `doc/multi-agent-chat.md` | `features/rooms/` | `rooms.ts`, `store.ts` (`profiles`); `FEATURE_DEPS` lets chat, settings, sidebar and tabs import it, `App.tsx` too |
 | Rooms daemon plugin `mypaseo-rooms` (routes room posts into members' sessions, digests, loop guard, room log) | `rooms-plugin/` | `rooms.ts` is its only client, as `git.ts` is for `paseo-plugin/`; its zod schemas in `index.server.ts` are the source of truth for the types. Modules sit in `server/` (the daemon's plugin build refuses others); `server/route.ts` copies the mention parser of `rooms/mentions.ts`: keep both passing the Contract's table |
 
 Shared leaves live in `src/components/` (`ProviderIcon`, `Markdown`, `Code`, `Pick`, `icons`, `menu`); shared modules
@@ -77,7 +77,7 @@ stay flat in `src/`.
 | Searchable items `.row[tabindex]` and `.menu > button` (menus `.menu[popover]`), each labelled by its first `.truncate` (else all its text); the box sits over `.sidebar > .tree`, `.panel > .panel-tabs + *` | sidebar rows, the panel's lists, `menu`s (`WorkspaceRow`, `ProjectRow`, `Hosts`, `Files` crumbs, `CommitDialog`, `OpenInEditor`) | `list-search/ListSearch.tsx` |
 | `.view:not([inert])` holding `.chat-foot textarea`, `.term-view textarea` or a `[tabindex="-1"]` scroller (`.changes`, `.graph`, `.file-view`) | `App.tsx`, `chat/Chat.tsx`, `terminal/Terminal.tsx`, `changes/Changes.tsx`, `git-graph/CommitGraph.tsx`, `files/Files.tsx` | `focus.ts` (`focusView`: a side pane closes, or Move Focus lands in the main area) |
 | Columns `.sidebar`, `.center`, `.panel`; their content `.sidebar > .tree`, `.panel > .panel-tabs + *`, `.view:not([inert])` | `sidebar/Sidebar.tsx`, `App.tsx`, `tabs/Panel.tsx` | `focus.ts` (`moveFocus`: Ctrl+Alt+arrows) |
-| `[role="toolbar"]` bars (`.sidebar-head`, `.sidebar-foot`, `.tabbar`, `.panel-tabs`, `.changes-toolbar`, `.graph-toolbar`, `.file-path`, `.member-bar`), open tab `.tab.on`, `.panel-tab.on`, menus `.menu` skipped | `sidebar/Sidebar.tsx`, `tabs/TabBar.tsx`, `tabs/Panel.tsx`, `changes/Changes.tsx`, `git-graph/CommitGraph.tsx`, `files/Files.tsx`, `rooms/MemberBar.tsx` | `a11y.ts` (`navigateBars`: left/right, `focusBar`), `focus.ts` (`moveFocus`) |
+| `[role="toolbar"]` bars (`.sidebar-head`, `.sidebar-foot`, `.tabbar`, `.panel-tabs`, `.changes-toolbar`, `.graph-toolbar`, `.file-path`, `.member-card`), open tab `.tab.on`, `.panel-tab.on`, menus `.menu` skipped | `sidebar/Sidebar.tsx`, `tabs/TabBar.tsx`, `tabs/Panel.tsx`, `changes/Changes.tsx`, `git-graph/CommitGraph.tsx`, `files/Files.tsx`, `rooms/MemberCard.tsx` | `a11y.ts` (`navigateBars`: left/right, `focusBar`), `focus.ts` (`moveFocus`) |
 
 ### CSS ↔ TS constants (keep in sync; the TS comment names the CSS rule)
 - `changes/Changes.tsx` `HEADERS = 72` = `.changes-toolbar` 38px + `.excerpt-head` 34px
@@ -107,6 +107,7 @@ feature CSS and TS use only `var(--…)`. `color-scheme` picks the side: the sys
 | `mypaseoGraphColumns` | git-graph/CommitGraph | same |
 | `mypaseoEditor` | files/OpenInEditor | same |
 | `mypaseoPaletteHidden` | palette/CommandPalette | same |
+| `mypaseoMembers` | rooms/MemberCard | same |
 | `mypaseoClientId` | daemon.ts | daemon.ts |
 | `mypaseoTheme` | theme.ts (`setTheme`, from settings/GeneralSection) | **index.html** (inline script), theme.ts |
 
