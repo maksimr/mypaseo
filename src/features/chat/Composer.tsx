@@ -5,7 +5,8 @@ import { ARTIFACT_PROMPT } from '../../artifact'
 import { errorText, type Agent, type AgentProfile, type DaemonClient } from '../../daemon'
 import * as rooms from '../../rooms'
 import { RESERVED, slug, uniqueHandle } from '../rooms/handles'
-import { handleOf, roomId, roomMembers } from '../rooms/members'
+import { colorVar } from '../rooms/colors'
+import { colorOf, handleOf, roomId, roomMembers } from '../rooms/members'
 import { mentions } from '../rooms/mentions'
 import { mentionAt, remention, unmention } from './autocomplete'
 import { contextOptions, forkEnd, forkId, hhmm, pickRange, type ForkPoint, type Mark, type Share } from './share'
@@ -17,7 +18,7 @@ import { clickable } from '../../a11y'
 import { hostLabel, isScratch, projectName, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../../store'
 import { useAutocomplete } from './useAutocomplete'
 import { ContextMeter } from './ContextMeter'
-import { RecipientChip } from './RecipientChip'
+import { Recipients, type Recipient } from './Recipients'
 import { agentSettings, modelConfig, sendSetting, sessionSettings, type Session } from './session'
 import { Pick } from '../../components/Pick'
 import type { PickOption } from '../../components/Options'
@@ -53,8 +54,6 @@ const fileDrafts = new Map<string, File[]>()
 /** The Provider (the default agent's), Model, Thinking, Mode and Context (a contextOptions id) picked on joining chips, by handle. */
 type JoinPick = { handle: string; provider?: string; model?: string; thinking?: string; mode?: string; context?: string }
 const joinDrafts = new Map<string, JoinPick[]>()
-/** An agent the message goes to: its chip, and its agent if it runs already. */
-type Recipient = Omit<Parameters<typeof RecipientChip>[0], 'id'> & { key: string; agent?: Agent }
 /** The messages picked with Share From Here. */
 const shareDrafts = new Map<string, Share>()
 /** The drafts with Direct Message on. */
@@ -287,6 +286,7 @@ export function Composer({
     key: handle,
     name: `@${handle}`,
     provider: m.provider,
+    color: colorOf(m, profiles),
     agent: m,
     settings: agentSettings(
       providers.find((p) => p.provider === m.provider),
@@ -300,6 +300,7 @@ export function Composer({
     key: j.handle,
     name: `@${j.handle}`,
     provider: j.provider,
+    color: colorVar(j.profile?.color),
     joins: !!agent,
     settings: [
       // Another agent in its place, keeping the Shared history.
@@ -520,13 +521,7 @@ export function Composer({
       }}
     >
       {ac.popup}
-      {recipients.length > 0 && (
-        <div className="recipients" role="group" aria-label="Recipients">
-          {recipients.map(({ key, ...r }) => (
-            <RecipientChip key={key} id={`${panelId}${key}`} {...r} />
-          ))}
-        </div>
-      )}
+      {recipients.length > 0 && <Recipients recipients={recipients} panelId={panelId} />}
       {images.length + files.length + n > 0 && (
         <div className="composer-images">
           {reviewPaths.map((path) => {

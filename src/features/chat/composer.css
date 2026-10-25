@@ -159,10 +159,9 @@
   font-size: 12px;
   color: var(--text-muted);
 }
-/* Who the message goes to (RecipientChip): a chip each, which opens its settings. */
+/* Who the message goes to (Recipients.tsx): a chip each, which opens its settings, on one line. */
 .recipients {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   padding: 10px 12px 0;
@@ -211,6 +210,58 @@
 }
 .recipient-brief {
   min-width: 0;
+}
+/* One of several (`compact`): its color and name, at its full width; Recipients measures it. */
+.recipients.compact .recipient {
+  flex: none;
+  background: var(--bg-raised);
+}
+.recipients.compact .recipient-chip {
+  gap: 8px;
+  height: 30px;
+  padding: 0 10px;
+  color: var(--text-muted);
+}
+.recipients.compact .recipient-name {
+  font-family: var(--sans);
+  font-weight: 600;
+}
+.recipient-chip > .dot {
+  width: 8px;
+  height: 8px;
+}
+/* +N agents: the chips that don't fit sit in it, unseen, so their panels open here. */
+.recipient-more {
+  position: relative;
+  border-color: var(--accent);
+}
+.recipients .recipient-more > .recipient-chip {
+  color: var(--accent);
+}
+.recipient-more > .recipient-chip > svg {
+  color: var(--text-muted);
+}
+.recipient-more.unused,
+.recipient-more > .recipient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+}
+.recipient-more .recipient-panel {
+  visibility: visible;
+}
+.recipient-list {
+  max-width: 320px;
+  font-size: 12px;
+}
+.recipient-list .recipient-brief {
+  flex: 1;
+  text-align: left;
+}
+.recipient-panel .recipient-remove {
+  align-self: flex-end;
+  width: auto; /* not a .menu row */
 }
 .recipient-panel {
   width: 300px;

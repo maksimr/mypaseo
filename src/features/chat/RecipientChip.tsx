@@ -1,4 +1,4 @@
-import { ChevronDown, X } from 'lucide-react'
+import { ChevronDown, Trash2, X } from 'lucide-react'
 import { Pick } from '../../components/Pick'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import { placeMenu } from '../../components/menu'
@@ -15,12 +15,15 @@ export function SettingList({ settings }: { settings: Setting[] }) {
 }
 
 /** An agent the message goes to: a chip with its settings at a glance that opens all of them, where the composer
- *  changes them. `joins`: the send adds it to the chat. */
+ *  changes them. `joins`: the send adds it to the chat. `compact`, one of several: its color and name only, Remove in
+ *  its panel. */
 export function RecipientChip({
   id,
   name,
   provider,
+  color,
   joins,
+  compact,
   settings,
   note,
   onRemove,
@@ -29,7 +32,10 @@ export function RecipientChip({
   id: string
   name: string
   provider: string | undefined
+  /** Its profile's color, a CSS color. */
+  color?: string
   joins?: boolean
+  compact: boolean
   settings: Setting[]
   note?: string
   onRemove?: () => void
@@ -38,13 +44,13 @@ export function RecipientChip({
   return (
     <span className="recipient" role="group" aria-label={name}>
       <button className="recipient-chip" popoverTarget={id} onClick={placeMenu(id, true)}>
-        <ProviderIcon provider={provider} size={13} />
+        {compact ? <span className="dot" style={{ background: color }} /> : <ProviderIcon provider={provider} size={13} />}
         <span className="recipient-name">{name}</span>
-        {joins && <span className="recipient-tag">joins</span>}
-        {brief && <span className="recipient-brief truncate">{brief}</span>}
+        {!compact && joins && <span className="recipient-tag">joins</span>}
+        {!compact && brief && <span className="recipient-brief truncate">{brief}</span>}
         <ChevronDown size={12} />
       </button>
-      {onRemove && (
+      {onRemove && !compact && (
         <button className="icon-btn" title="Remove" aria-label={`Remove ${name}`} onClick={onRemove}>
           <X size={13} />
         </button>
@@ -57,6 +63,11 @@ export function RecipientChip({
         </div>
         <SettingList settings={settings} />
         {note && <p className="faint recipient-note">{note}</p>}
+        {onRemove && compact && (
+          <button className="btn danger recipient-remove" aria-label={`Remove ${name}`} onClick={onRemove}>
+            <Trash2 size={13} /> Remove
+          </button>
+        )}
       </div>
     </span>
   )
