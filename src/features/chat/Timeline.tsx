@@ -1,10 +1,10 @@
-import { ArrowDownFromLine, Loader2, Lock } from 'lucide-react'
+import { Loader2, Lock, Share } from 'lucide-react'
 import { Fragment, memo, useContext, useEffect, useMemo, useState } from 'react'
 import { ActiveViewContext } from '../../activeView'
 import { errorText, type Agent, type TimelineItem, type ToolCall, type ToolDetail } from '../../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../../keymap'
 import { Code } from '../../components/Code'
-import { Markdown } from '../../components/Markdown'
+import { CopyButton, Markdown } from '../../components/Markdown'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import * as rooms from '../../rooms'
 import { useDaemon } from '../../store'
@@ -24,6 +24,7 @@ export function Timeline({
   items,
   members,
   room,
+  times,
   marks,
   onShare,
 }: {
@@ -33,6 +34,8 @@ export function Timeline({
   members: Member[]
   /** In a room: who wrote each item, at the same index as items. */
   room?: RoomItem[]
+  /** Without a room: when each item was stamped, at the same index as items. */
+  times?: string[]
   /** Share From Here: each item's mark, at the same index as items, where it works; the pick, `end` with Shift. */
   marks?: (Mark | undefined)[]
   onShare?: (m: Mark, end: boolean) => void
@@ -70,6 +73,7 @@ export function Timeline({
   const to = (row: Row) => (room?.[row.index].author === 'user' ? `to @${byId.get(room[row.index].agentId)?.handle}` : undefined)
   const resumed = items.findLastIndex((x) => x.type === 'plugin' && x.kind === 'room.resumed')
   const share = (i: number) => !!onShare && !!marks?.[i]
+  const time = (i: number) => (room ? room[i].timestamp : times?.[i])
   // A member's run sits in its own box, so its name sticks on top only while the run scrolls by.
   const runs: { who?: RoomItem; rows: Row[] }[] = []
   for (const row of grouped) {
@@ -88,9 +92,9 @@ export function Timeline({
           ))}
         </WorkGroup>
       ) : room && row.item.type === 'plugin' ? (
-        <RoomEvent index={row.index} roomId={room[row.index].agentId} item={row.item} open={row.index > resumed} share={share(row.index)} />
+        <RoomEvent index={row.index} roomId={room[row.index].agentId} item={row.item} open={row.index > resumed} share={share(row.index)} time={time(row.index)} />
       ) : (
-        <Item index={row.index} item={row.item} expanded={expanded} to={to(row)} share={share(row.index)} />
+        <Item index={row.index} item={row.item} expanded={expanded} to={to(row)} share={share(row.index)} time={time(row.index)} />
       )}
     </Fragment>
   )
@@ -151,16 +155,47 @@ function ShareButton() {
   const key = useShortcut('shareFromHere')
   return (
     <button className="icon-btn share-here" title={`Share From Here (${formatCombo(key)})`}>
-      <ArrowDownFromLine size={13} />
+      <Share size={13} />
     </button>
   )
 }
 
+const day = new Intl.DateTimeFormat(undefined, { month: 'numeric', day: 'numeric' })
+const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
+
+/** Under a message, shown on hover: Copy, Share From Here where it works, and when it was stamped. */
+function MessageFoot({ text, time, share }: { text: string; time?: string; share?: boolean }) {
+  return (
+    <div className="msg-foot">
+      <CopyButton text={text} />
+      {share && <ShareButton />}
+      {time && (
+        <time dateTime={time}>
+          {day.format(new Date(time))} {clock.format(new Date(time))}
+        </time>
+      )}
+    </div>
+  )
+}
+
 /** `meta`: whom it went to, and what came with it. */
-function UserMessage({ index, text, meta, dm, share }: { index: number; text: string; meta?: string; dm?: boolean; share?: boolean }) {
+function UserMessage({
+  index,
+  text,
+  meta,
+  dm,
+  share,
+  time,
+}: {
+  index: number
+  text: string
+  meta?: string
+  dm?: boolean
+  share?: boolean
+  time?: string
+}) {
   return (
     <div className="msg user" data-item={index}>
-      {share && <ShareButton />}
       {meta && (
         <div className="msg-to">
           {meta}
@@ -168,6 +203,7 @@ function UserMessage({ index, text, meta, dm, share }: { index: number; text: st
         </div>
       )}
       <div className="user-text">{text}</div>
+      <MessageFoot text={text} time={time} share={share} />
     </div>
   )
 }
@@ -183,12 +219,14 @@ function RoomEvent({
   item,
   open,
   share,
+  time,
 }: {
   index: number
   roomId: string
   item: Extract<TimelineItem, { type: 'plugin' }>
   open: boolean
   share: boolean
+  time?: string
 }) {
   const daemon = useDaemon()
   const [busy, setBusy] = useState(false)
@@ -196,7 +234,7 @@ function RoomEvent({
     case 'room.post': {
       const p = item.data as { text: string; to: string[]; dm: boolean; images: number; files: string[] }
       const meta = [p.to.length ? `to ${mentions(p.to)}` : 'to everyone', ...(p.images ? [count(p.images, 'image')] : []), ...p.files]
-      return <UserMessage index={index} text={p.text} meta={meta.join(' · ')} dm={p.dm} share={share} />
+      return <UserMessage index={index} text={p.text} meta={meta.join(' · ')} dm={p.dm} share={share} time={time} />
     }
     case 'room.join': {
       const j = item.data as { handles: string[]; context: string }
@@ -238,15 +276,29 @@ function RoomEvent({
   }
 }
 
-const Item = memo(function Item({ index, item, expanded, to, share }: { index: number; item: TimelineItem; expanded: boolean; to?: string; share?: boolean }) {
+const Item = memo(function Item({
+  index,
+  item,
+  expanded,
+  to,
+  share,
+  time,
+}: {
+  index: number
+  item: TimelineItem
+  expanded: boolean
+  to?: string
+  share?: boolean
+  time?: string
+}) {
   switch (item.type) {
     case 'user_message':
-      return <UserMessage index={index} text={item.text} meta={to} />
+      return <UserMessage index={index} text={item.text} meta={to} time={time} />
     case 'assistant_message':
       return (
         <div className="msg assistant" data-item={index}>
-          {share && <ShareButton />}
           <Markdown text={item.text} />
+          <MessageFoot text={item.text} time={time} share={share} />
         </div>
       )
     case 'reasoning':

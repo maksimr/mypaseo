@@ -48,12 +48,13 @@ function CodeBlock({ className, children, node }: React.ComponentProps<'code'> &
   return (
     <div className="code-block">
       <Code code={text} filename={`snippet.${lang ?? 'txt'}`} />
-      <CopyButton text={text.replace(/\n$/, '')} />
+      <CopyButton text={text.replace(/\n$/, '')} className="code-copy" />
     </div>
   )
 }
 
-function CopyButton({ text }: { text: string }) {
+/** `className`: besides `icon-btn`. */
+export function CopyButton({ text, className }: { text: string; className?: string }) {
   const [copied, setCopied] = useState(false)
   const copy = async () => {
     try {
@@ -65,7 +66,7 @@ function CopyButton({ text }: { text: string }) {
     setTimeout(() => setCopied(false), 1200)
   }
   return (
-    <button className="icon-btn code-copy" title="Copy" onClick={copy}>
+    <button className={className ? `icon-btn ${className}` : 'icon-btn'} title="Copy" onClick={copy}>
       {copied ? <Check size={13} /> : <Copy size={13} />}
     </button>
   )

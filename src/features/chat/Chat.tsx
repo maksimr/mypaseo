@@ -246,7 +246,7 @@ export function Chat({
           <>
             {tl.loading && <div className="empty">Loading…</div>}
             {tl.error && <div className="empty err">{tl.error}</div>}
-            <Timeline items={tl.items} members={named} room={room} marks={marks} onShare={shareFrom} />
+            <Timeline items={tl.items} members={named} room={room} times={ownTl.times} marks={marks} onShare={shareFrom} />
           </>
         ) : (
           <div className="empty-chat new-agent">

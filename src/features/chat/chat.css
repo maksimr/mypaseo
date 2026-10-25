@@ -190,8 +190,10 @@
 .msg.user:first-child {
   margin-top: 0;
 }
-/* No box around it: its text lines up with the work runs, and its padding matches .work-head's. */
+/* No box around it: its text lines up with the work runs, and its padding matches .work-head's. Its .msg-foot under it. */
 .msg.assistant {
+  flex-direction: column;
+  gap: 4px;
   margin-block: 12px;
   padding: 2px 0;
 }
@@ -214,7 +216,7 @@
 .msg-author {
   position: sticky;
   top: 12px;
-  z-index: 2; /* over the positioned .msg, .share-here and the .work-head its run's end pushes up */
+  z-index: 2; /* over the positioned .msg, .msg-foot and the .work-head its run's end pushes up */
   display: flex;
   align-items: center;
   gap: 6px;
@@ -233,19 +235,34 @@
   gap: 3px;
   vertical-align: top;
 }
-/* Share From Here on a room message: left of the user's bubble, over the agent's text's top right corner. Shown on
-   hover or focus; always without hover. */
-.share-here {
-  position: absolute;
-  top: 0;
-  right: 0;
-  background: var(--bg);
+/* Under a message: Copy, Share From Here and its time (Timeline.tsx MessageFoot). Under the agent's text, its copy icon
+   lined up with the text; under the user's bubble, right-aligned in its bottom margin, clear of the tail (7px down).
+   Shown on hover or focus; always without hover. */
+.msg-foot {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-faint);
+  font-size: 12px;
 }
-.msg.user > .share-here {
-  right: calc(100% + 4px);
+.msg-foot > time {
+  margin-left: 6px;
+}
+.msg-foot > .icon-btn:not(:hover) {
+  color: inherit; /* as faint as the time */
+}
+.msg.assistant > .msg-foot {
+  margin-left: -5.5px; /* the 13px icon centered in the 24px .icon-btn */
+}
+.msg.user > .msg-foot {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: max-content;
+  padding-top: 8px; /* inside the bubble's 32px bottom margin, with the 24px buttons */
 }
 @media (hover: hover) {
-  .msg:not(:hover, :focus-within) > .share-here {
+  .msg:not(:hover, :focus-within) > .msg-foot {
     opacity: 0;
   }
 }
