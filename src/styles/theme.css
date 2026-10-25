@@ -5,7 +5,7 @@
 
   /* Surfaces; dark ones are neutral grays as in Claude: a gray sidebar, the center and the panel dark (--bg) */
   --bg: light-dark(#fafafa, #1a1a1a);
-  --bg-sidebar: light-dark(#efeff0, #2a2a2a);
+  --bg-sidebar: light-dark(#efeff0, #1f1f1f);
   --bg-panel: light-dark(#efeff0, #151515);
   --bg-elev: light-dark(#ffffff, #2a2a2a);
   --bg-hover: light-dark(#e6e6e8, #323232);
