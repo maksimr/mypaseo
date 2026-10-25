@@ -12,7 +12,7 @@ import { mentionAt, remention, unmention } from './autocomplete'
 import { contextOptions, forkEnd, forkId, hhmm, pickRange, type ForkPoint, type Mark, type Share } from './share'
 import { dropImageRef, imageRef } from './imageRefs'
 import { ImageEditor, type PastedImage } from './ImageEditor'
-import { formatCombo, isShortcut, useShortcut } from '../../keymap'
+import { comboOf, formatCombo, isShortcut, useShortcut } from '../../keymap'
 import { deleteComments, reviewAttachment, useReview, type ReviewComment } from '../review/review'
 import { clickable } from '../../a11y'
 import { hostLabel, isScratch, projectName, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../../store'
@@ -615,7 +615,12 @@ export function Composer({
           const at = mentionAt(text, e.currentTarget.selectionStart)
           const r = recipients.find((x) => x.key === at) ?? recipients.find((x) => x.agent && x.agent.id === agent?.id) ?? recipients[0]
           const levels = r?.settings.find((s) => s.title === 'Thinking')
-          if (isShortcut(e, 'send')) {
+          // Tab skips Attach Files (Shift+Tab from the chip reaches it) to the first recipient's chip.
+          const chip = e.currentTarget.parentElement?.querySelector<HTMLButtonElement>('.recipient-chip')
+          if (comboOf(e) === 'Tab' && chip) {
+            e.preventDefault()
+            chip.focus()
+          } else if (isShortcut(e, 'send')) {
             e.preventDefault()
             void send()
           } else if (isShortcut(e, 'cycleThinking') && levels) {
