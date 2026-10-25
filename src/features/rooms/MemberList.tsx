@@ -1,13 +1,14 @@
 import { ChevronRight, Loader2, ShieldQuestion } from 'lucide-react'
 import type { Agent } from '../../daemon'
+import { ProfileIcon } from './ProfileIcon'
 
-/** A room member: its handle and its profile's color (a CSS color), if it has one. */
-export type Member = { agent: Agent; handle: string; color?: string }
+/** A room member: its handle and its profile's color (a CSS color) and icon, if it has them. */
+export type Member = { agent: Agent; handle: string; color?: string; icon?: string }
 
-/** A member's color on a tile. */
-export const MemberAvatar = ({ color }: { color?: string }) => (
+/** A member's icon, else its color, on a tile. */
+export const MemberAvatar = ({ color, icon }: { color?: string; icon?: string }) => (
   <span className="member-avatar">
-    <span className="dot" style={{ background: color }} />
+    <ProfileIcon icon={icon} color={color} size={20} />
   </span>
 )
 
@@ -47,7 +48,7 @@ export function MemberList({ members, onOpen }: { members: (Member & { brief: st
       </div>
       {members.map((m, i) => (
         <button key={m.agent.id} className="member-chip" onClick={() => onOpen(m.agent.id)}>
-          <MemberAvatar color={m.color} />
+          <MemberAvatar color={m.color} icon={m.icon} />
           <span className="member-identity">
             <MemberName member={m} lead={i === 0} />
             <span className="member-brief truncate">{m.brief}</span>

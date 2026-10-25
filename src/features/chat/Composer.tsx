@@ -3,10 +3,10 @@ import { useContext, useEffect, useId, useRef, useState } from 'react'
 import { ActiveViewContext } from '../../activeView'
 import { ARTIFACT_PROMPT } from '../../artifact'
 import { errorText, type Agent, type AgentProfile, type DaemonClient } from '../../daemon'
+import { savedDefaultAgent, useDefaultAgent } from '../../defaultAgent'
 import * as rooms from '../../rooms'
 import { RESERVED, slug, uniqueHandle } from '../rooms/handles'
-import { colorVar } from '../rooms/colors'
-import { colorOf, handleOf, roomId, roomMembers } from '../rooms/members'
+import { handleOf, look, lookOf, roomId, roomMembers } from '../rooms/members'
 import { mentions } from '../rooms/mentions'
 import { mentionAt, remention, unmention } from './autocomplete'
 import { contextOptions, forkEnd, forkId, hhmm, pickRange, type ForkPoint, type Mark, type Share } from './share'
@@ -31,8 +31,8 @@ type Draft = { provider?: string; model?: string; thinking?: string; mode?: stri
 // Invalid ids fall back to provider defaults below.
 const loadDraft = (): Draft => {
   const last: Draft = JSON.parse(localStorage.mypaseoDraft ?? '{}')
-  const def: Draft | undefined = localStorage.mypaseoDefaultAgent && JSON.parse(localStorage.mypaseoDefaultAgent)
-  return def ? { ...def, mode: def.provider === last.provider ? last.mode : undefined } : last
+  const def = savedDefaultAgent()
+  return def ? { provider: def.provider, model: def.model, thinking: def.thinking, mode: def.provider === last.provider ? last.mode : undefined } : last
 }
 
 const readImage = (file: File) =>
@@ -172,6 +172,7 @@ export function Composer({
   const members = agent ? (room ? roomMembers(agents, room) : [agent]) : []
   const memberHandles = members.map((m) => handleOf(m, profiles))
   const defaultAgent = loadDraft()
+  const defaultLook = useDefaultAgent()
   // In a chat that has an @agent, the next default agent is @agent-2.
   const defaultHandle = uniqueHandle('agent', memberHandles)
   const candidates = [
@@ -181,8 +182,11 @@ export function Composer({
     { handle: defaultHandle, provider: ready(defaultAgent.provider), description: 'Default agent', profile: undefined },
   ].filter((c, i, all) => !memberHandles.includes(c.handle) && all.findIndex((x) => x.handle === c.handle) === i)
   const mentioned = mentions(text, [...memberHandles, ...candidates.map((c) => c.handle)])
-  // Each handle and its color, for the mentions in the text.
-  const colors = new Map([...members.map((m, i) => [memberHandles[i], colorOf(m, profiles)] as const), ...candidates.map((c) => [c.handle, colorVar(c.profile?.color)] as const)])
+  // Each handle and its color and icon, for the mentions in the text.
+  const looks = new Map([
+    ...members.map((m, i) => [memberHandles[i], lookOf(m, profiles, defaultLook)] as const),
+    ...candidates.map((c) => [c.handle, look(c.profile ?? defaultLook)] as const),
+  ])
   const [joinPicks, setJoinPicks] = useDraftList(joinDrafts, draftKey)
   const [shared, setSharedState] = useState(() => shareDrafts.get(draftKey))
   const setShared = (s: Share | undefined) => {
@@ -290,7 +294,7 @@ export function Composer({
     key: handle,
     name: `@${handle}`,
     provider: m.provider,
-    color: colorOf(m, profiles),
+    ...lookOf(m, profiles, defaultLook),
     agent: m,
     settings: agentSettings(
       providers.find((p) => p.provider === m.provider),
@@ -304,7 +308,7 @@ export function Composer({
     key: j.handle,
     name: `@${j.handle}`,
     provider: j.provider,
-    color: colorVar(j.profile?.color),
+    ...look(j.profile ?? defaultLook),
     joins: !!agent,
     settings: [
       // Another agent in its place, keeping the Shared history.
@@ -330,6 +334,7 @@ export function Composer({
               key: 'new',
               name: '@agent', // handleOf's default: a new agent has no handle or profile
               provider,
+              ...look(defaultLook),
               settings: [
                 { title: 'Provider', value: provider, options: usable.map((p): PickOption => [p.provider, p.label ?? p.provider]), onChange: (v) => change('provider', v) },
                 ...sessionSettings({ models, model, thinkingOptions, validThinking }, change, modes, mode),
@@ -614,7 +619,7 @@ export function Composer({
             }}
           />
           <div className="composer-text">
-            <Mirror text={text} colors={colors} />
+            <Mirror text={text} looks={looks} />
             <textarea
               name="prompt"
               ref={input}

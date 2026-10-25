@@ -6,9 +6,11 @@ import { artifactDocs } from '../../artifact'
 import { parseNear } from '../../components/Markdown'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import type { Agent, TimelineItem } from '../../daemon'
+import { useDefaultAgent } from '../../defaultAgent'
 import { formatCombo, isShortcut, useShortcut } from '../../keymap'
 import type { ReviewComment } from '../review/review'
-import { colorOf, handleOf, isLead, roomId, roomMembers } from '../rooms/members'
+import { handleOf, isLead, lookOf, roomId, roomMembers } from '../rooms/members'
+import { ProfileIcon } from '../rooms/ProfileIcon'
 import { isScratch, keptUnread, useDaemon, useHost } from '../../store'
 import { useRoomTimeline } from './useRoomTimeline'
 import { useTimeline } from './useTimeline'
@@ -52,10 +54,11 @@ export function Chat({
 }) {
   const daemon = useDaemon()
   const { agents, profiles } = useHost()
+  const defaultAgent = useDefaultAgent()
   // A room's lead shows the room; any other agent, a member included (its own chat), its own timeline.
   const lead = agent && isLead(agent) ? agent : undefined
   const members = lead ? [lead, ...roomMembers(agents, lead.id).filter((m) => m.id !== lead.id)] : agent ? [agent] : []
-  const named = members.map((m) => ({ agent: m, handle: handleOf(m, profiles), color: colorOf(m, profiles) }))
+  const named = members.map((m) => ({ agent: m, handle: handleOf(m, profiles), ...lookOf(m, profiles, defaultAgent) }))
   const roomTl = useRoomTimeline(lead?.id ?? null, named.map((m) => ({ agentId: m.agent.id, handle: m.handle, running: m.agent.status === 'running' })))
   const ownTl = useTimeline(lead ? null : (agent?.id ?? null))
   const tl: { items: TimelineItem[]; loading: boolean; error: string | null; partial?: boolean } = lead ? roomTl : ownTl
@@ -236,11 +239,11 @@ export function Chat({
         )}
         {/* Measured here, not on the composer's div: its bottom margin collapses out of that one. */}
         <div className="chat-foot" ref={foot}>
-          {permissions.map(({ request, agent: m, handle }) => (
+          {permissions.map(({ request, agent: m, handle, color, icon }) => (
             <Fragment key={`${m.id}:${request.id}`}>
               {lead && (
                 <div className="permission-from">
-                  <ProviderIcon provider={m.provider} size={13} />@{handle}
+                  <ProfileIcon icon={icon} color={color} size={13} fallback={<ProviderIcon provider={m.provider} size={13} />} />@{handle}
                 </div>
               )}
               <PermissionCard agentId={m.id} request={request} />

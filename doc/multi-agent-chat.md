@@ -15,8 +15,8 @@ end of this file: what changed, anything later steps must know.
 - **Profiles** are the daemon's `agentProfiles` config (protocol `AgentProfileSchema`: id, name, icon, color, provider,
   model, modeId, thinkingOptionId, featureValues, notes). Paseo desktop and agents' `list_profiles` tool read the same
   list. `notes` doubles as the agent's role in a room (sent with its first delivery; profiles have no system prompt).
-- **`@agent`** is the default agent: Settings → Default agent, else the composer's picks (`loadDraft` in
-  `Composer.tsx`). Always available, also with zero profiles.
+- **`@agent`** is the default agent: Settings → Profiles (`src/defaultAgent.ts`: provider, model, thinking, and the color
+  and icon of every agent started from no profile), else the composer's picks (`loadDraft` in `Composer.tsx`). Always available, also with zero profiles.
 - **Recipients of a user message**: the mentioned members; **no mention = every member**. In a one-agent chat that's the
   one agent, as today; a new chat needs no mention.
 - **Recipients of an agent message**: the members it mentions. No mention = addressed to the user only; the exchange

@@ -38,7 +38,7 @@
 | Git graph / file history / commit details | `features/git-graph/` | `git.ts`, `changes/Stat`, `changes.css` row styles |
 | Files (tree, file view, open in editor) | `features/files/` | markup contract below |
 | Terminals | `features/terminal/` | `keymap.ts` (`appKey` passes app shortcuts through xterm automatically) |
-| Settings (incl. Profiles: the daemon's `agentProfiles`) | `features/settings/` | `keymap.ts` (`SHORTCUT_GROUPS`), `notifications.ts`, `store.ts` (`setProfiles`), `daemon.ts` (`AgentProfile`), `rooms/handles` |
+| Settings (incl. Profiles: the default agent, `defaultAgent.ts`, then the daemon's `agentProfiles`) | `features/settings/` | `keymap.ts` (`SHORTCUT_GROUPS`), `notifications.ts`, `store.ts` (`setProfiles`), `daemon.ts` (`AgentProfile`), `defaultAgent.ts`, `rooms/handles` |
 | Command palette | `features/palette/` | `keymap.ts` (`HIDDEN` list) |
 | Tabs / panel layout (a room's members hide behind its lead's tab; closing a lead closes the room) | `features/tabs/` + `App.tsx` | `rooms/members`, `chat/ContextCard` (`ContextToggle`) |
 | Update banner (new deploy cached by the service worker in `vite.config.ts`) | `features/update/` | — |
@@ -97,8 +97,8 @@ feature CSS and TS use only `var(--…)`. `color-scheme` picks the side: the sys
 ### localStorage keys (`grep localStorage.mypaseo` before adding or renaming one)
 | Key | Written by | Read by |
 |---|---|---|
-| `mypaseoDefaultAgent` | settings/GeneralSection (`DefaultAgent`) | **chat/Composer** (`loadDraft`) |
-| `mypaseoDraft` | chat/Composer | **settings/GeneralSection** (fallback) |
+| `mypaseoDefaultAgent` | defaultAgent.ts (`saveDefaultAgent`, from settings/ProfilesSection) | defaultAgent.ts (chat/Composer `loadDraft`, chat/Chat) |
+| `mypaseoDraft` | chat/Composer | **settings/ProfilesSection** (fallback) |
 | `mypaseoNotifications` | settings/GeneralSection | **notifications.ts** |
 | `mypaseoKeymap` | keymap.ts | keymap.ts |
 | `mypaseoHosts`, `mypaseoPinned`, `mypaseoProjectOrder` | store.ts | store.ts |

@@ -21,6 +21,13 @@ export function handleOf(agent: Labeled, profiles: readonly { id: string; name: 
   return agent.labels[HANDLE] ?? (profile ? slug(profile.name) : 'agent')
 }
 
-/** Its profile's color (a CSS color), if it was started from a profile that has one. */
-export const colorOf = (agent: Labeled, profiles: readonly { id: string; color?: string }[]) =>
-  colorVar(profiles.find((p) => p.id === agent.labels[PROFILE])?.color)
+type Look = { color?: string; icon?: string }
+
+/** A profile's color, as a CSS color, and icon. */
+export const look = (p?: Look): Look => ({ color: colorVar(p?.color), icon: p?.icon })
+
+/** Its color (a CSS color) and icon: its profile's, or, started from none, the default agent's (`def`). */
+export function lookOf(agent: Labeled, profiles: readonly (Look & { id: string })[], def?: Look) {
+  const id = agent.labels[PROFILE]
+  return look(id ? profiles.find((p) => p.id === id) : def)
+}

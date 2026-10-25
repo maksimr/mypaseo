@@ -88,6 +88,20 @@
 .composer textarea::placeholder {
   color: var(--text-faint);
 }
+/* A mention's icon over its @ (Mirror.tsx), a little wider than it, into the space before: the @ keeps its width, so
+   the text stays lined up with the textarea's. */
+.mention-icon {
+  position: relative;
+  color: transparent;
+}
+.mention-icon > svg {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: calc(1ch + 3px);
+  height: calc(1ch + 3px);
+  translate: 0 -50%;
+}
 /* Bottom-up so the best match sits next to the input. */
 .autocomplete {
   position: absolute;

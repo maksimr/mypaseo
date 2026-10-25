@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { useId } from 'react'
 import { placeMenu } from '../../components/menu'
+import { ProfileIcon } from '../rooms/ProfileIcon'
 import { ContextGauge } from './ContextMeter'
 import type { Recipient } from './Recipients'
 import { contextLabel, contextPct } from './usage'
@@ -28,7 +29,7 @@ export function RecipientSummary({ recipients, total }: { recipients: Recipient[
         <ul>
           {recipients.map((r) => (
             <li key={r.key}>
-              <span className="dot" style={{ background: r.color }} />
+              <ProfileIcon icon={r.icon} color={r.color} size={16} />
               <span className="truncate">{r.name}</span>
               {r.joins ? <span className="recipient-joining">Joining</span> : <span className="muted">In chat</span>}
               {r.agent && (

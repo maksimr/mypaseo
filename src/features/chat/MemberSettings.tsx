@@ -31,7 +31,7 @@ export function MemberSettings({ member: m, lead, entry, onDone }: { member: Mem
     <>
       <div className="member-settings">
         <div className="member-summary">
-          <MemberAvatar color={m.color} />
+          <MemberAvatar color={m.color} icon={m.icon} />
           <span className="member-identity">
             <MemberName member={m} />
             <span className="member-brief">Settings for this agent's session.</span>

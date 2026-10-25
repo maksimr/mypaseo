@@ -7,14 +7,15 @@ import { Code } from '../../components/Code'
 import { CopyButton, Markdown } from '../../components/Markdown'
 import * as rooms from '../../rooms'
 import { useDaemon } from '../../store'
+import { ProfileIcon } from '../rooms/ProfileIcon'
 import type { RoomItem } from '../rooms/roomView'
 import type { Mark } from './share'
 import { toolArg } from './toolArg'
 import { rows, type Row } from './work'
 import { WorkGroup } from './WorkGroup'
 
-/** color: its profile's, a CSS color. */
-type Member = { agent: Agent; handle: string; color?: string }
+/** color: its profile's, a CSS color; icon: its profile's. */
+type Member = { agent: Agent; handle: string; color?: string; icon?: string }
 
 // A member's direct replies run apart from its public ones.
 const authorKey = (r: RoomItem) => `${r.agentId}${r.private ? ' dm' : ''}`
@@ -114,6 +115,7 @@ export function Timeline({
           <div key={who.key} className="msg-run">
             {author && (
               <div className="msg-author">
+                <ProfileIcon icon={author.icon} color={author.color} size={14} fallback={null} />
                 <span style={{ color: author.color }}>@{author.handle}</span>
                 {who.private && <> · <Direct /></>}
               </div>

@@ -2,6 +2,7 @@ import { ChevronDown } from 'lucide-react'
 import { useId, useRef } from 'react'
 import { placeMenu } from '../../components/menu'
 import type { Agent } from '../../daemon'
+import { ProfileIcon } from '../rooms/ProfileIcon'
 import { RecipientChip } from './RecipientChip'
 import { briefOf } from './session'
 
@@ -29,7 +30,7 @@ export function Recipients({ recipients, panelId }: { recipients: Recipient[]; p
           <button ref={more} className="recipient-chip" title="Show All Recipients" popoverTarget={menuId} onClick={placeMenu(menuId, true)}>
             <span className="recipient-dots">
               {recipients.map((r) => (
-                <span key={r.key} className="dot" style={{ background: r.color }} />
+                <ProfileIcon key={r.key} icon={r.icon} color={r.color} size={13} />
               ))}
             </span>
             {recipients.length} agents
@@ -49,7 +50,7 @@ export function Recipients({ recipients, panelId }: { recipients: Recipient[]; p
                   document.querySelector<HTMLButtonElement>(`[popovertarget="${CSS.escape(`${panelId}${r.key}`)}"]`)?.click()
                 }}
               >
-                <span className="dot" style={{ background: r.color }} />
+                <ProfileIcon icon={r.icon} color={r.color} size={14} />
                 <span className="recipient-name truncate">{r.name}</span>
                 <span className="recipient-brief truncate">{briefOf(r.settings)}</span>
                 <ChevronDown size={14} />

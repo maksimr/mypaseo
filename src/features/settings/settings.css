@@ -261,10 +261,10 @@
   font-size: 14px;
   font-weight: 400;
 }
-/* Columns: color, handle, model, thinking, edit, remove; rows share them through subgrid. */
+/* Columns: icon or color, handle, model, thinking, edit, remove; rows share them through subgrid. */
 .profile-list {
   display: grid;
-  grid-template-columns: 8px minmax(0, 2fr) minmax(0, 3fr) auto auto auto;
+  grid-template-columns: 18px minmax(0, 2fr) minmax(0, 3fr) auto auto auto;
   column-gap: 16px;
 }
 .profile {
@@ -277,6 +277,13 @@
 }
 .profile + .profile {
   border-top: 1px solid var(--border);
+}
+/* The default agent's label, then the profiles'. */
+.profile-list > .group-label {
+  grid-column: 1 / -1;
+}
+.profile-list > .group-label:not(:first-child) {
+  margin-top: 32px;
 }
 .profile-handle {
   font-weight: 500;
@@ -311,8 +318,15 @@
   padding: 14px 0;
 }
 .profile-dot {
+  justify-self: center;
+  width: 8px;
   height: 8px;
   border-radius: 50%;
+}
+.profile-icon-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .profile-colors,
 .profile-colors > [role='radiogroup'] {
@@ -468,7 +482,7 @@ kbd {
   }
   /* The handle takes its width first; the model truncates. */
   .profile-list {
-    grid-template-columns: 8px minmax(0, max-content) minmax(0, 1fr) auto auto auto;
+    grid-template-columns: 18px minmax(0, max-content) minmax(0, 1fr) auto auto auto;
     column-gap: 12px;
   }
   .profile-thinking {
