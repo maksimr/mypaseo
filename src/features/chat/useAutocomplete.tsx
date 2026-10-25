@@ -5,8 +5,10 @@ import { errorText, type DraftConfig, type SlashCommand } from '../../daemon'
 import { useDaemon } from '../../store'
 import { comboOf } from '../../keymap'
 import { ProviderIcon } from '../../components/ProviderIcon'
+import { ProfileIcon } from '../rooms/ProfileIcon'
 
-type Option = { id: string; label: string; value: string; kind: 'command' | 'file' | 'directory' | 'agent'; hint?: string; description?: string; provider?: string }
+type Look = { icon?: string; color?: string }
+type Option = { id: string; label: string; value: string; kind: 'command' | 'file' | 'directory' | 'agent'; hint?: string; description?: string; provider?: string } & Look
 type Entry = { path: string; kind: 'file' | 'directory' }
 
 /** `/` command and `@` agent and file autocomplete for the composer textarea, like the desktop app. */
@@ -27,7 +29,7 @@ export function useAutocomplete({
   /** Lists commands before the agent exists. No agent and no config: no command list. */
   draftConfig?: DraftConfig
   /** Listed before the files, in this order. */
-  agents: { handle: string; provider?: string; description?: string }[]
+  agents: ({ handle: string; provider?: string; description?: string } & Look)[]
 }) {
   const daemon = useDaemon()
   const listId = useId()
@@ -85,7 +87,7 @@ export function useAutocomplete({
         ? [
             ...agents
               .filter((a) => a.handle.includes(trigger.query.toLowerCase()))
-              .map((a): Option => ({ id: `@${a.handle}`, label: `@${a.handle}`, value: a.handle, kind: 'agent', provider: a.provider, description: a.description })),
+              .map((a): Option => ({ id: `@${a.handle}`, label: `@${a.handle}`, value: a.handle, kind: 'agent', provider: a.provider, description: a.description, icon: a.icon, color: a.color })),
             ...(Array.isArray(files) ? files.map((e) => ({ id: e.path, label: e.path, value: e.path, kind: e.kind })) : []),
           ]
         : []
@@ -154,7 +156,7 @@ export function useAutocomplete({
             onClick={() => pick(o)}
           >
             {o.kind === 'agent' ? (
-              <ProviderIcon provider={o.provider} />
+              <ProfileIcon icon={o.icon} color={o.color} size={14} fallback={<ProviderIcon provider={o.provider} />} />
             ) : o.kind === 'directory' ? (
               <Folder size={14} className="muted" />
             ) : o.kind === 'file' ? (

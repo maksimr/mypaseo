@@ -276,7 +276,7 @@ export function Composer({
     cwd,
     agentId: agent?.id,
     draftConfig: !agent && provider ? { provider, cwd, model: model?.id } : undefined,
-    agents: [...members.map((m, i) => ({ handle: memberHandles[i], provider: m.provider, description: 'In this chat' })), ...candidates],
+    agents: [...members.map((m, i) => ({ handle: memberHandles[i], provider: m.provider, description: 'In this chat' })), ...candidates].map((a) => ({ ...a, ...looks.get(a.handle) })),
   })
 
   // A new agent's picks, kept for the next one.
