@@ -343,6 +343,69 @@
   gap: 2px;
   padding: 4px 10px 10px;
 }
+/* By the lock (RecipientSummary.tsx): who the message goes to, which opens the list. */
+.recipient-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.recipient-count:hover,
+.recipient-count:has(+ :popover-open) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.recipient-summary-panel {
+  width: 300px;
+  padding: 14px 16px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+.recipient-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.recipient-summary-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.recipient-summary-head .icon-btn {
+  width: 24px; /* not a .menu row */
+  height: 24px;
+  padding: 0;
+}
+.recipient-summary-panel p {
+  margin: 4px 0 8px;
+}
+.recipient-summary-panel ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.recipient-summary-panel li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  font-weight: 500;
+}
+.recipient-summary-panel .dot {
+  width: 9px;
+  height: 9px;
+}
+.recipient-joining {
+  padding: 1px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  font-size: 12px;
+}
 .composer-add,
 .composer-lock {
   width: 28px;

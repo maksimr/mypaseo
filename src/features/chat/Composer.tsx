@@ -18,6 +18,7 @@ import { clickable } from '../../a11y'
 import { hostLabel, isScratch, projectName, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../../store'
 import { useAutocomplete } from './useAutocomplete'
 import { ContextMeter } from './ContextMeter'
+import { RecipientSummary } from './RecipientSummary'
 import { Recipients, type Recipient } from './Recipients'
 import { agentSettings, modelConfig, sendSetting, sessionSettings, type Session } from './session'
 import { Pick } from '../../components/Pick'
@@ -521,7 +522,8 @@ export function Composer({
       }}
     >
       {ac.popup}
-      {recipients.length > 0 && <Recipients recipients={recipients} panelId={panelId} />}
+      {/* A room's chips are the mentioned; everyone is the count by the lock. */}
+      {recipients.length > 0 && (mentioned.length > 0 || members.length < 2) && <Recipients recipients={recipients} panelId={panelId} />}
       {images.length + files.length + n > 0 && (
         <div className="composer-images">
           {reviewPaths.map((path) => {
@@ -685,6 +687,9 @@ export function Composer({
         )}
         <span className="grow" />
         {sole && <ContextMeter agent={sole} />}
+        {agent && (room || joining.length > 0) && recipients.length > 1 && (
+          <RecipientSummary recipients={recipients} total={members.length + joining.length} />
+        )}
         {agent && (room || joining.length > 0) && (
           <button
             className={`icon-btn composer-lock ${dm ? 'on' : ''}`}
