@@ -255,15 +255,50 @@
   gap: 6px;
 }
 /* Profiles */
-.profile .setting-row {
-  gap: 10px;
+.profile-count {
+  margin-left: 4px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 400;
+}
+/* Columns: color, handle, model, thinking, edit, remove; rows share them through subgrid. */
+.profile-list {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 2fr) minmax(0, 3fr) auto auto auto;
+  column-gap: 16px;
+}
+.profile {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  padding: 12px 0;
+  font-size: 14px;
+}
+.profile + .profile {
+  border-top: 1px solid var(--border);
+}
+.profile-handle {
+  font-weight: 500;
+}
+.profile-thinking {
+  justify-self: start;
+  margin-right: 24px;
+  padding: 1px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-size: 12px;
 }
 .profile-editor {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  /* icon 18 + gap 10: aligns with the profile name */
-  padding: 0 0 18px 28px;
+}
+/* Under its row, aligned with the handle */
+.profile > .profile-editor {
+  grid-column: 2 / -1;
+  padding: 16px 0 6px;
 }
 .profile-editor .setting-selects {
   justify-content: flex-start;
@@ -276,12 +311,8 @@
   padding: 14px 0;
 }
 .profile-dot {
-  display: inline-block;
-  width: 8px;
   height: 8px;
-  margin-right: 6px;
   border-radius: 50%;
-  vertical-align: 1px;
 }
 .profile-colors,
 .profile-colors > [role='radiogroup'] {
@@ -434,5 +465,13 @@ kbd {
   }
   .provider-body {
     padding-left: 0;
+  }
+  /* The handle takes its width first; the model truncates. */
+  .profile-list {
+    grid-template-columns: 8px minmax(0, max-content) minmax(0, 1fr) auto auto auto;
+    column-gap: 12px;
+  }
+  .profile-thinking {
+    margin-right: 0;
   }
 }

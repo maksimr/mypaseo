@@ -1,7 +1,6 @@
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { Options } from '../../components/Options'
-import { ProviderIcon } from '../../components/ProviderIcon'
 import type { AgentProfile, ProviderEntry } from '../../daemon'
 import { modelOptions } from '../../modelOptions'
 import { setProfiles, useHost, useHostId } from '../../store'
@@ -33,32 +32,35 @@ export function Profiles({ config, patch, q, error }: SectionProps) {
   if (!list.length && !matches(q, KEYWORDS) && !error) return null
   return (
     <section className="settings-section">
-      <h2>Profiles</h2>
+      <h2>
+        Profiles {profiles.length > 0 && <span className="profile-count">{profiles.length}</span>}
+      </h2>
       {error && <div className="banner err">{error}</div>}
       <div className="group-label">Agents to mention in a chat, shared with Paseo desktop</div>
-      {list.map((p) => (
-        <div key={p.id} className="profile">
-          <div className="setting-row">
-            <ProviderIcon provider={p.provider} size={18} />
-            <div className="grow min0">
-              <div className="setting-title">
-                {colorVar(p.color) && <span className="profile-dot" style={{ background: colorVar(p.color) }} />}
-                {p.name} <span className="muted">@{slug(p.name)}</span>
-              </div>
-              <div className="setting-desc truncate">{summary(p, providers)}</div>
+      <div className="profile-list">
+        {list.map((p) => {
+          const { model, thinking } = labels(p, providers)
+          return (
+            <div key={p.id} className="profile">
+              <span className="profile-dot" style={{ background: colorVar(p.color) }} />
+              <span className="profile-handle truncate" title={p.name}>
+                @{slug(p.name)}
+              </span>
+              <span className="muted truncate">{model}</span>
+              {thinking ? <span className="profile-thinking">{thinking}</span> : <span />}
+              <button className="icon-btn" title="Edit" aria-label={`Edit Profile ${p.name}`} aria-expanded={editing === p.id} onClick={() => setEditing(editing === p.id ? null : p.id)}>
+                <Pencil size={14} />
+              </button>
+              <button className="icon-btn" title="Remove" aria-label={`Remove Profile ${p.name}`} onClick={() => remove(p)}>
+                <Trash2 size={14} />
+              </button>
+              {editing === p.id && (
+                <ProfileEditor profile={p} profiles={profiles} onSave={(next) => save(profiles.map((x) => (x.id === next.id ? next : x)))} onCancel={() => setEditing(null)} />
+              )}
             </div>
-            <button className="icon-btn" title="Edit" aria-label={`Edit Profile ${p.name}`} aria-expanded={editing === p.id} onClick={() => setEditing(editing === p.id ? null : p.id)}>
-              <Pencil size={13} />
-            </button>
-            <button className="icon-btn" title="Remove" aria-label={`Remove Profile ${p.name}`} onClick={() => remove(p)}>
-              <Trash2 size={13} />
-            </button>
-          </div>
-          {editing === p.id && (
-            <ProfileEditor profile={p} profiles={profiles} onSave={(next) => save(profiles.map((x) => (x.id === next.id ? next : x)))} onCancel={() => setEditing(null)} />
-          )}
-        </div>
-      ))}
+          )
+        })}
+      </div>
       {!profiles.length && <div className="setting-desc profile-empty">No profiles yet.</div>}
       {editing === 'new' ? (
         <ProfileEditor profiles={profiles} onSave={(next) => save([...profiles, next])} onCancel={() => setEditing(null)} />
@@ -71,12 +73,14 @@ export function Profiles({ config, patch, q, error }: SectionProps) {
   )
 }
 
-/** "model · thinking", by their labels. */
-function summary(p: AgentProfile, providers: ProviderEntry[]) {
-  const models = providers.find((e) => e.provider === p.provider)?.models ?? []
-  const model = models.find((m) => m.id === p.model)
-  const thinking = (model ?? models.find((m) => m.isDefault))?.thinkingOptions?.find((o) => o.id === p.thinkingOptionId)
-  return [model?.label ?? p.model ?? 'Default model', thinking?.label ?? p.thinkingOptionId].filter(Boolean).join(' · ')
+/** The labels of the model and thinking a profile starts with: its own, else the defaults. */
+function labels(p: AgentProfile, providers: ProviderEntry[]) {
+  const entry = providers.find((e) => e.provider === p.provider)
+  const models = entry?.models ?? []
+  const model = p.model ? models.find((m) => m.id === p.model) : models.find((m) => m.isDefault)
+  const options = model?.thinkingOptions ?? []
+  const thinking = options.find((o) => o.id === (p.thinkingOptionId ?? model?.defaultThinkingOptionId)) ?? (p.thinkingOptionId ? undefined : options.find((o) => o.isDefault))
+  return { model: model?.label ?? p.model ?? entry?.label ?? p.provider, thinking: thinking?.label ?? p.thinkingOptionId }
 }
 
 function ProfileEditor({
