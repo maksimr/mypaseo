@@ -1,16 +1,22 @@
 .update-banner {
   position: fixed;
-  top: 12px;
+  top: calc(env(safe-area-inset-top, 0px) + 24px); /* below the notch or status bar (viewport-fit=cover) */
   left: 50%;
   translate: -50%;
   z-index: 20;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 6px 6px 12px;
+  gap: 12px;
+  padding: 6px 6px 6px 14px;
   border: 1px solid var(--border-strong);
-  border-radius: 6px;
+  border-radius: 10px;
   background: var(--bg-elev);
   box-shadow: 0 8px 24px var(--shadow-40);
   white-space: nowrap;
+}
+.update-banner .btn {
+  color: var(--accent);
+}
+.update-banner .icon-btn {
+  margin-left: -4px; /* the icon's padding already spaces it from Reload */
 }

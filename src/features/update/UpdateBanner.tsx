@@ -22,8 +22,9 @@ export function UpdateBanner() {
   if (!ready) return null
   return (
     <div className="update-banner" role="status">
-      New version available.
-      <button type="button" className="btn primary" onClick={() => location.reload()}>
+      <span className="dot attention" />
+      New version available
+      <button type="button" className="btn" onClick={() => location.reload()}>
         Reload
       </button>
       <button type="button" className="icon-btn" title="Close" onClick={() => setReady(false)}>
