@@ -1,50 +1,19 @@
-import { Brain, Loader2, ShieldQuestion, Sparkles, Users, X } from 'lucide-react'
-import { useSyncExternalStore } from 'react'
+import { Brain, Loader2, ShieldQuestion, Sparkles, X } from 'lucide-react'
 import { Pick } from '../../components/Pick'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import { errorText, type Agent } from '../../daemon'
 import { modelOptions } from '../../modelOptions'
 import { archiveAgent, useDaemon, useHost } from '../../store'
 
-// Whether rooms show their Members card: one setting for every room, kept across reloads.
-const listeners = new Set<() => void>()
-let shown = localStorage.mypaseoMembers !== 'hidden'
-const subscribe = (l: () => void) => {
-  listeners.add(l)
-  return () => listeners.delete(l)
-}
-const useShown = () => useSyncExternalStore(subscribe, () => shown)
-
-/** The tab bar's Show Members, for a room's chat. */
-export function MembersToggle() {
-  const on = useShown()
-  return (
-    <button
-      className={`icon-btn ${on ? 'on' : ''}`}
-      title="Show Members"
-      aria-pressed={on}
-      onClick={() => {
-        shown = !on
-        localStorage.mypaseoMembers = shown ? 'shown' : 'hidden'
-        listeners.forEach((l) => l())
-      }}
-    >
-      <Users size={15} />
-    </button>
-  )
-}
-
-/** A room's members, floating over its chat, the lead first: what each is doing, its Model and Thinking, and Remove
- *  (not the lead's: closing the lead closes the room). */
-export function MemberCard({ members }: { members: { agent: Agent; handle: string }[] }) {
+/** A room's members in its chat's Context card (chat/ContextCard.tsx), the lead first: what each is doing, its Model and
+ *  Thinking, and Remove (not the lead's: closing the lead closes the room). Its lines sit in the card's grid. */
+export function MemberList({ members }: { members: { agent: Agent; handle: string }[] }) {
   const daemon = useDaemon()
   const { providers } = useHost()
-  const on = useShown()
-  if (!on) return null
   const report = (call: Promise<unknown>) => call.catch((e) => alert(errorText(e)))
   return (
-    <div className="member-card" role="toolbar" aria-label="Members">
-      <div className="member-card-head">Members</div>
+    <>
+      <div className="members-head">Members</div>
       {members.map(({ agent: a, handle }, i) => {
         const models = (providers.find((p) => p.provider === a.provider)?.models ?? []).filter((m) => m.isSelectable !== false)
         const model = a.runtimeInfo?.model ?? a.model ?? undefined
@@ -88,6 +57,6 @@ export function MemberCard({ members }: { members: { agent: Agent; handle: strin
           </div>
         )
       })}
-    </div>
+    </>
   )
 }

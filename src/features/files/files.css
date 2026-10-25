@@ -27,6 +27,41 @@
   color: var(--text);
   text-decoration: underline;
 }
+/* Open in Editor (OpenInEditor.tsx): the editor's name opens the workspace in it; the chevron, past a rule, picks another. */
+.open-in {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.open-in > button:first-child {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 28px;
+  margin-left: -6px; /* the logo on the card's edge, the hover around it */
+  padding: 0 6px;
+  border-radius: 5px;
+}
+.open-in > button:first-child:hover {
+  background: var(--bg-hover);
+}
+.open-in > .icon-btn {
+  position: relative;
+}
+.open-in > .icon-btn::before {
+  content: '';
+  position: absolute;
+  inset: 4px auto 4px -7px; /* centered in the gap */
+  border-left: 1px solid var(--border-strong);
+}
+.open-in img {
+  display: block;
+}
+.editor-menu button {
+  text-align: left;
+}
 .crumb-menu {
   min-width: 240px;
   max-height: 50vh;

@@ -1,10 +1,9 @@
 import { ChevronDown, FileCode, FileDiff, GitCommitHorizontal, History, Loader2, Shapes, SquareTerminal, X } from 'lucide-react'
 import { clickable } from '../../a11y'
 import { GitGraphIcon } from '../../components/icons'
-import { OpenInEditor } from '../files/OpenInEditor'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import type { Agent } from '../../daemon'
-import { MembersToggle } from '../rooms/MemberCard'
+import { ContextToggle } from '../chat/ContextCard'
 import { handleOf, isLead, roomId } from '../rooms/members'
 import { formatCombo, useShortcut } from '../../keymap'
 import { totals, type DiffState } from '../changes/useCheckoutDiff'
@@ -41,6 +40,7 @@ export function TabBar({
   const slide = useSlide(tab === 'chat' ? `chat:${agent?.id}` : tab)
   // A room's other members show in its lead's chat: only the open one keeps a tab, named by its handle if untitled.
   const shown = chatTabs.filter((a) => !a || a === agent || isLead(a) || !chatTabs.some((x) => x && x.id === roomId(a)))
+  const room = tab === 'chat' && !!agent && isLead(agent)
   return (
     <div className="tabbar" role="toolbar" aria-label="Tabs">
       {/* On phones, a popover listing every tab (the bar shows only the open one); picking one closes it. */}
@@ -180,8 +180,7 @@ export function TabBar({
       <button className="icon-btn tab-list-btn" title="All Tabs" popoverTarget="tab-list">
         <ChevronDown size={15} />
       </button>
-      {tab === 'chat' && agent && isLead(agent) && <MembersToggle />}
-      {cwd && <OpenInEditor path={cwd} />}
+      {tab === 'chat' && (cwd || room) && <ContextToggle room={room} />}
     </div>
   )
 }

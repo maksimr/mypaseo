@@ -8,13 +8,13 @@ import { ProviderIcon } from '../../components/ProviderIcon'
 import type { Agent, TimelineItem } from '../../daemon'
 import { isShortcut } from '../../keymap'
 import type { ReviewComment } from '../review/review'
-import { MemberCard } from '../rooms/MemberCard'
 import { colorOf, handleOf, isLead, roomId, roomMembers } from '../rooms/members'
 import { isScratch, keptUnread, useDaemon, useHost } from '../../store'
 import { useRoomTimeline } from './useRoomTimeline'
 import { useTimeline } from './useTimeline'
 import { Timeline } from './Timeline'
 import { Composer } from './Composer'
+import { ContextCard } from './ContextCard'
 import { PermissionCard } from './PermissionCard'
 import { Rail } from './Rail'
 import { itemAcross, readingLine } from './reading'
@@ -223,7 +223,7 @@ export function Chat({
 
   return (
     <div className="chat">
-      {lead && <MemberCard members={named} />}
+      <ContextCard cwd={target.workspace?.workspaceDirectory} members={lead && named} />
       <div
         className="chat-scroll scroll-fade"
         ref={scroller}

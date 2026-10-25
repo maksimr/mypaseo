@@ -59,19 +59,6 @@
   padding: 0 6px;
   border-left: 1px solid var(--border-strong);
 }
-.open-in {
-  flex: none;
-}
-.open-in button:first-child {
-  padding: 4px;
-}
-.open-in img,
-#editor-menu img {
-  display: block;
-}
-#editor-menu button {
-  text-align: left;
-}
 .split-btn button:hover:not(:disabled) {
   background: var(--bg-hover);
 }

@@ -6,14 +6,14 @@ const { readdirSync } = require('node:fs')
 const FEATURE_DEPS = {
   artifacts: ['chat'],
   changes: ['review'],
-  chat: ['review', 'rooms'],
+  chat: ['files', 'review', 'rooms'],
   files: ['review'],
   'git-graph': ['changes'],
   palette: ['chat'],
   settings: ['hosts', 'rooms'],
   sidebar: ['hosts', 'rooms'],
   // The layout that puts the views into tabs and the side panel.
-  tabs: ['artifacts', 'changes', 'files', 'git-graph', 'review', 'rooms', 'terminal'],
+  tabs: ['artifacts', 'changes', 'chat', 'files', 'git-graph', 'review', 'rooms', 'terminal'],
 }
 
 const features = readdirSync(`${__dirname}/src/features`)

@@ -400,9 +400,9 @@
   flex: 1;
   border-top: 1px solid var(--border);
 }
-/* A room's members floating at the chat's top right (rooms/MemberCard.tsx), shown by the tab bar's Show Members; it
-   stays put while the chat scrolls under it, and floats over the text without moving it. */
-.member-card {
+/* A chat's context floating at its top right (ContextCard.tsx), shown by the tab bar's Show Context: Open in Editor,
+   then a room's members. It stays put while the chat scrolls under it, and floats over the text without moving it. */
+.context-card {
   position: absolute;
   z-index: 3; /* over the timeline's 1 and 2 and the composer's 1 */
   top: 8px;
@@ -421,10 +421,16 @@
   background: var(--bg-elev);
   box-shadow: 0 8px 24px var(--shadow-40);
 }
-.member-card-head {
+.context-card > .open-in {
+  grid-column: 1 / -1;
+}
+.members-head {
   grid-column: 1 / -1;
   margin-bottom: 2px;
   color: var(--text-muted);
+}
+.open-in + .members-head {
+  margin-top: 6px;
 }
 /* A member on one line, its picks in the card's columns, so they line up across members. */
 .member-line {

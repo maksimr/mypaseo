@@ -233,8 +233,11 @@
   .composer textarea {
     font-size: 18px;
   }
-  /* The bar shows only the open tab; the chevron drops down the full list. No Open in Editor on a phone. */
-  .open-in {
+  /* The bar shows only the open tab; the chevron drops down the full list. No Open in Editor on a phone: a chat's
+     Context is only a room's members. */
+  .open-in,
+  .context-toggle:not(.room),
+  .context-card:not(:has(.member-line)) {
     display: none;
   }
   .tab-list-btn {
