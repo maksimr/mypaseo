@@ -572,6 +572,35 @@
 .member-settings .pick:hover select {
   background: var(--bg-hover);
 }
+/* Its session's usage, under its settings (SessionUsage in MemberSettings.tsx); rows are composer.css's .usage-*. */
+.member-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+.member-usage-head {
+  font-weight: 600;
+}
+.member-usage .usage-row {
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.member-usage-context {
+  font-size: 13px;
+}
+.member-usage .usage-value {
+  font-weight: 600;
+}
+.member-usage .usage-track {
+  height: 6px;
+  border-radius: 3px;
+}
+.member-usage .usage-fill.default {
+  background: var(--accent);
+}
 /* Remove, then Apply, at the right. */
 .member-foot {
   display: flex;

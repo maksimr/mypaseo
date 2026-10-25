@@ -1,4 +1,4 @@
-import type { UsageReport } from '../../daemon'
+import type { Agent, UsageReport } from '../../daemon'
 
 type Window = Extract<UsageReport['report'], { status: 'available' }>['windows'][number]
 type Balance = NonNullable<Extract<UsageReport['report'], { status: 'available' }>['balances']>[number]
@@ -9,6 +9,12 @@ export function formatTokens(n: number) {
   if (n >= 1_000_000) return `${Math.round(n / 1_000_000)}m`
   if (n >= 1_000) return `${Math.round(n / 1_000)}k`
   return String(Math.round(n))
+}
+
+/** How full the agent's context window is, in whole percent; null without both numbers. */
+export function contextPct(u: Agent['lastUsage']) {
+  const { contextWindowMaxTokens: max, contextWindowUsedTokens: used } = u ?? {}
+  return max && max > 0 && used != null && used >= 0 ? Math.round((used / max) * 100) : null
 }
 
 export const formatCost = (usd: number) => (usd < 0.01 ? `$${usd.toFixed(4)}` : `$${usd.toFixed(2)}`)
@@ -41,10 +47,12 @@ export function usedPct(w: Window) {
   return w.usedPct ?? (w.remainingPct != null ? 100 - w.remainingPct : null)
 }
 
+/** Warning from 70% used, danger past 90%. */
+export const pctTone = (used: number | null): Tone => (used == null ? 'default' : used > 90 ? 'danger' : used >= 70 ? 'warning' : 'default')
+
 /** The source's tone, else one from how much of the window is used. */
 export function windowTone(w: Window): Tone {
-  const used = usedPct(w)
-  return w.tone ?? (used == null ? 'default' : used > 90 ? 'danger' : used >= 70 ? 'warning' : 'default')
+  return w.tone ?? pctTone(usedPct(w))
 }
 
 /** "31% · resets 2h", or "· runs out 3h" when the source predicts the window runs out before it resets. */

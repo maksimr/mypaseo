@@ -3,13 +3,13 @@ import { Gauge, Loader2, RotateCw } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { errorText, type Agent, type UsageReport } from '../../daemon'
 import { useDaemon } from '../../store'
-import { balanceAmount, formatCost, formatTokens, resetLabel, updatedLabel, upsertReport, usedPct, windowTone, windowTrailing, type Tone } from './usage'
+import { balanceAmount, contextPct, formatCost, formatTokens, resetLabel, updatedLabel, upsertReport, usedPct, windowTone, windowTrailing, type Tone } from './usage'
 
 /** Composer ring for how full the agent's context window is; hovering or clicking it opens the details and the account's usage. */
 export function ContextMeter({ agent }: { agent: Agent }) {
   const [open, setOpen] = useState(false)
   const { contextWindowMaxTokens: max, contextWindowUsedTokens: used, totalCostUsd: cost } = agent.lastUsage ?? {}
-  const pct = max && max > 0 && used != null && used >= 0 ? Math.round((used / max) * 100) : null
+  const pct = contextPct(agent.lastUsage)
   const label = pct != null ? `Context window ${pct}% used` : 'Context window: No context data'
   const r = 7
   const c = 2 * Math.PI * r
