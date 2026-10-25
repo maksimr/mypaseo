@@ -428,7 +428,7 @@
   color: var(--text);
 }
 .recipient-summary-panel {
-  width: 300px;
+  width: 340px;
   padding: 14px 16px 10px;
   border-radius: 12px;
   font-size: 13px;
@@ -465,8 +465,26 @@
   font-weight: 500;
 }
 .recipient-summary-panel .dot {
+  flex: none;
   width: 9px;
   height: 9px;
+}
+/* Its context ring and numbers (ContextGauge), at the row's end. */
+.recipient-usage {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.recipient-usage .ctx-text {
+  display: inline; /* kept on phones, unlike the composer's ring */
+}
+.recipient-summary-panel .recipient-summary-note {
+  margin: 6px 0 4px;
+  font-size: 11px;
 }
 .recipient-joining {
   padding: 1px 8px;

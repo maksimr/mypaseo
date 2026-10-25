@@ -17,6 +17,8 @@ export function contextPct(u: Agent['lastUsage']) {
   return max && max > 0 && used != null && used >= 0 ? Math.round((used / max) * 100) : null
 }
 
+export const contextLabel = (pct: number | null) => (pct != null ? `Context window ${pct}% used` : 'Context window: No context data')
+
 export const formatCost = (usd: number) => (usd < 0.01 ? `$${usd.toFixed(4)}` : `$${usd.toFixed(2)}`)
 
 /** "3d" / "5h" / "17m" until iso, "now" once passed, null if unparsable. */

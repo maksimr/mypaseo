@@ -3,16 +3,13 @@ import { Gauge, Loader2, RotateCw } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { errorText, type Agent, type UsageReport } from '../../daemon'
 import { useDaemon } from '../../store'
-import { balanceAmount, contextPct, formatCost, formatTokens, resetLabel, updatedLabel, upsertReport, usedPct, windowTone, windowTrailing, type Tone } from './usage'
+import { balanceAmount, contextLabel, contextPct, formatCost, formatTokens, resetLabel, updatedLabel, upsertReport, usedPct, windowTone, windowTrailing, type Tone } from './usage'
 
 /** Composer ring for how full the agent's context window is; hovering or clicking it opens the details and the account's usage. */
 export function ContextMeter({ agent }: { agent: Agent }) {
   const [open, setOpen] = useState(false)
   const { contextWindowMaxTokens: max, contextWindowUsedTokens: used, totalCostUsd: cost } = agent.lastUsage ?? {}
   const pct = contextPct(agent.lastUsage)
-  const label = pct != null ? `Context window ${pct}% used` : 'Context window: No context data'
-  const r = 7
-  const c = 2 * Math.PI * r
   return (
     <span
       className="ctx-meter"
@@ -26,29 +23,8 @@ export function ContextMeter({ agent }: { agent: Agent }) {
         setOpen(false)
       }}
     >
-      <button className="icon-btn ctx-ring" aria-label={label} aria-expanded={open} onClick={() => setOpen(!open)}>
-        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
-          <circle cx="8" cy="8" r={r} fill="none" stroke="var(--border-strong)" strokeWidth="2" />
-          {pct != null && (
-            <circle
-              cx="8"
-              cy="8"
-              r={r}
-              fill="none"
-              stroke={pct > 90 ? 'var(--red)' : pct >= 70 ? 'var(--yellow)' : 'var(--text-muted)'}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray={c}
-              strokeDashoffset={c - (Math.min(100, pct) / 100) * c}
-              transform="rotate(-90 8 8)"
-            />
-          )}
-        </svg>
-        {pct != null && (
-          <span className="ctx-text" aria-hidden>
-            {((used! / max!) * 100).toFixed(1)}%/{max! >= 1_000_000 ? `${(max! / 1_000_000).toFixed(1)}M` : `${Math.round(max! / 1_000)}K`}
-          </span>
-        )}
+      <button className="icon-btn ctx-ring" aria-label={contextLabel(pct)} aria-expanded={open} onClick={() => setOpen(!open)}>
+        <ContextGauge usage={agent.lastUsage} />
       </button>
       {open && (
         <div className="ctx-card" role="dialog" aria-label="Context window">
@@ -70,6 +46,40 @@ export function ContextMeter({ agent }: { agent: Agent }) {
         </div>
       )}
     </span>
+  )
+}
+
+/** The ring and "16.5%/272K": the composer's ContextMeter and the recipients summary (RecipientSummary). Unlabelled: its holder says it. */
+export function ContextGauge({ usage }: { usage: Agent['lastUsage'] }) {
+  const { contextWindowMaxTokens: max, contextWindowUsedTokens: used } = usage ?? {}
+  const pct = contextPct(usage)
+  const r = 7
+  const c = 2 * Math.PI * r
+  return (
+    <>
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+        <circle cx="8" cy="8" r={r} fill="none" stroke="var(--border-strong)" strokeWidth="2" />
+        {pct != null && (
+          <circle
+            cx="8"
+            cy="8"
+            r={r}
+            fill="none"
+            stroke={pct > 90 ? 'var(--red)' : pct >= 70 ? 'var(--yellow)' : 'var(--text-muted)'}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={c - (Math.min(100, pct) / 100) * c}
+            transform="rotate(-90 8 8)"
+          />
+        )}
+      </svg>
+      {pct != null && (
+        <span className="ctx-text" aria-hidden>
+          {((used! / max!) * 100).toFixed(1)}%/{max! >= 1_000_000 ? `${(max! / 1_000_000).toFixed(1)}M` : `${Math.round(max! / 1_000)}K`}
+        </span>
+      )}
+    </>
   )
 }
 
