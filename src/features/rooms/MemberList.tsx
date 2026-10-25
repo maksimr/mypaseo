@@ -1,62 +1,61 @@
-import { Brain, Loader2, ShieldQuestion, Sparkles, X } from 'lucide-react'
-import { Pick } from '../../components/Pick'
-import { ProviderIcon } from '../../components/ProviderIcon'
-import { errorText, type Agent } from '../../daemon'
-import { modelOptions } from '../../modelOptions'
-import { archiveAgent, useDaemon, useHost } from '../../store'
+import { ChevronRight, Loader2, ShieldQuestion } from 'lucide-react'
+import type { Agent } from '../../daemon'
 
-/** A room's members in its chat's Context card (chat/ContextCard.tsx), the lead first: what each is doing, its Model and
- *  Thinking, and Remove (not the lead's: closing the lead closes the room). Its lines sit in the card's grid. */
-export function MemberList({ members }: { members: { agent: Agent; handle: string }[] }) {
-  const daemon = useDaemon()
-  const { providers } = useHost()
-  const report = (call: Promise<unknown>) => call.catch((e) => alert(errorText(e)))
+/** A room member: its handle and its profile's color (a CSS color), if it has one. */
+export type Member = { agent: Agent; handle: string; color?: string }
+
+/** A member's color on a tile. */
+export const MemberAvatar = ({ color }: { color?: string }) => (
+  <span className="member-avatar">
+    <span className="dot" style={{ background: color }} />
+  </span>
+)
+
+/** Its handle, This Chat on the lead, and what it's doing (as the sidebar's StatusMark). */
+export function MemberName({ member: { agent: a, handle }, lead }: { member: Member; lead?: boolean }) {
   return (
-    <>
-      <div className="members-head">Members</div>
-      {members.map(({ agent: a, handle }, i) => {
-        const models = (providers.find((p) => p.provider === a.provider)?.models ?? []).filter((m) => m.isSelectable !== false)
-        const model = a.runtimeInfo?.model ?? a.model ?? undefined
-        const levels = models.find((m) => m.id === model)?.thinkingOptions ?? []
-        return (
-          <div key={a.id} className="member-line" role="group" aria-label={`@${handle}`}>
-            <ProviderIcon provider={a.provider} size={13} />
-            <span className="member-name">
-              <span className="member-handle truncate">@{handle}</span>
-              {/* As the sidebar's StatusMark. */}
-              {a.pendingPermissions.length > 0 ? (
-                <ShieldQuestion size={13} color="var(--yellow)" aria-label="Needs your action" />
-              ) : a.status === 'running' ? (
-                <Loader2 size={13} className="spin muted" aria-label="Running" />
-              ) : a.status === 'error' ? (
-                <span className="dot failed" title={a.lastError ?? 'Error'} />
-              ) : null}
-            </span>
-            {models.length > 0 && (
-              <Pick icon={<Sparkles size={14} />} value={model} onChange={(v) => report(daemon.setAgentModel(a.id, v))} options={modelOptions(models)} title="Model" />
-            )}
-            {levels.length > 0 && (
-              <Pick
-                icon={<Brain size={14} />}
-                value={a.thinkingOptionId ?? a.effectiveThinkingOptionId ?? undefined}
-                onChange={(v) => report(daemon.setAgentThinkingOption(a.id, v))}
-                options={levels.map((o) => [o.id, o.label])}
-                title="Thinking"
-              />
-            )}
-            {i > 0 && (
-              <button
-                className="icon-btn"
-                title="Remove"
-                aria-label={`Remove @${handle}`}
-                onClick={() => confirm(`Remove @${handle} from the room? Its agent is archived.`) && void archiveAgent(a)}
-              >
-                <X size={13} />
-              </button>
-            )}
-          </div>
-        )
-      })}
-    </>
+    <span className="member-name">
+      <span className="member-handle truncate">@{handle}</span>
+      {lead && <span className="member-badge">This Chat</span>}
+      {a.pendingPermissions.length > 0 ? (
+        <span className="member-status">
+          <ShieldQuestion size={11} color="var(--yellow)" />
+          Needs action
+        </span>
+      ) : a.status === 'running' ? (
+        <span className="member-status">
+          <Loader2 size={11} className="spin" />
+          Working
+        </span>
+      ) : a.status === 'error' ? (
+        <span className="member-status" title={a.lastError ?? undefined}>
+          <span className="dot failed" />
+          Error
+        </span>
+      ) : null}
+    </span>
+  )
+}
+
+/** A room's members in its chat's Context card (chat/ContextCard.tsx), the lead first: what each is doing and runs
+ *  (`brief`). A click opens its settings (`onOpen`), Remove among them. */
+export function MemberList({ members, onOpen }: { members: (Member & { brief: string })[]; onOpen: (agentId: string) => void }) {
+  return (
+    <div className="members">
+      <div className="members-head">
+        Members<span className="members-count">{members.length}</span>
+      </div>
+      {members.map((m, i) => (
+        <button key={m.agent.id} className="member-chip" onClick={() => onOpen(m.agent.id)}>
+          <MemberAvatar color={m.color} />
+          <span className="member-identity">
+            <MemberName member={m} lead={i === 0} />
+            <span className="member-brief truncate">{m.brief}</span>
+          </span>
+          <ChevronRight size={14} className="faint" />
+        </button>
+      ))}
+      <p className="member-hint">Select a member to configure its session.</p>
+    </div>
   )
 }

@@ -2,7 +2,7 @@ import { ArrowUp, Folder, GitBranch, Loader2, Lock, MessageCircle, Paperclip, Pl
 import { useContext, useEffect, useId, useRef, useState } from 'react'
 import { ActiveViewContext } from '../../activeView'
 import { ARTIFACT_PROMPT } from '../../artifact'
-import { errorText, type Agent, type AgentProfile, type DaemonClient, type ProviderEntry } from '../../daemon'
+import { errorText, type Agent, type AgentProfile, type DaemonClient } from '../../daemon'
 import * as rooms from '../../rooms'
 import { RESERVED, slug, uniqueHandle } from '../rooms/handles'
 import { handleOf, roomId, roomMembers } from '../rooms/members'
@@ -17,10 +17,10 @@ import { clickable } from '../../a11y'
 import { hostLabel, isScratch, projectName, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../../store'
 import { useAutocomplete } from './useAutocomplete'
 import { ContextMeter } from './ContextMeter'
-import { RecipientChip, type Setting } from './RecipientChip'
+import { RecipientChip } from './RecipientChip'
+import { agentSettings, modelConfig, sendSetting, sessionSettings, type Session } from './session'
 import { Pick } from '../../components/Pick'
 import type { PickOption } from '../../components/Options'
-import { modelOptions } from '../../modelOptions'
 import type { Target } from './target'
 
 type Draft = { provider?: string; model?: string; thinking?: string; mode?: string }
@@ -43,15 +43,6 @@ const readImage = (file: File) =>
 const inlineImage = (f: File) => /^image\/(png|jpeg|gif|webp)$/.test(f.type)
 const MAX_FILE_BYTES = 50 * 1024 * 1024 // the Paseo app's limit; the daemon sets none
 
-/** The provider's selectable models, the picked one (else its default) and a thinking level it offers (else its default). */
-function modelConfig(entry: ProviderEntry | undefined, modelId: string | null | undefined, thinking: string | null | undefined) {
-  const models = (entry?.models ?? []).filter((m) => m.isSelectable !== false)
-  const model = models.find((m) => m.id === modelId) ?? models.find((m) => m.isDefault) ?? models[0]
-  const thinkingOptions = model?.thinkingOptions ?? []
-  const validThinking = (thinkingOptions.some((o) => o.id === thinking) ? thinking : model?.defaultThinkingOptionId) ?? undefined
-  return { models, model, thinkingOptions, validThinking }
-}
-
 /** The system prompt of every agent made here, room members included: the artifact rules, plus a profile's notes as its role. */
 const systemPromptOf = (profile?: AgentProfile) => (profile?.notes ? `${ARTIFACT_PROMPT}\n\nYour role: ${profile.notes}` : ARTIFACT_PROMPT)
 
@@ -62,8 +53,6 @@ const fileDrafts = new Map<string, File[]>()
 /** The Provider (the default agent's), Model, Thinking, Mode and Context (a contextOptions id) picked on joining chips, by handle. */
 type JoinPick = { handle: string; provider?: string; model?: string; thinking?: string; mode?: string; context?: string }
 const joinDrafts = new Map<string, JoinPick[]>()
-/** The settings a recipient's session has. */
-type Session = 'model' | 'thinking' | 'mode'
 /** An agent the message goes to: its chip, and its agent if it runs already. */
 type Recipient = Omit<Parameters<typeof RecipientChip>[0], 'id'> & { key: string; agent?: Agent }
 /** The messages picked with Share From Here. */
@@ -287,22 +276,7 @@ export function Composer({
   const change = (field: keyof Draft, value: string) =>
     setDraft({ ...draft, provider, [field]: value, ...(field === 'provider' ? { model: undefined, thinking: undefined, mode: undefined } : {}) })
   // A running agent's: its session changes now.
-  const setSession = (a: Agent, field: Session, value: string) =>
-    void (field === 'model' ? daemon.setAgentModel(a.id, value) : field === 'thinking' ? daemon.setAgentThinkingOption(a.id, value) : daemon.setAgentMode(a.id, value)).catch(
-      (e) => alert(errorText(e)),
-    )
-  const sessionSettings = (
-    c: ReturnType<typeof modelConfig>,
-    set: (field: Session, value: string) => void,
-    modes: { id: string; label: string }[],
-    mode: string | null | undefined,
-  ): Setting[] => [
-    ...(c.models.length ? [{ title: 'Model', value: c.model?.id, options: modelOptions(c.models), onChange: (v: string) => set('model', v), brief: true }] : []),
-    ...(c.thinkingOptions.length
-      ? [{ title: 'Thinking', value: c.validThinking, options: c.thinkingOptions.map((o): PickOption => [o.id, o.label]), onChange: (v: string) => set('thinking', v), brief: true }]
-      : []),
-    ...(modes.length ? [{ title: 'Mode', value: mode ?? undefined, options: modes.map((m): PickOption => [m.id, m.label]), onChange: (v: string) => set('mode', v) }] : []),
-  ]
+  const setSession = (a: Agent, field: Session, value: string) => void sendSetting(daemon, a, field, value).catch((e) => alert(errorText(e)))
   const dropMention = (handle: string) => {
     setText(unmention(text, handle))
     setJoinPicks(joinPicks.filter((x) => x.handle !== handle))
@@ -314,11 +288,10 @@ export function Composer({
     name: `@${handle}`,
     provider: m.provider,
     agent: m,
-    settings: sessionSettings(
-      modelConfig(providers.find((p) => p.provider === m.provider), m.runtimeInfo?.model ?? m.model, m.thinkingOptionId ?? m.effectiveThinkingOptionId),
+    settings: agentSettings(
+      providers.find((p) => p.provider === m.provider),
+      m,
       (field, v) => setSession(m, field, v),
-      m.availableModes,
-      m.currentModeId,
     ),
     note: 'Changes apply to its session now.',
     onRemove: mentioned.includes(handle) ? () => dropMention(handle) : undefined,

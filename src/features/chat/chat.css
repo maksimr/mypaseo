@@ -433,62 +433,214 @@
   border-top: 1px solid var(--border);
 }
 /* A chat's context floating at its top right (ContextCard.tsx), shown by the tab bar's Show Context: Open in Editor,
-   then a room's members. It stays put while the chat scrolls under it, and floats over the text without moving it. */
+   then a room's members, or a member's settings in their place. It stays put while the chat scrolls under it, and
+   floats over the text without moving it. */
 .context-card {
   position: absolute;
   z-index: 3; /* over the timeline's 1 and 2 and the composer's 2 */
   top: 8px;
   right: 16px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto; /* icon, name, Model, Thinking, Remove */
-  row-gap: 4px;
-  width: max-content;
-  min-width: 220px;
-  max-width: min(400px, 100% - 32px);
+  display: flex;
+  flex-direction: column;
+  width: 260px;
+  max-width: calc(100% - 32px);
   max-height: calc(100% - 16px);
   overflow-y: auto;
-  padding: 10px 12px;
   border: 1px solid var(--border-strong);
-  border-radius: 10px;
+  border-radius: 14px;
   background: var(--bg-elev);
-  box-shadow: 0 8px 24px var(--shadow-40);
+  box-shadow: 0 16px 35px var(--shadow-40);
+}
+/* As wide for the members as for one's settings, so opening them keeps its size. */
+.context-card:has(.members, .member-settings) {
+  width: 340px;
+}
+.context-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 12px 12px 16px;
+}
+.context-head > .icon-btn:first-child {
+  margin-left: -6px; /* the back chevron on the title's edge */
+}
+.context-head:has(+ .member-settings) {
+  border-bottom: 1px solid var(--border);
+}
+.context-title {
+  flex: 1;
+  font-weight: 600;
 }
 .context-card > .open-in {
-  grid-column: 1 / -1;
+  margin: 0 12px 14px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--bg-raised);
+}
+.context-card > .open-in > button:first-child {
+  margin-left: 0;
+}
+.members {
+  padding: 14px 12px 12px;
+  border-top: 1px solid var(--border);
 }
 .members-head {
-  grid-column: 1 / -1;
-  margin-bottom: 2px;
-  color: var(--text-muted);
-}
-.open-in + .members-head {
-  margin-top: 6px;
-}
-/* A member on one line, its picks in the card's columns, so they line up across members. */
-.member-line {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: subgrid;
+  display: flex;
   align-items: center;
+  gap: 7px;
+  margin: 0 4px 10px;
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
-/* As wide as its value, its chevron beside it. */
-.member-line > .pick {
-  justify-self: start;
+.members-count {
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--bg-raised);
+  font-size: 10px;
+  letter-spacing: 0;
 }
-/* Last, without a Thinking pick before it too. */
-.member-line > .icon-btn {
-  grid-column: -2;
+.member-chip {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg-raised);
+  text-align: left;
 }
-/* Its handle and status; the picks have their own 8px inset. */
+.member-chip:hover {
+  background: var(--bg-active);
+}
+.member-chip + .member-chip {
+  margin-top: 8px;
+}
+.member-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--bg-elev);
+}
+.member-avatar > .dot {
+  width: 8px;
+  height: 8px;
+}
+.member-identity {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+/* Its handle, This Chat and its status. */
 .member-name {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
-  padding-inline: 8px;
 }
 .member-handle {
-  font-family: var(--mono);
+  font-weight: 600;
+}
+.member-badge {
+  flex: none;
+  padding: 0 5px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+.member-status {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.member-brief {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.member-hint {
+  margin: 12px 4px 0;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+/* A member's settings (MemberSettings.tsx): the composer chip's picks (.recipient-setting), at the card's size. */
+.member-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+.member-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.member-summary > .member-avatar {
+  width: 34px;
+  height: 34px;
+}
+.member-summary .member-brief {
+  font-size: 11px;
+}
+.member-settings .recipient-setting {
+  gap: 16px;
+  font-size: 12px;
+}
+.member-settings .pick {
+  flex: 0 1 205px;
+  color: var(--text);
+}
+.member-settings .pick select {
+  flex: 1;
+  field-sizing: fixed;
+  width: 100%;
+  max-width: none;
+  height: 36px;
+  padding: 0 28px 0 11px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised);
+}
+.member-settings .pick:hover select {
+  background: var(--bg-hover);
+}
+/* Remove, then Apply, at the right. */
+.member-foot {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+.member-remove {
+  height: 28px;
+  border-radius: 7px;
+}
+.member-apply {
+  height: 28px;
+  padding: 0 14px;
+  border-radius: 7px;
+  background: var(--text);
+  color: var(--bg-elev);
+  font-weight: 600;
 }
 /* Whose permission request the card under it is, in a room: on the card's column (.permission in composer.css). */
 .permission-from {

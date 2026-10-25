@@ -237,7 +237,7 @@
      Context is only a room's members. */
   .open-in,
   .context-toggle:not(.room),
-  .context-card:not(:has(.member-line)) {
+  .context-card:not(:has(.members, .member-settings)) {
     display: none;
   }
   .tab-list-btn {

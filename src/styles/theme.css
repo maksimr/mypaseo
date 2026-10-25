@@ -8,6 +8,7 @@
   --bg-sidebar: light-dark(#efeff0, #1f1f1f);
   --bg-panel: light-dark(#efeff0, #151515);
   --bg-elev: light-dark(#ffffff, #2a2a2a);
+  --bg-raised: light-dark(#f4f4f5, #303030); /* a box on --bg-elev: the Context card's members and picks */
   --bg-hover: light-dark(#e6e6e8, #323232);
   --bg-active: light-dark(#dbdbde, #3a3a3a);
   --bg-input: light-dark(#ffffff, #121212);
