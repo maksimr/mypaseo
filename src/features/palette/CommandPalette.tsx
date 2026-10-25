@@ -10,7 +10,7 @@ import { OpenFileContext } from '../../openFile'
 import { hostLabel, projectName, useDaemon, useStore } from '../../store'
 
 // Only the composer or commit dialog handles these, and Add to Chat needs the selection the palette's input takes.
-const HIDDEN: ShortcutId[] = ['commandPalette', 'send', 'cycleThinking', 'pickModel', 'pickProject', 'amend', 'addToChat', 'listSearch']
+const HIDDEN: ShortcutId[] = ['commandPalette', 'send', 'pickModel', 'pickProject', 'amend', 'addToChat', 'listSearch']
 
 /**
  * Lists the shortcut commands. Running one replays its key combo on window, so whichever component owns it handles it.

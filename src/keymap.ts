@@ -57,7 +57,6 @@ export const SHORTCUTS = {
   // Chat
   // Shift+Enter still inserts a newline since combos match exactly.
   send: { group: 'Chat', label: 'Send', description: 'Send the message in the chat composer.', default: 'Enter' },
-  cycleThinking: { group: 'Chat', label: 'Cycle Thinking Level', description: 'Switch to the next thinking level from the chat composer.', default: 'Shift+Tab' },
   pickModel: { group: 'Chat', label: 'Choose Model', description: 'Open the model picker from the chat composer.', default: 'Alt+KeyP' },
   // Ctrl on Mac too, as asked: ⌘P is the browser's Print.
   pickProject: { group: 'Chat', label: 'Choose Project', description: 'Open the project picker from the new agent composer.', default: 'Ctrl+KeyP' },

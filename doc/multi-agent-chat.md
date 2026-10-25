@@ -238,8 +238,7 @@ Depends on S1, S2, S3. Owns `features/chat/Composer.tsx`, `autocomplete.ts`, `us
 
 - `@` popup: members first, then profiles and `@agent`, then files. An agent pick inserts `@handle ` (no quotes).
 - Each mentioned non-member gets a `JoinChip` above the textarea: provider icon, `@handle`, Model and Thinking `Pick`s
-  (defaults from the profile, or `loadDraft()` for `@agent`), remove. Cycle Thinking acts on the chip whose mention
-  holds the caret. Context: only "None" in this step (S7 adds the rest).
+  (defaults from the profile, or `loadDraft()` for `@agent`), remove. Context: only "None" in this step (S7 adds the rest).
 - Send:
   - no room, no new members → unchanged (`sendAgentMessage`).
   - no room, new members → label the lead (`mypaseo.room`/`mypaseo.handle` from `handleOf`), `room.join`, `room.post`.

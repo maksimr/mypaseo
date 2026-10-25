@@ -630,7 +630,6 @@ export function Composer({
               // On the recipient whose mention holds the caret, else this chat's agent, else the first.
               const at = mentionAt(text, e.currentTarget.selectionStart)
               const r = recipients.find((x) => x.key === at) ?? recipients.find((x) => x.agent && x.agent.id === agent?.id) ?? recipients[0]
-              const levels = r?.settings.find((s) => s.title === 'Thinking')
               // Tab skips Send (Shift+Tab from the chip reaches it) to the first recipient's chip, in the bar under the box.
               const chip = e.currentTarget.closest('.composer')?.querySelector<HTMLButtonElement>('.recipient-chip')
               if (comboOf(e) === 'Tab' && chip) {
@@ -639,10 +638,6 @@ export function Composer({
               } else if (isShortcut(e, 'send')) {
                 e.preventDefault()
                 void send()
-              } else if (isShortcut(e, 'cycleThinking') && levels) {
-                e.preventDefault()
-                const ids = levels.options.map(([id]) => id)
-                levels.onChange(ids[(ids.indexOf(levels.value ?? '') + 1) % ids.length])
               } else if (isShortcut(e, 'pickModel') && r) {
                 // Its settings, at the Model.
                 e.preventDefault()
