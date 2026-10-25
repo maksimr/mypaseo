@@ -1,7 +1,7 @@
 import type { TimelineItem } from '../../daemon'
 
 type Entry = { item: TimelineItem; timestamp: string }
-type Member = { agentId: string; handle: string; entries: Entry[] }
+type Member = { agentId: string; handle: string; entries: Entry[]; running?: boolean }
 /** author: the member's handle, or `user` for what the user wrote. private: part of a direct message exchange. */
 export type RoomItem = Entry & { author: string; agentId: string; private: boolean; key: string }
 
@@ -17,13 +17,20 @@ export function deliveryOf(item: TimelineItem): { dm: boolean; at: string } | nu
 const isRoomItem = (item: TimelineItem): item is Extract<TimelineItem, { type: 'plugin' }> =>
   item.type === 'plugin' && item.pluginId === 'mypaseo-rooms'
 
+// A step, as chat/work.ts has it: the runs of them collapse into one row.
+const isStep = (item: TimelineItem) => item.type === 'tool_call' || item.type === 'reasoning'
+
 /**
  * A member's items with their sort times. A rebuilt timeline stamps every entry with the rebuild time, so an entry
  * stamped after the member's next delivery (before its first one, after the room's first item) keeps the sort time
  * before it: a turn sorts at the delivery that opened it, pre-room history before the room. Sort times never go down
  * along a timeline, and the lead's room items come first, so they win ties with the turns they open.
+ *
+ * A run of steps sorts with the item that ends it, so a member's thoughts and tool calls sit right above the reply they
+ * led to, not among what the others wrote meanwhile; a running member's last run sorts last, under everything. A run
+ * a new turn ends (an interrupted turn's) keeps its own time.
  */
-function itemsOf({ agentId, handle, entries }: Member, lead: boolean): [number, RoomItem][] {
+function itemsOf({ agentId, handle, entries, running }: Member, lead: boolean): [number, RoomItem][] {
   const deliveries = entries.map(({ item }) => deliveryOf(item))
   const roomStart = lead ? Math.min(...entries.filter((e) => isRoomItem(e.item)).map((e) => Date.parse(e.timestamp))) : Infinity
   const cap: number[] = []
@@ -38,6 +45,7 @@ function itemsOf({ agentId, handle, entries }: Member, lead: boolean): [number, 
   let last = -Infinity
   let delivered = false
   let dm = false
+  let steps: [number, RoomItem][] = [] // the run of steps waiting for the item that ends it
   entries.forEach(({ item, timestamp }, i) => {
     const t = Date.parse(timestamp)
     if (isRoomItem(item)) {
@@ -53,11 +61,17 @@ function itemsOf({ agentId, handle, entries }: Member, lead: boolean): [number, 
     if (delivery) {
       last = Math.max(last, Date.parse(delivery.at))
       delivered = true
+      steps = []
       return
     }
     if (t <= cap[i] && (delivered || t <= roomStart)) last = Math.max(last, t)
-    rest.push([last, { item, timestamp, agentId, key: `${agentId}:${i}`, author: user ? 'user' : handle, private: dm }])
+    const entry: [number, RoomItem] = [last, { item, timestamp, agentId, key: `${agentId}:${i}`, author: user ? 'user' : handle, private: dm }]
+    rest.push(entry)
+    if (isStep(item)) return void steps.push(entry)
+    if (!user) for (const s of steps) s[0] = last
+    steps = []
   })
+  if (running) for (const s of steps) s[0] = Infinity
   return [...rooms, ...rest]
 }
 

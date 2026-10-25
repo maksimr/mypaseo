@@ -56,7 +56,7 @@ export function Chat({
   const lead = agent && isLead(agent) ? agent : undefined
   const members = lead ? [lead, ...roomMembers(agents, lead.id).filter((m) => m.id !== lead.id)] : agent ? [agent] : []
   const named = members.map((m) => ({ agent: m, handle: handleOf(m, profiles), color: colorOf(m, profiles) }))
-  const roomTl = useRoomTimeline(lead?.id ?? null, named.map((m) => ({ agentId: m.agent.id, handle: m.handle })))
+  const roomTl = useRoomTimeline(lead?.id ?? null, named.map((m) => ({ agentId: m.agent.id, handle: m.handle, running: m.agent.status === 'running' })))
   const ownTl = useTimeline(lead ? null : (agent?.id ?? null))
   const tl: { items: TimelineItem[]; loading: boolean; error: string | null; partial?: boolean } = lead ? roomTl : ownTl
   const permissions = named.flatMap((m) => m.agent.pendingPermissions.map((request) => ({ ...m, request })))

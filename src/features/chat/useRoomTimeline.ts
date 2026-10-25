@@ -60,13 +60,13 @@ function follow(
 
 /**
  * A room as one conversation (mergeRoom): every member's timeline, followed live, and the room items. `members` lists
- * the lead (`roomId`) first; null shows nothing. `items[i]` is `room[i].item`.
+ * the lead (`roomId`) first; null shows nothing; a running one's last steps sort last. `items[i]` is `room[i].item`.
  *
  * The room items come from the room log only, reloaded whenever one streams in on the lead: a rebuilt timeline drops
  * them, and the log has the times the plugin works with (the streamed copy is stamped a few ms later). Leaving them out
  * of the lead's timeline keeps its entries' keys (their index) stable as the log grows.
  */
-export function useRoomTimeline(roomId: string | null, members: { agentId: string; handle: string }[]) {
+export function useRoomTimeline(roomId: string | null, members: { agentId: string; handle: string; running: boolean }[]) {
   const daemon = useDaemon()
   const [timelines, setTimelines] = useState<Record<string, Entry[]>>({})
   const [log, setLog] = useState<Entry[]>([])
@@ -98,9 +98,10 @@ export function useRoomTimeline(roomId: string | null, members: { agentId: strin
     }
   }, [daemon, roomId, ids])
   const handles = members.map((m) => m.handle).join()
+  const running = members.map((m) => m.running).join()
   const room = useMemo(
     () => (roomId ? mergeRoom(members.map((m) => ({ ...m, entries: [...(timelines[m.agentId] ?? []), ...(m.agentId === roomId ? log : [])] })), roomId) : []),
-    [roomId, ids, handles, timelines, log], // eslint-disable-line react-hooks/exhaustive-deps -- members, by its ids and handles
+    [roomId, ids, handles, running, timelines, log], // eslint-disable-line react-hooks/exhaustive-deps -- members, by its fields
   )
   const items = useMemo(() => room.map((r) => r.item), [room])
   return { items, room, loading: !error && members.some((m) => !timelines[m.agentId]), error }

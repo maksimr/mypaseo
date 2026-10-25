@@ -205,9 +205,10 @@ UI.
 - `members.ts`: `roomId(agent)`, `roomMembers(agents, roomId)`, `handleOf(agent, profiles)` (label, else profile slug,
   else `agent`), `isLead(agent)`.
 - `roomView.ts`: `deliveryOf(item): { dm: boolean } | null` (the one place that knows the `mpr` encoding), and
-  `mergeRoom(members: { agentId; handle; entries: { item; timestamp }[] }[], leadId)` → `RoomItem[]`
+  `mergeRoom(members: { agentId; handle; entries: { item; timestamp }[]; running? }[], leadId)` → `RoomItem[]`
   (`{ item, timestamp, author: handle | 'user', agentId, private: boolean, key }`), sorted by timestamp, ties keep each
-  agent's order. It drops deliveries, keeps the lead's `mypaseo-rooms` plugin items, marks private turns, keeps
+  agent's order. A run of steps (thoughts, tool calls) sorts with the item that ends it, so it sits right above its
+  reply; a running member's last run sorts last. It drops deliveries, keeps the lead's `mypaseo-rooms` plugin items, marks private turns, keeps
   messages typed in a member's own chat (author `user`, sent to that member).
 
 Done when: `npm run check` passes; tests cover the mention table, `uniqueHandle`, and a merged two-agent fixture with

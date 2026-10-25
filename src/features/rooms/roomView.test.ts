@@ -58,17 +58,57 @@ test('merges two members into one conversation with a DM turn', () => {
     ['a1', 'agent', 'hello', false],
     ['a1', 'agent', 'j1', false],
     ['a1', 'user', 'p1', false],
-    ['a2', 'code-reviewer', 'reading', false],
     ['a1', 'user', 'p2', true],
     ['a1', 'agent', 'hm', true],
     ['a1', 'agent', 'secret', true],
+    ['a2', 'code-reviewer', 'reading', false], // sorts with its reply
     ['a2', 'code-reviewer', 'LGTM @agent', false],
     ['a1', 'agent', 'thanks', false],
     ['a2', 'user', 'typed in my chat', false],
     ['a2', 'code-reviewer', 'done', false],
   ])
   assert.deepEqual(merged.slice(0, 4).map((r) => r.key), ['a1:0', 'a1:1', 'room:j1', 'room:p1'])
-  assert.equal(merged[4].timestamp, ts(4))
+  assert.equal(merged[7].timestamp, ts(4))
+})
+
+test("a member's steps sit right above the reply they led to; a running member's last ones sort last", () => {
+  const lead = (running: boolean) => ({
+    ...member('a1', 'agent', [
+      [1, join],
+      [1, post('p1', [])],
+      [2, deliver('p1', 2)],
+      [3, think('lead thinks')],
+      [6, says('lead answers')],
+      [7, post('p2', [])],
+      [8, deliver('p2', 8)],
+      [9, think('lead still thinking')],
+    ]),
+    running,
+  })
+  const reviewer = member('a2', 'code-reviewer', [
+    [2, deliver('p1', 2)],
+    [4, think('reviewer thinks')],
+    [5, says('reviewer answers')],
+    [8, deliver('p2', 8)],
+    [9, think('interrupted')], // a new turn ends it: keeps its time
+    [10, user('typed in my chat')],
+    [11, says('done')],
+  ])
+  const start = ['j1', 'p1', 'reviewer thinks', 'reviewer answers', 'lead thinks', 'lead answers', 'p2']
+  assert.deepEqual(mergeRoom([lead(true), reviewer], 'a1').map((r) => text(r.item)), [
+    ...start,
+    'interrupted',
+    'typed in my chat',
+    'done',
+    'lead still thinking',
+  ])
+  assert.deepEqual(mergeRoom([lead(false), reviewer], 'a1').map((r) => text(r.item)), [
+    ...start,
+    'lead still thinking',
+    'interrupted',
+    'typed in my chat',
+    'done',
+  ])
 })
 
 test('a rebuilt timeline (every entry at the rebuild time) sorts each turn at the delivery that opened it', () => {
