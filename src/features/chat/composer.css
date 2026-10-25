@@ -238,16 +238,14 @@
   width: 8px;
   height: 8px;
 }
-/* N agents, framed, with each one's color: the chips sit in it, unseen, so their panels open here. */
+/* N agents, unframed and muted like the picks beside it, with each one's color: the chips sit in it, unseen, so their
+   panels open here. */
 .recipient-more {
   position: relative;
-  border-color: var(--border-strong);
-  background: var(--bg-raised);
 }
 .recipients .recipient-more > .recipient-chip {
   gap: 8px;
   padding: 0 10px;
-  color: var(--text);
   white-space: nowrap;
 }
 .recipient-more > .recipient-chip > svg {
