@@ -27,17 +27,28 @@ export function useMenuScrim() {
   }, [])
 }
 
+const EDGE = 8 // the least gap between a menu and the window's edge
+
 export const placeMenu = (menuId: string, above = false) => (e: MouseEvent<HTMLElement>) => {
   e.stopPropagation()
-  // shortcut: fixed placement at the trigger, vertical flip only; switch to CSS anchor positioning once Baseline.
+  // shortcut: fixed placement at the trigger; switch to CSS anchor positioning once Baseline.
   const r = e.currentTarget.getBoundingClientRect()
   const menu = document.getElementById(menuId)!
+  const room = (up: boolean) => (up ? r.top : innerHeight - r.bottom) - 4
   const place = (up: boolean) => {
     menu.style.top = up ? '' : `${r.bottom + 4}px`
     menu.style.bottom = up ? `${innerHeight - r.top + 4}px` : ''
   }
   place(above)
-  menu.style.left = `${r.left}px`
-  // The popover opens after this handler, so measure it before the next paint and flip up if it overflows the bottom.
-  if (!above) requestAnimationFrame(() => menu.getBoundingClientRect().bottom > innerHeight && place(true))
+  menu.style.left = '0px' // at its full width for the measure below
+  // The popover opens after this handler, so measure it before the next paint: flip it to the side with more room if
+  // it overflows its own, and start it at the trigger's left edge, or end it at its right one if it would overflow the
+  // window, kept inside the window either way.
+  requestAnimationFrame(() => {
+    if (!menu.matches(':popover-open')) return
+    const { width, height } = menu.getBoundingClientRect()
+    if (height > room(above) && room(!above) > room(above)) place(!above)
+    const left = r.left + width > innerWidth - EDGE ? r.right - width : r.left
+    menu.style.left = `${Math.max(EDGE, Math.min(left, innerWidth - width - EDGE))}px`
+  })
 }
