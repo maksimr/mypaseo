@@ -1,4 +1,4 @@
-import { ArrowDown, Import, SquarePen } from 'lucide-react'
+import { ArrowDown, Import, Reply } from 'lucide-react'
 import { Fragment, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { ActiveViewContext } from '../../activeView'
@@ -261,20 +261,19 @@ export function Chat({
               forks={own?.filter((f) => f !== undefined)}
             />
           </div>
-          {away && (
-            <button className="jump-latest" title={`Jump to Latest Message (${formatCombo(jumpKey)})`} onClick={jumpToLatest}>
-              <ArrowDown size={14} />
-            </button>
-          )}
-          {composerHidden && (
-            <button
-              className="show-composer"
-              title="Write Message"
-              aria-label="Write Message"
-              onClick={showComposer}
-            >
-              <SquarePen size={14} />
-            </button>
+          {(away || composerHidden) && (
+            <div className="chat-float">
+              {composerHidden && (
+                <button title="Reply" onClick={showComposer}>
+                  <Reply size={14} /> Reply
+                </button>
+              )}
+              {away && (
+                <button className="jump-latest" title={`Jump to Latest Message (${formatCombo(jumpKey)})`} onClick={jumpToLatest}>
+                  <ArrowDown size={14} />
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>

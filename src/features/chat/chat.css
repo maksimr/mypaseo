@@ -58,32 +58,46 @@
   z-index: 2; /* over .msg-author's 2: comes after the timeline */
   margin-top: auto;
 }
-/* The chat's floating buttons: frosted circles over the messages. */
-.show-composer,
-.jump-latest {
+/* The chat's floating buttons, a frosted pill over the messages: Reply brings back the composer that scrolling up hid,
+   the arrow jumps to the latest message, away from it. Centered over the composer, or over the chat's bottom with it
+   hidden; the arrow alone is a circle. */
+.chat-float {
   position: absolute;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  color: var(--text-faint);
-  backdrop-filter: blur(8px);
-}
-:is(.show-composer, .jump-latest):hover {
-  color: var(--text-muted);
-}
-/* Brings back the composer that scrolling up hid, under the composer's .send button: its side margin (24px, or more
-   past its 812px max width) + 1px border + 8px row padding, centered on its 32px. */
-.show-composer {
-  right: calc(max(24px, (100% - 812px) / 2) + 11px);
-  bottom: 8px; /* level with .jump-latest */
-}
-/* Jumps to the latest message, away from it: centered over the composer, or over the chat's bottom with it hidden. */
-.jump-latest {
   bottom: calc(100% + 8px);
   left: 50%;
   translate: -50%;
+  display: flex;
+  border: 1px solid color-mix(in oklab, var(--text) 8%, transparent);
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+  color: var(--text-faint);
+}
+.chat-float > button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+.chat-float > .jump-latest:only-child {
+  padding: 0;
+}
+.chat-float > button:hover {
+  color: var(--text-muted);
+}
+/* The divider between the two. */
+.chat-float > button + button::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: color-mix(in oklab, var(--text) 8%, transparent);
 }
 .timeline {
   width: 100%;
