@@ -228,7 +228,7 @@
 .recipient-brief {
   min-width: 0;
 }
-/* One of several: at its full width; Recipients measures it. */
+/* One of several: at its full width. */
 .recipients.several .recipient {
   flex: none;
   max-width: none;
@@ -302,8 +302,13 @@
   padding: 10px 14px;
   border-top: 1px solid var(--border);
 }
+/* Its foot: Back at the start, Remove at the end. */
+.recipient-foot {
+  display: flex;
+  align-items: center;
+}
 .recipient-panel .recipient-remove {
-  align-self: flex-end;
+  margin-left: auto;
   width: auto; /* not a .menu row */
 }
 .recipient-panel {
@@ -420,6 +425,7 @@
   font-size: 15px;
   font-weight: 600;
 }
+.recipient-foot .icon-btn,
 .recipient-summary-head .icon-btn {
   width: 24px; /* not a .menu row */
   height: 24px;

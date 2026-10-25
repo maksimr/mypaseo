@@ -1,4 +1,4 @@
-import { ChevronDown, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronLeft, Trash2 } from 'lucide-react'
 import { Pick } from '../../components/Pick'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import { placeMenu } from '../../components/menu'
@@ -16,7 +16,7 @@ export function SettingList({ settings }: { settings: Setting[] }) {
 
 /** An agent the message goes to: a chip with its settings at a glance that opens all of them, where the composer
  *  changes them, and Remove. `joins`: the send adds it to the chat. `several`, one of several: its color in place of
- *  its provider's icon. */
+ *  its provider's icon. `onBack`: a Back button in its panel's foot, which closes the panel first. */
 export function RecipientChip({
   id,
   name,
@@ -27,6 +27,7 @@ export function RecipientChip({
   settings,
   note,
   onRemove,
+  onBack,
 }: {
   /** Its panel's id. */
   id: string
@@ -39,6 +40,7 @@ export function RecipientChip({
   settings: Setting[]
   note?: string
   onRemove?: () => void
+  onBack?: () => void
 }) {
   const brief = briefOf(settings)
   return (
@@ -58,10 +60,27 @@ export function RecipientChip({
         </div>
         <SettingList settings={settings} />
         {note && <p className="faint recipient-note">{note}</p>}
-        {onRemove && (
-          <button className="btn danger recipient-remove" aria-label={`Remove ${name}`} onClick={onRemove}>
-            <Trash2 size={13} /> Remove
-          </button>
+        {(onBack || onRemove) && (
+          <div className="recipient-foot">
+            {onBack && (
+              <button
+                className="icon-btn"
+                title="Back"
+                aria-label="Back to Recipients"
+                onClick={() => {
+                  document.getElementById(id)!.hidePopover()
+                  onBack()
+                }}
+              >
+                <ChevronLeft size={15} />
+              </button>
+            )}
+            {onRemove && (
+              <button className="btn danger recipient-remove" aria-label={`Remove ${name}`} onClick={onRemove}>
+                <Trash2 size={13} /> Remove
+              </button>
+            )}
+          </div>
         )}
       </div>
     </span>
