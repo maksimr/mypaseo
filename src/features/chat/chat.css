@@ -31,7 +31,7 @@
 .chat-foot {
   position: sticky;
   bottom: 0;
-  z-index: 1;
+  z-index: 2; /* over .msg-author's 2: comes after the timeline */
   margin-top: auto;
 }
 /* Brings back the composer that scrolling up hid. On the rail's line and frosted like .rail-latest, where the
@@ -436,7 +436,7 @@
    then a room's members. It stays put while the chat scrolls under it, and floats over the text without moving it. */
 .context-card {
   position: absolute;
-  z-index: 3; /* over the timeline's 1 and 2 and the composer's 1 */
+  z-index: 3; /* over the timeline's 1 and 2 and the composer's 2 */
   top: 8px;
   right: 16px;
   display: grid;
