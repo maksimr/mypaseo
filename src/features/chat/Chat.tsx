@@ -16,8 +16,7 @@ import { Timeline } from './Timeline'
 import { Composer } from './Composer'
 import { ContextCard } from './ContextCard'
 import { PermissionCard } from './PermissionCard'
-import { Rail } from './Rail'
-import { itemAcross, readingLine } from './reading'
+import { itemAcross } from './reading'
 import { ownMarks, roomMarks, type Mark } from './share'
 import type { Target } from './target'
 
@@ -60,17 +59,9 @@ export function Chat({
   const roomTl = useRoomTimeline(lead?.id ?? null, named.map((m) => ({ agentId: m.agent.id, handle: m.handle })))
   const ownTl = useTimeline(lead ? null : (agent?.id ?? null))
   const tl: { items: TimelineItem[]; loading: boolean; error: string | null; partial?: boolean } = lead ? roomTl : ownTl
-  // The rail's circles are the user's messages: in a room, its posts.
-  const railItems = useMemo(
-    () => tl.items.map((x): TimelineItem => (x.type === 'plugin' && x.kind === 'room.post' ? { type: 'user_message', text: (x.data as { text: string }).text } : x)),
-    [tl.items],
-  )
-  const running = members.some((m) => m.status === 'running')
   const permissions = named.flatMap((m) => m.agent.pendingPermissions.map((request) => ({ ...m, request })))
-  const historyIn = !tl.loading && !tl.partial
   const scroller = useRef<HTMLDivElement>(null)
   const atBottom = useRef(true)
-  const [away, setAway] = useState(false)
   // Scrolling up to read hides the composer; reaching the bottom or Write Message brings it back.
   // Pending permissions keep it, so the floating button never covers their cards.
   const foot = useRef<HTMLDivElement>(null)
@@ -80,29 +71,6 @@ export function Chat({
   const jumpToLatest = () => {
     const el = scroller.current
     if (el) el.scrollTop = el.scrollHeight
-  }
-  // The rail's pick: the item centered on the reading line, or one taller than the view at its top. Parsing the
-  // messages around it can move it, so it goes there again after.
-  const goTo = (i: number) => {
-    const el = scroller.current
-    const item = el?.querySelector(`[data-item="${i}"]`)
-    if (!el || !item) return
-    atBottom.current = false // else sticking to the bottom scrolls it away again
-    const place = () => {
-      const r = item.getBoundingClientRect()
-      el.scrollTop += Math.min(r.top + r.height / 2 - readingLine(el), r.top - el.getBoundingClientRect().top)
-    }
-    place()
-    flushSync(() => parseNear(el))
-    place()
-    lastTop.current = el.scrollTop // not a scroll up by the user: the composer, and the rail in it, stay shown
-  }
-  const jumpToStart = () => {
-    const el = scroller.current
-    if (!el) return
-    atBottom.current = false
-    el.scrollTop = 0
-    lastTop.current = 0 // as in goTo
   }
   const showComposer = () => {
     flushSync(() => setHide(false))
@@ -233,7 +201,6 @@ export function Chat({
           const up = el.scrollTop < lastTop.current
           lastTop.current = el.scrollTop
           atBottom.current = fromBottom < 40
-          setAway(!atBottom.current)
           if (atBottom.current) setHide(false)
           // Only this far up does the space it frees stay short of the bottom; else it would show again at once.
           else if (up && fromBottom > (foot.current?.offsetHeight ?? 0) + 40 && !typing(foot.current)) {
@@ -290,19 +257,6 @@ export function Chat({
               forks={own?.filter((f) => f !== undefined)}
             />
           </div>
-          {/* Shown with the composer hidden too. Even empty, as for a new agent: its space stays, so the composer doesn't
-              jump when steps arrive. Empty too until the whole history is in: the tail page alone would show, then grow
-              as the rest arrives. */}
-          <Rail
-            key={agent?.id}
-            items={historyIn ? railItems : []}
-            running={historyIn && running}
-            scroller={scroller}
-            onPick={goTo}
-            onStart={jumpToStart}
-            onEnd={jumpToLatest}
-            away={away}
-          />
           {composerHidden && (
             <button
               className="show-composer"

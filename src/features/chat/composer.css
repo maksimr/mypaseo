@@ -23,32 +23,47 @@
   justify-content: flex-end;
   gap: 6px;
 }
+/* Opaque over the timeline it floats on, the bar under the box and the box's corners too, so their text stays readable;
+   as wide as the timeline's text. */
 .composer {
-  position: relative;
   width: calc(100% - 48px);
   max-width: 812px;
-  margin: 0 auto 16px;
+  margin: 0 auto;
+  padding-bottom: 8px;
+  background: var(--bg);
+}
+/* The box: the attachments over a row of Attach Files, the text and Send; a pill while the text is one line. */
+.composer-box {
+  position: relative;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 24px;
   background: var(--bg-elev);
 }
 /* The accent, like the :focus-visible outline on a focused sidebar row. */
-.composer:focus-within {
+.composer-box:focus-within {
   border-color: var(--accent);
 }
-.composer.dragging {
+.composer.dragging > .composer-box {
   border-style: dashed;
   border-color: var(--text-muted);
   background: var(--bg-hover);
 }
+/* Attach Files and Send stay by the last line as the text grows. */
+.composer-input {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 8px;
+}
+/* One line as high as Attach Files and Send (32px). */
 .composer textarea {
-  display: block;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   field-sizing: content;
-  min-height: calc(2lh + 18px);
+  min-height: calc(1lh + 12px);
   max-height: 40vh;
   overflow-x: hidden;
-  padding: 14px 16px 4px;
+  padding: 6px 8px;
   border: 0;
   outline: none;
   resize: none;
@@ -72,7 +87,7 @@
   background: var(--bg-elev);
   box-shadow: 0 8px 24px var(--shadow-40);
 }
-.composer:not(:focus-within) .autocomplete,
+.composer-box:not(:focus-within) .autocomplete,
 .path-field:not(:focus-within) .autocomplete {
   display: none;
 }
@@ -159,8 +174,8 @@
   font-size: 12px;
   color: var(--text-muted);
 }
-/* Who the message goes to (Recipients.tsx): a chip each, which opens its settings, on one line in the bar after
-   Attach Files. As wide as its chips, shrinking before the bar's other items. */
+/* Who the message goes to (Recipients.tsx): a chip each, which opens its settings, on one line at the start of the bar
+   under the box. As wide as its chips, shrinking before the bar's other items. */
 .recipients {
   display: flex;
   flex: 0 1000 auto;
@@ -178,8 +193,9 @@
   border: 1px solid var(--border-strong);
   border-radius: 8px;
 }
-.recipient:has(> .icon-btn) {
-  padding-right: 2px;
+/* One chip: unframed, as plain as the picks beside it. */
+.recipients:not(.compact) .recipient {
+  border-color: transparent;
 }
 .recipient-chip {
   display: inline-flex;
@@ -339,11 +355,12 @@
   outline: 2px solid var(--text);
   outline-offset: 2px;
 }
+/* Under the box: the recipients, a new agent's Project and Workspace, then the context ring, the count and the lock. */
 .composer-bar {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 4px 10px 10px;
+  padding: 6px 6px 0;
 }
 /* By the lock (RecipientSummary.tsx): who the message goes to, which opens the list. */
 .recipient-count {
@@ -408,7 +425,11 @@
   border-radius: 6px;
   font-size: 12px;
 }
-.composer-add,
+.composer-add {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
 .composer-lock {
   width: 28px;
   height: 28px;
@@ -473,8 +494,8 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--text);
   color: var(--bg);
@@ -500,7 +521,7 @@
   font-variant-numeric: tabular-nums;
 }
 /* Phones: an agent's bar stays one row; the context ring drops its numbers (its card has them).
-   A new agent's bar holds the Project and Workspace picks and the worktree name, more than a row: it wraps, Send stays right. */
+   A new agent's bar holds the Project and Workspace picks and the worktree name, more than a row: it wraps. */
 @media (width < 600px) {
   .ctx-text {
     display: none;
@@ -509,18 +530,13 @@
     flex-wrap: wrap;
     row-gap: 4px;
   }
-  /* Stays on Attach Files' row: the bar less its 28px, the bar's 2px gap and its own 6px margins. */
-  .composer-bar.new-agent .recipients {
-    max-width: calc(100% - 36px);
-  }
   .send {
     position: relative;
-    margin-left: auto; /* right end of its row when it wraps alone */
   }
   .send::after {
     content: '';
     position: absolute;
-    inset: -4px; /* a 36px hit area round the 28px circle, for a thumb */
+    inset: -4px; /* a 40px hit area round the 32px circle, for a thumb */
   }
 }
 .ctx-card {

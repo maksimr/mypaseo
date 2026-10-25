@@ -521,140 +521,154 @@ export function Composer({
         addFiles(items.filter((it) => !dirs.includes(it)).flatMap((it) => it.getAsFile() ?? []))
       }}
     >
-      {ac.popup}
-      {images.length + files.length + n > 0 && (
-        <div className="composer-images">
-          {reviewPaths.map((path) => {
-            const cs = review.comments.filter((c) => c.path === path)
-            const count = cs.length === 1 ? '1 comment' : `${cs.length} comments`
-            return (
-              <span key={`review${path}`} className="composer-image composer-file" title={cs.map((c) => c.ref).join('\n')} {...clickable(() => onShowComment(cs[0]))}>
-                <span className="composer-review">
-                  <MessageCircle size={12} />
-                  {path.split('/').pop()}
-                  <span>{count}</span>
+      {/* The box: attachments, then Attach Files, the text and Send; the bar under it. */}
+      <div className="composer-box">
+        {ac.popup}
+        {images.length + files.length + n > 0 && (
+          <div className="composer-images">
+            {reviewPaths.map((path) => {
+              const cs = review.comments.filter((c) => c.path === path)
+              const count = cs.length === 1 ? '1 comment' : `${cs.length} comments`
+              return (
+                <span key={`review${path}`} className="composer-image composer-file" title={cs.map((c) => c.ref).join('\n')} {...clickable(() => onShowComment(cs[0]))}>
+                  <span className="composer-review">
+                    <MessageCircle size={12} />
+                    {path.split('/').pop()}
+                    <span>{count}</span>
+                  </span>
+                  <button
+                    title="Remove"
+                    aria-label={`Remove Review of ${path}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (confirm(`Delete ${cs.length === 1 ? 'the review comment' : `all ${cs.length} review comments`} on ${path}?`)) deleteComments(review.key, cs.map((c) => c.id))
+                    }}
+                  >
+                    <X size={11} />
+                  </button>
                 </span>
+              )
+            })}
+            {images.map((img, i) => (
+              <span key={i} className="composer-image">
+                <img
+                  src={`data:${img.mimeType};base64,${img.data}`}
+                  alt={`Pasted image ${i + 1}`}
+                  title="Draw on Image"
+                  aria-label={`Draw on Image ${i + 1}`}
+                  {...clickable(() => setEditing(i))}
+                />
                 <button
                   title="Remove"
-                  aria-label={`Remove Review of ${path}`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (confirm(`Delete ${cs.length === 1 ? 'the review comment' : `all ${cs.length} review comments`} on ${path}?`)) deleteComments(review.key, cs.map((c) => c.id))
+                  aria-label={`Remove Image ${i + 1}`}
+                  onClick={() => {
+                    setImages(images.filter((_, j) => j !== i))
+                    setText(dropImageRef(text, i + 1))
                   }}
                 >
                   <X size={11} />
                 </button>
               </span>
-            )
-          })}
-          {images.map((img, i) => (
-            <span key={i} className="composer-image">
-              <img
-                src={`data:${img.mimeType};base64,${img.data}`}
-                alt={`Pasted image ${i + 1}`}
-                title="Draw on Image"
-                aria-label={`Draw on Image ${i + 1}`}
-                {...clickable(() => setEditing(i))}
-              />
-              <button
-                title="Remove"
-                aria-label={`Remove Image ${i + 1}`}
-                onClick={() => {
-                  setImages(images.filter((_, j) => j !== i))
-                  setText(dropImageRef(text, i + 1))
+            ))}
+            {editing !== null && images[editing] && (
+              <ImageEditor
+                image={images[editing]}
+                n={editing + 1}
+                onSave={(img) => {
+                  setImages((prev) => prev.map((im, j) => (j === editing ? img : im)))
+                  setEditing(null)
+                  input.current?.focus()
                 }}
-              >
-                <X size={11} />
-              </button>
-            </span>
-          ))}
-          {editing !== null && images[editing] && (
-            <ImageEditor
-              image={images[editing]}
-              n={editing + 1}
-              onSave={(img) => {
-                setImages((prev) => prev.map((im, j) => (j === editing ? img : im)))
-                setEditing(null)
-                input.current?.focus()
-              }}
-              onClose={() => {
-                setEditing(null)
-                input.current?.focus()
-              }}
-            />
+                onClose={() => {
+                  setEditing(null)
+                  input.current?.focus()
+                }}
+              />
+            )}
+            {files.map((f, i) => (
+              <span key={`file${i}`} className="composer-image composer-file" title={f.name}>
+                <Paperclip size={14} />
+                <span>{f.name}</span>
+                <button title="Remove" aria-label={`Remove ${f.name}`} onClick={() => setFiles(files.filter((_, j) => j !== i))}>
+                  <X size={11} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="composer-input">
+          <button className="icon-btn composer-add" title="Attach Files" onClick={() => fileInput.current?.click()}>
+            <Plus size={16} />
+          </button>
+          <input
+            ref={fileInput}
+            type="file"
+            multiple
+            hidden
+            onChange={(e) => {
+              addFiles([...(e.target.files ?? [])])
+              e.target.value = ''
+            }}
+          />
+          <textarea
+            name="prompt"
+            ref={input}
+            value={text}
+            placeholder={agent ? (members.length > 1 ? 'Message everyone…' : 'Message the agent…') : provider ? 'What should the agent do?' : 'No ready providers — check Settings'}
+            rows={1}
+            {...ac.inputProps}
+            onChange={(e) => {
+              setText(e.target.value)
+              ac.track(e.target)
+            }}
+            onSelect={(e) => ac.track(e.currentTarget)}
+            onPaste={(e) => {
+              if (addFiles([...e.clipboardData.files])) e.preventDefault()
+            }}
+            onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing || ac.onKeyDown(e)) return
+              // On the recipient whose mention holds the caret, else this chat's agent, else the first.
+              const at = mentionAt(text, e.currentTarget.selectionStart)
+              const r = recipients.find((x) => x.key === at) ?? recipients.find((x) => x.agent && x.agent.id === agent?.id) ?? recipients[0]
+              const levels = r?.settings.find((s) => s.title === 'Thinking')
+              // Tab skips Send (Shift+Tab from the chip reaches it) to the first recipient's chip, in the bar under the box.
+              const chip = e.currentTarget.closest('.composer')?.querySelector<HTMLButtonElement>('.recipient-chip')
+              if (comboOf(e) === 'Tab' && chip) {
+                e.preventDefault()
+                chip.focus()
+              } else if (isShortcut(e, 'send')) {
+                e.preventDefault()
+                void send()
+              } else if (isShortcut(e, 'cycleThinking') && levels) {
+                e.preventDefault()
+                const ids = levels.options.map(([id]) => id)
+                levels.onChange(ids[(ids.indexOf(levels.value ?? '') + 1) % ids.length])
+              } else if (isShortcut(e, 'pickModel') && r) {
+                // Its settings, at the Model.
+                e.preventDefault()
+                const id = `${panelId}${r.key}`
+                document.querySelector<HTMLButtonElement>(`[popovertarget="${CSS.escape(id)}"]`)?.click()
+                const panel = document.getElementById(id)
+                const select = panel?.querySelector<HTMLSelectElement>('select[name="Model"]') ?? panel?.querySelector('select')
+                if (select) openPicker(select)
+              } else if (isShortcut(e, 'pickProject') && projectSelect.current) {
+                e.preventDefault()
+                openPicker(projectSelect.current)
+              }
+            }}
+          />
+          {running.length > 0 && empty ? (
+            <button className="send stop" title="Stop" onClick={() => void stop()}>
+              <Square size={12} fill="currentColor" />
+            </button>
+          ) : (
+            <button className="send" title={`Send (${formatCombo(sendKey)})`} disabled={empty || busy || !provider} onClick={() => void send()}>
+              {busy ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} />}
+            </button>
           )}
-          {files.map((f, i) => (
-            <span key={`file${i}`} className="composer-image composer-file" title={f.name}>
-              <Paperclip size={14} />
-              <span>{f.name}</span>
-              <button title="Remove" aria-label={`Remove ${f.name}`} onClick={() => setFiles(files.filter((_, j) => j !== i))}>
-                <X size={11} />
-              </button>
-            </span>
-          ))}
         </div>
-      )}
-      <textarea
-        name="prompt"
-        ref={input}
-        value={text}
-        placeholder={agent ? (members.length > 1 ? 'Message everyone…' : 'Message the agent…') : provider ? 'What should the agent do?' : 'No ready providers — check Settings'}
-        rows={2}
-        {...ac.inputProps}
-        onChange={(e) => {
-          setText(e.target.value)
-          ac.track(e.target)
-        }}
-        onSelect={(e) => ac.track(e.currentTarget)}
-        onPaste={(e) => {
-          if (addFiles([...e.clipboardData.files])) e.preventDefault()
-        }}
-        onKeyDown={(e) => {
-          if (e.nativeEvent.isComposing || ac.onKeyDown(e)) return
-          // On the recipient whose mention holds the caret, else this chat's agent, else the first.
-          const at = mentionAt(text, e.currentTarget.selectionStart)
-          const r = recipients.find((x) => x.key === at) ?? recipients.find((x) => x.agent && x.agent.id === agent?.id) ?? recipients[0]
-          const levels = r?.settings.find((s) => s.title === 'Thinking')
-          // Tab skips Attach Files (Shift+Tab from the chip reaches it) to the first recipient's chip.
-          const chip = e.currentTarget.parentElement?.querySelector<HTMLButtonElement>('.recipient-chip')
-          if (comboOf(e) === 'Tab' && chip) {
-            e.preventDefault()
-            chip.focus()
-          } else if (isShortcut(e, 'send')) {
-            e.preventDefault()
-            void send()
-          } else if (isShortcut(e, 'cycleThinking') && levels) {
-            e.preventDefault()
-            const ids = levels.options.map(([id]) => id)
-            levels.onChange(ids[(ids.indexOf(levels.value ?? '') + 1) % ids.length])
-          } else if (isShortcut(e, 'pickModel') && r) {
-            // Its settings, at the Model.
-            e.preventDefault()
-            const id = `${panelId}${r.key}`
-            document.querySelector<HTMLButtonElement>(`[popovertarget="${CSS.escape(id)}"]`)?.click()
-            const panel = document.getElementById(id)
-            const select = panel?.querySelector<HTMLSelectElement>('select[name="Model"]') ?? panel?.querySelector('select')
-            if (select) openPicker(select)
-          } else if (isShortcut(e, 'pickProject') && projectSelect.current) {
-            e.preventDefault()
-            openPicker(projectSelect.current)
-          }
-        }}
-      />
+      </div>
       <div className={agent ? 'composer-bar' : 'composer-bar new-agent'}>
-        <button className="icon-btn composer-add" title="Attach Files" onClick={() => fileInput.current?.click()}>
-          <Plus size={16} />
-        </button>
-        <input
-          ref={fileInput}
-          type="file"
-          multiple
-          hidden
-          onChange={(e) => {
-            addFiles([...(e.target.files ?? [])])
-            e.target.value = ''
-          }}
-        />
         {/* A room's chips are the mentioned; everyone is the count by the lock. */}
         {recipients.length > 0 && (mentioned.length > 0 || members.length < 2) && <Recipients recipients={recipients} panelId={panelId} />}
         {!agent && (
@@ -704,15 +718,6 @@ export function Composer({
             onClick={() => setLocked(!locked)}
           >
             <Lock size={14} />
-          </button>
-        )}
-        {running.length > 0 && empty ? (
-          <button className="send stop" title="Stop" onClick={() => void stop()}>
-            <Square size={12} fill="currentColor" />
-          </button>
-        ) : (
-          <button className="send" title={`Send (${formatCombo(sendKey)})`} disabled={empty || busy || !provider} onClick={() => void send()}>
-            {busy ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} />}
           </button>
         )}
       </div>

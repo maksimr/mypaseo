@@ -58,13 +58,12 @@
   z-index: 2; /* over .msg-author's 2: comes after the timeline */
   margin-top: auto;
 }
-/* Brings back the composer that scrolling up hid. On the rail's line and frosted like .rail-latest, where the
-   composer's .send button sits: its side margin (24px, or more past its 812px max width) + 1px border + 10px bar
-   padding. */
+/* Brings back the composer that scrolling up hid. Frosted, under the composer's .send button: its side margin (24px,
+   or more past its 812px max width) + 1px border + 8px row padding, centered on its 32px. */
 .show-composer {
   position: absolute;
   right: calc(max(24px, (100% - 812px) / 2) + 11px);
-  bottom: 4.5px; /* centered in the rail's 38px, less its 1px top padding */
+  bottom: 10px;
   display: grid;
   place-items: center;
   width: 28px;
@@ -74,85 +73,6 @@
   backdrop-filter: blur(8px);
 }
 .show-composer:hover {
-  color: var(--text-muted);
-}
-/* The chat's outline under the composer: its start, the user's messages and its end, joined by a line. Centered, it
-   grows out both ways; once it overflows (safe), it starts at the newest and scrolls. */
-.rail {
-  display: flex;
-  flex-direction: row-reverse; /* overflowing, it opens scrolled to its right end: the newest message */
-  justify-content: safe center;
-  margin-top: -16px; /* takes the composer's bottom margin: the strip down to the page bottom is the rail's */
-  /* Fixed, empty too. .sidebar-foot's height and top border: its icons line up with the settings button. */
-  height: 38px;
-  align-items: center;
-  padding: 1px 44px 0; /* room for .rail-latest on both sides, so the sheet stays centered */
-  overflow-x: auto;
-  scrollbar-width: none;
-  color: var(--text-faint);
-}
-/* With the composer hidden, no margin to take, and .show-composer's room (its right + 28px + 4px) on both sides, so
-   the sheet stays centered and never scrolls under it. */
-[hidden] + .rail {
-  margin-top: 0;
-  padding-inline: calc(max(24px, (100% - 812px) / 2) + 43px);
-}
-.rail-step {
-  display: flex;
-  align-items: center;
-  height: 20px;
-}
-/* Frosted, under the circles only: they stay readable over the messages scrolling under it. */
-.rail-sheet {
-  display: flex;
-  padding: 4px 8px;
-  border-radius: 14px;
-  backdrop-filter: blur(8px);
-}
-/* Jumps to the latest message, away from it: beside the sheet and as frosted, but taking no room, so the sheet stays
-   put as it shows. First in the row-reverse: the rightmost. */
-.rail-latest {
-  order: -1;
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  margin: 0 -32px 0 4px;
-  border-radius: 50%;
-  backdrop-filter: blur(8px);
-}
-.rail-latest:hover {
-  color: var(--text-muted);
-}
-/* The line from the step before. */
-.rail-step:not(:first-child)::before {
-  content: '';
-  flex: 0 1 16px; /* below 16px only to make room for magnified icons */
-  height: 1px;
-  margin: 0 4px;
-  background: var(--border-strong);
-}
-/* Magnified near the mouse by --s (Rail.tsx), as the Dock does: up from the line (the icon's bottom), and apart by
-   its margins (see .rail-pick), half the icon's growth each side. */
-.rail-step > button {
-  scale: var(--s, 1);
-  transform-origin: 50% 75%;
-  transition:
-    scale 0.15s ease-out,
-    margin 0.15s ease-out;
-}
-/* The step across the chat's reading line (on its button, over their hover color). */
-.rail-step.current > button {
-  color: var(--text-muted);
-}
-/* A step's icon, scrolling the chat to it: a 20px hit area over the gaps to its lines. */
-.rail-pick {
-  display: flex;
-  margin: 0 calc(-4px + (var(--s, 1) - 1) * 5px);
-  padding: 5px;
-}
-.rail-pick:hover {
   color: var(--text-muted);
 }
 .timeline {
@@ -234,7 +154,7 @@
   font-size: 12px;
 }
 /* In a room: the member a run of messages and steps comes from, held on top while its run (.msg-run) scrolls by, over
-   the chat's fade (.chat-scroll::before). Frosted like .rail-sheet, under the name only, and tinted so the text behind
+   the chat's fade (.chat-scroll::before). Frosted, under the name only, and tinted so the text behind
    doesn't show through it; the padding sits in the negative margin, so the name stays lined up with the text. */
 .msg-author {
   position: sticky;
