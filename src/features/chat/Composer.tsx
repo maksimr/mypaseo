@@ -522,8 +522,6 @@ export function Composer({
       }}
     >
       {ac.popup}
-      {/* A room's chips are the mentioned; everyone is the count by the lock. */}
-      {recipients.length > 0 && (mentioned.length > 0 || members.length < 2) && <Recipients recipients={recipients} panelId={panelId} />}
       {images.length + files.length + n > 0 && (
         <div className="composer-images">
           {reviewPaths.map((path) => {
@@ -652,6 +650,8 @@ export function Composer({
             e.target.value = ''
           }}
         />
+        {/* A room's chips are the mentioned; everyone is the count by the lock. */}
+        {recipients.length > 0 && (mentioned.length > 0 || members.length < 2) && <Recipients recipients={recipients} panelId={panelId} />}
         {!agent && (
           <Pick
             ref={projectSelect}

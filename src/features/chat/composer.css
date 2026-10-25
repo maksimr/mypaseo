@@ -159,12 +159,15 @@
   font-size: 12px;
   color: var(--text-muted);
 }
-/* Who the message goes to (Recipients.tsx): a chip each, which opens its settings, on one line. */
+/* Who the message goes to (Recipients.tsx): a chip each, which opens its settings, on one line in the bar after
+   Attach Files. As wide as its chips, shrinking before the bar's other items. */
 .recipients {
   display: flex;
+  flex: 0 1000 auto;
   align-items: center;
+  min-width: 0;
   gap: 6px;
-  padding: 10px 12px 0;
+  margin-inline: 2px 4px;
   font-size: 12px;
 }
 .recipient {
@@ -218,7 +221,6 @@
 }
 .recipients.compact .recipient-chip {
   gap: 8px;
-  height: 30px;
   padding: 0 10px;
   color: var(--text-muted);
 }
@@ -506,6 +508,10 @@
   .composer-bar.new-agent {
     flex-wrap: wrap;
     row-gap: 4px;
+  }
+  /* Stays on Attach Files' row: the bar less its 28px, the bar's 2px gap and its own 6px margins. */
+  .composer-bar.new-agent .recipients {
+    max-width: calc(100% - 36px);
   }
   .send {
     position: relative;

@@ -16,13 +16,18 @@ export function Recipients({ recipients, panelId }: { recipients: Recipient[]; p
   const [fit, setFit] = useState(recipients.length)
   const compact = recipients.length > 1
   const keys = recipients.map((r) => r.key).join()
-  // How many chips fit with the +N chip after them; all of them, without it, if they fit alone.
+  // How many chips fit with the +N chip after them; all of them, without it, if they fit alone. The row is as wide as
+  // its chips, so the spare width the bar's spacer (.grow) holds on the row's line is room too.
   useLayoutEffect(() => {
     const el = row.current
     if (!el || !compact) return
+    const spacer = el.parentElement?.querySelector<HTMLElement>(':scope > .grow')
     const measure = () => {
       const css = getComputedStyle(el)
-      const room = el.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight)
+      const box = el.getBoundingClientRect()
+      const s = spacer?.getBoundingClientRect()
+      const spare = s && s.top > box.top && s.top < box.bottom ? s.width : 0
+      const room = el.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight) + spare
       const gap = parseFloat(css.columnGap) || 0
       const widths = [...el.querySelectorAll<HTMLElement>('.recipient:not(.recipient-more)')].map((c) => c.offsetWidth)
       let used = widths.reduce((sum, w) => sum + w + gap, -gap)
@@ -36,6 +41,7 @@ export function Recipients({ recipients, panelId }: { recipients: Recipient[]; p
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(el)
+    if (spacer) observer.observe(spacer)
     return () => observer.disconnect()
   }, [compact, keys])
 
