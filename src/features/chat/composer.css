@@ -175,7 +175,8 @@
   color: var(--text-muted);
 }
 /* Who the message goes to (Recipients.tsx): a chip each, which opens its settings, on one line at the start of the bar
-   under the box. As wide as its chips, shrinking before the bar's other items. */
+   under the box, unframed, as plain as the picks beside them. As wide as its chips, shrinking before the bar's other
+   items. */
 .recipients {
   display: flex;
   flex: 0 1000 auto;
@@ -190,12 +191,8 @@
   align-items: center;
   min-width: 0;
   max-width: 100%;
-  border: 1px solid var(--border-strong);
+  border: 1px solid transparent;
   border-radius: 8px;
-}
-/* One chip: unframed, as plain as the picks beside it. */
-.recipients:not(.compact) .recipient {
-  border-color: transparent;
 }
 .recipient-chip {
   display: inline-flex;
@@ -208,7 +205,8 @@
   color: var(--text-muted);
 }
 .recipient-chip:hover,
-.recipient:has(.recipient-panel:popover-open) .recipient-chip {
+.recipient:has(.recipient-panel:popover-open) .recipient-chip,
+.recipient-more:has(.recipient-list:popover-open) > .recipient-chip {
   background: var(--bg-hover);
   color: var(--text);
 }
@@ -230,52 +228,81 @@
 .recipient-brief {
   min-width: 0;
 }
-/* One of several (`compact`): its color and name, at its full width; Recipients measures it. */
-.recipients.compact .recipient {
+/* One of several: at its full width; Recipients measures it. */
+.recipients.several .recipient {
   flex: none;
-  background: var(--bg-raised);
+  max-width: none;
 }
-.recipients.compact .recipient-chip {
-  gap: 8px;
-  padding: 0 10px;
-  color: var(--text-muted);
-}
-.recipients.compact .recipient-name {
-  font-family: var(--sans);
-  font-weight: 600;
-}
-.recipient-chip > .dot {
+.recipient-chip .dot,
+.recipient-list .dot {
   width: 8px;
   height: 8px;
 }
-/* +N agents: the chips that don't fit sit in it, unseen, so their panels open here. */
+/* N agents, framed, with each one's color: the chips sit in it, unseen, so their panels open here. */
 .recipient-more {
   position: relative;
-  border-color: var(--accent);
+  border-color: var(--border-strong);
+  background: var(--bg-raised);
 }
 .recipients .recipient-more > .recipient-chip {
-  color: var(--accent);
+  gap: 8px;
+  padding: 0 10px;
+  color: var(--text);
+  white-space: nowrap;
 }
 .recipient-more > .recipient-chip > svg {
   color: var(--text-muted);
 }
-.recipient-more.unused,
+.recipient-dots {
+  display: inline-flex;
+  gap: 4px;
+}
 .recipient-more > .recipient {
   position: absolute;
   top: 0;
   left: 0;
+  width: max-content;
   visibility: hidden;
 }
 .recipient-more .recipient-panel {
   visibility: visible;
 }
+/* Its menu: a row each, under the columns' names, and a note at the foot. */
 .recipient-list {
-  max-width: 320px;
+  width: 340px;
+  padding: 0;
   font-size: 12px;
+}
+.recipient-list-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.recipient-list > button {
+  gap: 10px;
+  height: 36px;
+  padding: 0 14px;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
 }
 .recipient-list .recipient-brief {
   flex: 1;
-  text-align: left;
+  color: var(--text-muted);
+  text-align: right;
+}
+.recipient-list > button > svg {
+  flex: none;
+  color: var(--text-muted);
+}
+.recipient-list-note {
+  margin: 0;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
 }
 .recipient-panel .recipient-remove {
   align-self: flex-end;

@@ -325,7 +325,7 @@ export function Composer({
         ? [
             {
               key: 'new',
-              name: entry?.label ?? provider,
+              name: '@agent', // handleOf's default: a new agent has no handle or profile
               provider,
               settings: [
                 { title: 'Provider', value: provider, options: usable.map((p): PickOption => [p.provider, p.label ?? p.provider]), onChange: (v) => change('provider', v) },

@@ -15,15 +15,15 @@ export function SettingList({ settings }: { settings: Setting[] }) {
 }
 
 /** An agent the message goes to: a chip with its settings at a glance that opens all of them, where the composer
- *  changes them, and Remove. `joins`: the send adds it to the chat. `compact`, one of several: its color and name
- *  only. */
+ *  changes them, and Remove. `joins`: the send adds it to the chat. `several`, one of several: its color in place of
+ *  its provider's icon. */
 export function RecipientChip({
   id,
   name,
   provider,
   color,
   joins,
-  compact,
+  several,
   settings,
   note,
   onRemove,
@@ -35,7 +35,7 @@ export function RecipientChip({
   /** Its profile's color, a CSS color. */
   color?: string
   joins?: boolean
-  compact: boolean
+  several: boolean
   settings: Setting[]
   note?: string
   onRemove?: () => void
@@ -44,10 +44,10 @@ export function RecipientChip({
   return (
     <span className="recipient" role="group" aria-label={name}>
       <button className="recipient-chip" popoverTarget={id} onClick={placeMenu(id, true)}>
-        {compact ? <span className="dot" style={{ background: color }} /> : <ProviderIcon provider={provider} size={13} />}
+        {several ? <span className="dot" style={{ background: color }} /> : <ProviderIcon provider={provider} size={13} />}
         <span className="recipient-name">{name}</span>
-        {!compact && joins && <span className="recipient-tag">joins</span>}
-        {!compact && brief && <span className="recipient-brief truncate">{brief}</span>}
+        {joins && <span className="recipient-tag">joins</span>}
+        {brief && <span className="recipient-brief truncate">{brief}</span>}
         <ChevronDown size={12} />
       </button>
       <div id={id} popover="auto" className="menu recipient-panel" role="dialog" aria-label={`${name} Settings`}>
