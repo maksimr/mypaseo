@@ -58,12 +58,10 @@
   z-index: 2; /* over .msg-author's 2: comes after the timeline */
   margin-top: auto;
 }
-/* Brings back the composer that scrolling up hid. Frosted, under the composer's .send button: its side margin (24px,
-   or more past its 812px max width) + 1px border + 8px row padding, centered on its 32px. */
-.show-composer {
+/* The chat's floating buttons: frosted circles over the messages. */
+.show-composer,
+.jump-latest {
   position: absolute;
-  right: calc(max(24px, (100% - 812px) / 2) + 11px);
-  bottom: 10px;
   display: grid;
   place-items: center;
   width: 28px;
@@ -72,8 +70,20 @@
   color: var(--text-faint);
   backdrop-filter: blur(8px);
 }
-.show-composer:hover {
+:is(.show-composer, .jump-latest):hover {
   color: var(--text-muted);
+}
+/* Brings back the composer that scrolling up hid, under the composer's .send button: its side margin (24px, or more
+   past its 812px max width) + 1px border + 8px row padding, centered on its 32px. */
+.show-composer {
+  right: calc(max(24px, (100% - 812px) / 2) + 11px);
+  bottom: 8px; /* level with .jump-latest */
+}
+/* Jumps to the latest message, away from it: centered over the composer, or over the chat's bottom with it hidden. */
+.jump-latest {
+  bottom: calc(100% + 8px);
+  left: 50%;
+  translate: -50%;
 }
 .timeline {
   width: 100%;

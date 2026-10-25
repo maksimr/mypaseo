@@ -1,4 +1,4 @@
-import { Import, SquarePen } from 'lucide-react'
+import { ArrowDown, Import, SquarePen } from 'lucide-react'
 import { Fragment, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { ActiveViewContext } from '../../activeView'
@@ -6,7 +6,7 @@ import { artifactDocs } from '../../artifact'
 import { parseNear } from '../../components/Markdown'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import type { Agent, TimelineItem } from '../../daemon'
-import { isShortcut } from '../../keymap'
+import { formatCombo, isShortcut, useShortcut } from '../../keymap'
 import type { ReviewComment } from '../review/review'
 import { colorOf, handleOf, isLead, roomId, roomMembers } from '../rooms/members'
 import { isScratch, keptUnread, useDaemon, useHost } from '../../store'
@@ -62,6 +62,9 @@ export function Chat({
   const permissions = named.flatMap((m) => m.agent.pendingPermissions.map((request) => ({ ...m, request })))
   const scroller = useRef<HTMLDivElement>(null)
   const atBottom = useRef(true)
+  // Away from the bottom, a button jumps there.
+  const [away, setAway] = useState(false)
+  const jumpKey = useShortcut('jumpToLatest')
   // Scrolling up to read hides the composer; reaching the bottom or Write Message brings it back.
   // Pending permissions keep it, so the floating button never covers their cards.
   const foot = useRef<HTMLDivElement>(null)
@@ -201,6 +204,7 @@ export function Chat({
           const up = el.scrollTop < lastTop.current
           lastTop.current = el.scrollTop
           atBottom.current = fromBottom < 40
+          setAway(!atBottom.current)
           if (atBottom.current) setHide(false)
           // Only this far up does the space it frees stay short of the bottom; else it would show again at once.
           else if (up && fromBottom > (foot.current?.offsetHeight ?? 0) + 40 && !typing(foot.current)) {
@@ -257,6 +261,11 @@ export function Chat({
               forks={own?.filter((f) => f !== undefined)}
             />
           </div>
+          {away && (
+            <button className="jump-latest" title={`Jump to Latest Message (${formatCombo(jumpKey)})`} onClick={jumpToLatest}>
+              <ArrowDown size={14} />
+            </button>
+          )}
           {composerHidden && (
             <button
               className="show-composer"
@@ -264,7 +273,7 @@ export function Chat({
               aria-label="Write Message"
               onClick={showComposer}
             >
-              <SquarePen size={12} />
+              <SquarePen size={14} />
             </button>
           )}
         </div>
