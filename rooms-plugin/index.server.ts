@@ -150,6 +150,18 @@ async function members(paseo: PaseoApi, id: string): Promise<Member[]> {
   return entries.map(({ agent: a }) => ({ id: a.id, handle: a.labels[HANDLE] ?? 'agent', model: `${a.provider}/${a.model ?? 'default'}`, joined: a.createdAt }))
 }
 
+/** The agent's last turn, from its last user_message on. agent.turn_ended carries an empty timeline since daemon 0.13. */
+async function lastTurn(paseo: PaseoApi, agentId: string) {
+  const timeline = paseo.agents.ref(agentId).timeline
+  let page = await timeline.refetch({ direction: 'tail', limit: 50 })
+  const entries = [...page.entries]
+  while (!entries.some((e) => e.item.type === 'user_message') && page.hasOlder && page.startCursor) {
+    page = await timeline.refetch({ direction: 'before', cursor: page.startCursor, limit: 50 })
+    entries.unshift(...page.entries)
+  }
+  return entries
+}
+
 async function labelsOf(paseo: PaseoApi, agentId: string) {
   return (await paseo.agents.ref(agentId).refresh())?.agent.labels ?? {}
 }
@@ -300,10 +312,12 @@ export default function contribute(server: PluginServerContext) {
     busy.add(agent.id)
   })
 
-  server.on('agent.turn_ended', async ({ agent, outcome, timeline }, { paseo }) => {
+  server.on('agent.turn_ended', async ({ agent, outcome }, { paseo }) => {
     // Synchronously, before agent.turn_started of a turn that follows right away (a message typed while it ran).
     busy.delete(agent.id)
-    const reply = outcome.kind === 'completed' ? replyText(timeline) : null
+    // Requested in the same tick, so a delivery to the now idle agent from another hook can't open its next turn first.
+    const turn = outcome.kind === 'completed' ? await lastTurn(paseo, agent.id) : []
+    const reply = replyText(turn.map((e) => e.item))
     if (!reply && !queues.get(agent.id)?.length) return
     const id = (await labelsOf(paseo, agent.id))[ROOM]
     if (!id) return
@@ -313,8 +327,7 @@ export default function contribute(server: PluginServerContext) {
       if (!me) return
       if (reply) {
         // The timeline's own time, so a context range picked in the view includes the reply.
-        const tail = await paseo.agents.ref(agent.id).timeline.refetch({ direction: 'tail', limit: 10 })
-        const at = tail.entries.findLast((e) => e.item.type === 'assistant_message')?.timestamp ?? new Date().toISOString()
+        const at = turn.findLast((e) => e.item.type === 'assistant_message')?.timestamp ?? new Date().toISOString()
         const to = mentions(reply, ms.filter((m) => m !== me).map((m) => m.handle))
         const post: Post = { id: randomUUID(), author: me.handle, to, text: reply, at }
         room.file.posts.push(post)

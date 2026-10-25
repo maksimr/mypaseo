@@ -16,9 +16,9 @@
     "check": "tsc -b && oxlint && knip && jscpd --silent && depcruise src paseo-plugin rooms-plugin && node scripts/check-case.mjs && node --test 'src/**/*.test.ts' 'rooms-plugin/**/*.test.ts'"
   },
   "dependencies": {
-    "@getpaseo/client": "^0.11.2",
-    "@getpaseo/highlight": "^0.11.2",
-    "@getpaseo/protocol": "^0.11.2",
+    "@getpaseo/client": "^0.13.0",
+    "@getpaseo/highlight": "^0.13.0",
+    "@getpaseo/protocol": "^0.13.0",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "lucide-react": "^1.55.0",
@@ -28,7 +28,7 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
-    "@getpaseo/cli": "^0.11.2",
+    "@getpaseo/cli": "^0.13.0",
     "@swc/core": "^1.16.18",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
