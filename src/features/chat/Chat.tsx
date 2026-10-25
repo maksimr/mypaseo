@@ -249,7 +249,7 @@ export function Chat({
             <Timeline items={tl.items} members={named} room={room} marks={marks} onShare={shareFrom} />
           </>
         ) : (
-          <div className="empty-chat">
+          <div className="empty-chat new-agent">
             <h2>New agent</h2>
             <p className="muted">
               {target.workspace

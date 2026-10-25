@@ -12,6 +12,21 @@
   display: flex;
   flex-direction: column;
 }
+/* The New agent view: a title with its hint tight under it, as one block, and Import Session set apart below. */
+.new-agent {
+  gap: 0;
+}
+.new-agent h2 {
+  font-size: 24px;
+  letter-spacing: -0.01em;
+}
+.new-agent p {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+.new-agent .btn {
+  margin-top: 16px;
+}
 /* Floats over the timeline; inside the scroller so the scrollbar runs full height and the last message scrolls clear of it. */
 .chat-foot {
   position: sticky;
