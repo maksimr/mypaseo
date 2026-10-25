@@ -26,8 +26,8 @@ end of this file: what changed, anything later steps must know.
 - **DM**: a user message sent with the lock on goes only to the mentioned members (lock needs a mention). The reply is
   private: not routed, its mentions ignored, never in other members' digests or shared context. It's a conversation
   filter, not a security boundary (shared filesystem; paseo MCP tools can read other sessions).
-- **Joining**: a mention of a non-member adds a joining chip in the composer with Model, Thinking and Context picks.
-  Context: None / From here (a picked message onward) / Whole room / Fork @x (x's full session up to a message). A member
+- **Joining**: a mention of a non-member adds a joining recipient chip in the composer (`chat/RecipientChip`) whose
+  panel has Agent, Model, Thinking, Mode and Shared history picks. Shared history: No History / From here (a picked message onward) / Whole room / Fork @x (x's full session up to a message). A member
   never sees room posts from before it joined except what was shared.
 - **Routing runs in a new daemon plugin `mypaseo-rooms`** (`rooms-plugin/`), installed apart from `mypaseo-git`: it
   works with the browser closed, and two open tabs can't double-forward.

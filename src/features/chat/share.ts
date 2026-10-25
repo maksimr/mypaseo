@@ -55,7 +55,7 @@ export const forkEnd = (share: Share | undefined) => share && (share.to ?? share
 /** A joining chip's Context picks. Without a room there's nothing to range over: a fork at any of `forks`, the latest
  *  first. In a room, the range and a fork at its end need a picked message, the fork its `messageId`. */
 export function contextOptions(share: Share | undefined, room: boolean, forks: ForkPoint[] = []): PickOption[] {
-  const options: PickOption[] = [['none', 'None']]
+  const options: PickOption[] = [['none', 'No History']]
   if (!room) return [...options, ...forks.toReversed().map((f): PickOption => [forkId(f), `Fork @${f.handle} ${hhmm(f.at)} · ${excerpt(f.text)}`])]
   const fork = forkEnd(share)
   if (share) options.push(['range', share.to ? `${hhmm(share.from.at)}–${hhmm(share.to.at)}` : `From ${hhmm(share.from.at)}`])

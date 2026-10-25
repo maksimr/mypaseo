@@ -1,11 +1,10 @@
-import { ArrowUp, Brain, Folder, GitBranch, Loader2, Lock, MessageCircle, Paperclip, Plus, Shield, Sparkles, Square, X } from 'lucide-react'
-import { useContext, useEffect, useRef, useState } from 'react'
+import { ArrowUp, Folder, GitBranch, Loader2, Lock, MessageCircle, Paperclip, Plus, Square, X } from 'lucide-react'
+import { useContext, useEffect, useId, useRef, useState } from 'react'
 import { ActiveViewContext } from '../../activeView'
 import { ARTIFACT_PROMPT } from '../../artifact'
 import { errorText, type Agent, type AgentProfile, type DaemonClient, type ProviderEntry } from '../../daemon'
 import * as rooms from '../../rooms'
 import { RESERVED, slug, uniqueHandle } from '../rooms/handles'
-import { JoinChip } from '../rooms/JoinChip'
 import { handleOf, roomId, roomMembers } from '../rooms/members'
 import { mentions } from '../rooms/mentions'
 import { mentionAt, remention, unmention } from './autocomplete'
@@ -18,7 +17,7 @@ import { clickable } from '../../a11y'
 import { hostLabel, isScratch, projectName, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../../store'
 import { useAutocomplete } from './useAutocomplete'
 import { ContextMeter } from './ContextMeter'
-import { ProviderIcon } from '../../components/ProviderIcon'
+import { RecipientChip, type Setting } from './RecipientChip'
 import { Pick } from '../../components/Pick'
 import type { PickOption } from '../../components/Options'
 import { modelOptions } from '../../modelOptions'
@@ -60,9 +59,13 @@ const systemPromptOf = (profile?: AgentProfile) => (profile?.notes ? `${ARTIFACT
 const drafts = new Map<string, string>()
 const imageDrafts = new Map<string, PastedImage[]>()
 const fileDrafts = new Map<string, File[]>()
-/** The Provider (the default agent's), Model, Thinking and Context (a contextOptions id) picked on joining chips, by handle. */
-type JoinPick = { handle: string; provider?: string; model?: string; thinking?: string; context?: string }
+/** The Provider (the default agent's), Model, Thinking, Mode and Context (a contextOptions id) picked on joining chips, by handle. */
+type JoinPick = { handle: string; provider?: string; model?: string; thinking?: string; mode?: string; context?: string }
 const joinDrafts = new Map<string, JoinPick[]>()
+/** The settings a recipient's session has. */
+type Session = 'model' | 'thinking' | 'mode'
+/** An agent the message goes to: its chip, and its agent if it runs already. */
+type Recipient = Omit<Parameters<typeof RecipientChip>[0], 'id'> & { key: string; agent?: Agent }
 /** The messages picked with Share From Here. */
 const shareDrafts = new Map<string, Share>()
 /** The drafts with Direct Message on. */
@@ -136,7 +139,7 @@ export function Composer({
   const fileInput = useRef<HTMLInputElement>(null)
   const sendKey = useShortcut('send')
   const input = useRef<HTMLTextAreaElement>(null)
-  const modelSelect = useRef<HTMLSelectElement>(null)
+  const panelId = useId()
   const projectSelect = useRef<HTMLSelectElement>(null)
   const openPicker = (el: HTMLSelectElement) => {
     el.focus()
@@ -203,9 +206,11 @@ export function Composer({
       const provider = p ? c.provider : ready(pick?.provider ?? c.provider)
       const e = providers.find((x) => x.provider === provider)
       const picked = modelConfig(e, pick?.model ?? (p ? p.model : defaultAgent.model), pick?.thinking ?? (p ? p.thinkingOptionId : defaultAgent.thinking))
-      const modeId = p ? p.modeId : (e?.modes ?? []).some((m) => m.id === defaultAgent.mode) ? defaultAgent.mode : undefined
+      const modes = e?.modes ?? []
+      const valid = (id: string | null | undefined) => (modes.some((m) => m.id === id) ? (id ?? undefined) : undefined)
+      const modeId = valid(pick?.mode) ?? (p ? p.modeId : valid(defaultAgent.mode))
       const context = contexts.find(([id]) => id === pick?.context)?.[0] ?? 'none'
-      return { ...c, provider, ...picked, profile: p, modeId, context }
+      return { ...c, provider, ...picked, profile: p, modes, modeId, mode: modeId ?? e?.defaultModeId, context }
     })
   // A chip's Agent pick, by provider: the default agent on each ready one, and the profiles not mentioned yet.
   const agentOptions = (handle: string): PickOption[] =>
@@ -278,16 +283,84 @@ export function Composer({
     agents: [...members.map((m, i) => ({ handle: memberHandles[i], provider: m.provider, description: 'In this chat' })), ...candidates],
   })
 
-  const change = (field: keyof Draft, value: string) => {
-    if (!agent) return setDraft({ ...draft, provider, [field]: value, ...(field === 'provider' ? { model: undefined, thinking: undefined, mode: undefined } : {}) })
-    const call =
-      field === 'model'
-        ? daemon.setAgentModel(agent.id, value)
-        : field === 'thinking'
-          ? daemon.setAgentThinkingOption(agent.id, value)
-          : daemon.setAgentMode(agent.id, value)
-    call.catch((e) => alert(errorText(e)))
+  // A new agent's picks, kept for the next one.
+  const change = (field: keyof Draft, value: string) =>
+    setDraft({ ...draft, provider, [field]: value, ...(field === 'provider' ? { model: undefined, thinking: undefined, mode: undefined } : {}) })
+  // A running agent's: its session changes now.
+  const setSession = (a: Agent, field: Session, value: string) =>
+    void (field === 'model' ? daemon.setAgentModel(a.id, value) : field === 'thinking' ? daemon.setAgentThinkingOption(a.id, value) : daemon.setAgentMode(a.id, value)).catch(
+      (e) => alert(errorText(e)),
+    )
+  const sessionSettings = (
+    c: ReturnType<typeof modelConfig>,
+    set: (field: Session, value: string) => void,
+    modes: { id: string; label: string }[],
+    mode: string | null | undefined,
+  ): Setting[] => [
+    ...(c.models.length ? [{ title: 'Model', value: c.model?.id, options: modelOptions(c.models), onChange: (v: string) => set('model', v), brief: true }] : []),
+    ...(c.thinkingOptions.length
+      ? [{ title: 'Thinking', value: c.validThinking, options: c.thinkingOptions.map((o): PickOption => [o.id, o.label]), onChange: (v: string) => set('thinking', v), brief: true }]
+      : []),
+    ...(modes.length ? [{ title: 'Mode', value: mode ?? undefined, options: modes.map((m): PickOption => [m.id, m.label]), onChange: (v: string) => set('mode', v) }] : []),
+  ]
+  const dropMention = (handle: string) => {
+    setText(unmention(text, handle))
+    setJoinPicks(joinPicks.filter((x) => x.handle !== handle))
+    input.current?.focus() // the focused button goes with its chip
   }
+  // Who the message goes to (doc/multi-agent-chat.md): the mentioned, else every member, else the new agent.
+  const memberRecipient = (m: Agent, handle: string): Recipient => ({
+    key: handle,
+    name: `@${handle}`,
+    provider: m.provider,
+    agent: m,
+    settings: sessionSettings(
+      modelConfig(providers.find((p) => p.provider === m.provider), m.runtimeInfo?.model ?? m.model, m.thinkingOptionId ?? m.effectiveThinkingOptionId),
+      (field, v) => setSession(m, field, v),
+      m.availableModes,
+      m.currentModeId,
+    ),
+    note: 'Changes apply to its session now.',
+    onRemove: mentioned.includes(handle) ? () => dropMention(handle) : undefined,
+  })
+  const joinRecipient = (j: (typeof joining)[number]): Recipient => ({
+    key: j.handle,
+    name: `@${j.handle}`,
+    provider: j.provider,
+    joins: !!agent,
+    settings: [
+      // Another agent in its place, keeping the Shared history.
+      { title: 'Agent', value: j.profile ? j.handle : `${j.handle}/${j.provider}`, options: agentOptions(j.handle), onChange: (id) => swapJoin(j, id) },
+      ...sessionSettings(j, (field, v) => pickJoin(j.handle, { [field]: v }), j.modes, j.mode),
+      // What of the chat it gets with its first message; a new chat has none.
+      ...(agent ? [{ title: 'Shared history', value: j.context, options: contexts, onChange: (context: string) => pickJoin(j.handle, { context }), brief: true }] : []),
+    ],
+    note: agent && 'Shared history goes with its first message only.',
+    onRemove: () => dropMention(j.handle),
+  })
+  const recipients: Recipient[] = mentioned.length
+    ? mentioned.flatMap((h) => {
+        const i = memberHandles.indexOf(h)
+        const j = joining.find((x) => x.handle === h)
+        return i >= 0 ? [memberRecipient(members[i], h)] : j ? [joinRecipient(j)] : []
+      })
+    : agent
+      ? members.map((m, i) => memberRecipient(m, memberHandles[i]))
+      : provider
+        ? [
+            {
+              key: 'new',
+              name: entry?.label ?? provider,
+              provider,
+              settings: [
+                { title: 'Provider', value: provider, options: usable.map((p): PickOption => [p.provider, p.label ?? p.provider]), onChange: (v) => change('provider', v) },
+                ...sessionSettings({ models, model, thinkingOptions, validThinking }, change, modes, mode),
+              ],
+            },
+          ]
+        : []
+  // Its context window, when the message goes to one running agent.
+  const sole = recipients.length === 1 ? recipients[0].agent : undefined
 
   const clearDraft = () => {
     setText('')
@@ -474,6 +547,13 @@ export function Composer({
       }}
     >
       {ac.popup}
+      {recipients.length > 0 && (
+        <div className="recipients" role="group" aria-label="Recipients">
+          {recipients.map(({ key, ...r }) => (
+            <RecipientChip key={key} id={`${panelId}${key}`} {...r} />
+          ))}
+        </div>
+      )}
       {images.length + files.length + n > 0 && (
         <div className="composer-images">
           {reviewPaths.map((path) => {
@@ -546,34 +626,6 @@ export function Composer({
           ))}
         </div>
       )}
-      {joining.length > 0 && (
-        <div className="join-chips">
-          {joining.map((j) => (
-            <JoinChip
-              key={j.handle}
-              handle={j.handle}
-              provider={j.provider}
-              agent={j.profile ? j.handle : `${j.handle}/${j.provider}`}
-              agents={agentOptions(j.handle)}
-              onAgent={(id) => swapJoin(j, id)}
-              model={j.model?.id}
-              models={modelOptions(j.models)}
-              thinking={j.validThinking}
-              thinkingOptions={j.thinkingOptions.map((o) => [o.id, o.label])}
-              onModel={(model) => pickJoin(j.handle, { model })}
-              onThinking={(thinking) => pickJoin(j.handle, { thinking })}
-              context={j.context}
-              contexts={contexts}
-              onContext={(context) => pickJoin(j.handle, { context })}
-              onRemove={() => {
-                setText(unmention(text, j.handle))
-                setJoinPicks(joinPicks.filter((x) => x.handle !== j.handle))
-                input.current?.focus() // the focused button goes with its chip
-              }}
-            />
-          ))}
-        </div>
-      )}
       <textarea
         name="prompt"
         ref={input}
@@ -591,20 +643,25 @@ export function Composer({
         }}
         onKeyDown={(e) => {
           if (e.nativeEvent.isComposing || ac.onKeyDown(e)) return
-          // On the joining chip whose mention holds the caret, else on the agent.
-          const chip = joining.find((j) => j.handle === mentionAt(text, e.currentTarget.selectionStart))
-          const levels = chip ? chip.thinkingOptions : thinkingOptions
+          // On the recipient whose mention holds the caret, else this chat's agent, else the first.
+          const at = mentionAt(text, e.currentTarget.selectionStart)
+          const r = recipients.find((x) => x.key === at) ?? recipients.find((x) => x.agent && x.agent.id === agent?.id) ?? recipients[0]
+          const levels = r?.settings.find((s) => s.title === 'Thinking')
           if (isShortcut(e, 'send')) {
             e.preventDefault()
             void send()
-          } else if (isShortcut(e, 'cycleThinking') && levels.length > 0) {
+          } else if (isShortcut(e, 'cycleThinking') && levels) {
             e.preventDefault()
-            const next = levels[(levels.findIndex((o) => o.id === (chip ? chip.validThinking : validThinking)) + 1) % levels.length].id
-            if (chip) pickJoin(chip.handle, { thinking: next })
-            else change('thinking', next)
-          } else if (isShortcut(e, 'pickModel') && modelSelect.current) {
+            const ids = levels.options.map(([id]) => id)
+            levels.onChange(ids[(ids.indexOf(levels.value ?? '') + 1) % ids.length])
+          } else if (isShortcut(e, 'pickModel') && r) {
+            // Its settings, at the Model.
             e.preventDefault()
-            openPicker(modelSelect.current)
+            const id = `${panelId}${r.key}`
+            document.querySelector<HTMLButtonElement>(`[popovertarget="${CSS.escape(id)}"]`)?.click()
+            const panel = document.getElementById(id)
+            const select = panel?.querySelector<HTMLSelectElement>('select[name="Model"]') ?? panel?.querySelector('select')
+            if (select) openPicker(select)
           } else if (isShortcut(e, 'pickProject') && projectSelect.current) {
             e.preventDefault()
             openPicker(projectSelect.current)
@@ -658,32 +715,8 @@ export function Composer({
             onChange={(e) => setWorktreeName(e.target.value)}
           />
         )}
-        {!agent && (
-          <Pick
-            icon={<ProviderIcon provider={provider} />}
-            value={provider}
-            onChange={(v) => change('provider', v)}
-            options={usable.map((p) => [p.provider, p.label ?? p.provider])}
-            title="Provider"
-          />
-        )}
-        {models.length > 0 && (
-          <Pick ref={modelSelect} icon={<Sparkles size={14} />} value={model?.id} onChange={(v) => change('model', v)} options={modelOptions(models)} title="Model" />
-        )}
-        {thinkingOptions.length > 0 && (
-          <Pick
-            icon={<Brain size={14} />}
-            value={validThinking}
-            onChange={(v) => change('thinking', v)}
-            options={thinkingOptions.map((o) => [o.id, o.label])}
-            title="Thinking"
-          />
-        )}
-        {modes.length > 0 && (
-          <Pick icon={<Shield size={14} />} value={mode ?? undefined} onChange={(v) => change('mode', v)} options={modes.map((m) => [m.id, m.label])} title="Mode" />
-        )}
         <span className="grow" />
-        {agent && <ContextMeter agent={agent} />}
+        {sole && <ContextMeter agent={sole} />}
         {agent && (room || joining.length > 0) && (
           <button
             className={`icon-btn composer-lock ${dm ? 'on' : ''}`}

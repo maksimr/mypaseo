@@ -159,28 +159,90 @@
   font-size: 12px;
   color: var(--text-muted);
 }
-/* Agents the message's mentions add on send (rooms/JoinChip). */
-.join-chips {
+/* Who the message goes to (RecipientChip): a chip each, which opens its settings. */
+.recipients {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
   padding: 10px 12px 0;
+  font-size: 12px;
 }
-.join-chip {
+.recipient {
   display: inline-flex;
   align-items: center;
   min-width: 0;
   max-width: 100%;
-  padding: 0 2px 0 0;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
 }
-/* The Agent pick: its handle. */
-.join-chip > .pick:first-child {
+.recipient:has(> .icon-btn) {
+  padding-right: 2px;
+}
+.recipient-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 7px;
+  color: var(--text-muted);
+}
+.recipient-chip:hover,
+.recipient:has(.recipient-panel:popover-open) .recipient-chip {
+  background: var(--bg-hover);
   color: var(--text);
 }
-.join-chip > .pick:first-child select {
+.recipient-chip > svg {
+  flex: none;
+}
+.recipient-name {
   font-family: var(--mono);
+  color: var(--text);
+  white-space: nowrap;
+}
+.recipient-tag {
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--green);
+  font-size: 10px;
+}
+.recipient-brief {
+  min-width: 0;
+}
+.recipient-panel {
+  width: 300px;
+  padding: 12px;
+  font-size: 12px;
+}
+.recipient-panel:popover-open {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.recipient-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 4px;
+}
+.recipient-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.recipient-panel .pick {
+  color: var(--text);
+}
+.recipient-panel .pick select {
+  max-width: 190px;
+  border: 1px solid var(--border);
+}
+.recipient-note {
+  margin: 0;
 }
 .composer-image button {
   position: absolute;
@@ -321,8 +383,8 @@
   font: 12px var(--mono);
   font-variant-numeric: tabular-nums;
 }
-/* Phones: an agent's bar stays one row; the picks shrink and the context ring drops its numbers (its card has them).
-   A new agent's bar holds up to five picks and the worktree name, more than a row: it wraps, Send stays right. */
+/* Phones: an agent's bar stays one row; the context ring drops its numbers (its card has them).
+   A new agent's bar holds the Project and Workspace picks and the worktree name, more than a row: it wraps, Send stays right. */
 @media (width < 600px) {
   .ctx-text {
     display: none;
