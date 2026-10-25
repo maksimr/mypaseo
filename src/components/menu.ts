@@ -27,6 +27,26 @@ export function useMenuScrim() {
   }, [])
 }
 
+const FOCUSABLE = 'button, select, input, textarea, a[href], [tabindex]:not([tabindex="-1"])'
+
+/** Tab and Shift+Tab in an open menu cycle through its controls instead of leaving it; Escape still closes it. */
+export function useMenuFocusTrap() {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey) return
+      const menu = (e.target as Element).closest('.menu:popover-open')
+      if (!menu) return
+      const controls = [...menu.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => !el.matches(':disabled') && el.checkVisibility())
+      if (!controls.length) return
+      const i = controls.indexOf(e.target as HTMLElement)
+      e.preventDefault()
+      controls[e.shiftKey ? (i <= 0 ? controls.length - 1 : i - 1) : (i + 1) % controls.length].focus()
+    }
+    addEventListener('keydown', onKey)
+    return () => removeEventListener('keydown', onKey)
+  }, [])
+}
+
 const EDGE = 8 // the least gap between a menu and the window's edge
 
 export const placeMenu = (menuId: string, above = false) => (e: MouseEvent<HTMLElement>) => {
