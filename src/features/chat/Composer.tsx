@@ -17,6 +17,7 @@ import { deleteComments, reviewAttachment, useReview, type ReviewComment } from 
 import { clickable } from '../../a11y'
 import { hostLabel, isScratch, projectName, rememberAgent, useDaemon, useHost, useHostId, useStore } from '../../store'
 import { useAutocomplete } from './useAutocomplete'
+import { Mirror } from './Mirror'
 import { ContextMeter } from './ContextMeter'
 import { RecipientSummary } from './RecipientSummary'
 import { Recipients, type Recipient } from './Recipients'
@@ -180,6 +181,8 @@ export function Composer({
     { handle: defaultHandle, provider: ready(defaultAgent.provider), description: 'Default agent', profile: undefined },
   ].filter((c, i, all) => !memberHandles.includes(c.handle) && all.findIndex((x) => x.handle === c.handle) === i)
   const mentioned = mentions(text, [...memberHandles, ...candidates.map((c) => c.handle)])
+  // Each handle and its color, for the mentions in the text.
+  const colors = new Map([...members.map((m, i) => [memberHandles[i], colorOf(m, profiles)] as const), ...candidates.map((c) => [c.handle, colorVar(c.profile?.color)] as const)])
   const [joinPicks, setJoinPicks] = useDraftList(joinDrafts, draftKey)
   const [shared, setSharedState] = useState(() => shareDrafts.get(draftKey))
   const setShared = (s: Share | undefined) => {
@@ -610,48 +613,51 @@ export function Composer({
               e.target.value = ''
             }}
           />
-          <textarea
-            name="prompt"
-            ref={input}
-            value={text}
-            placeholder={agent ? (members.length > 1 ? 'Message everyone…' : 'Message the agent…') : provider ? 'What should the agent do?' : 'No ready providers — check Settings'}
-            rows={1}
-            {...ac.inputProps}
-            onChange={(e) => {
-              setText(e.target.value)
-              ac.track(e.target)
-            }}
-            onSelect={(e) => ac.track(e.currentTarget)}
-            onPaste={(e) => {
-              if (addFiles([...e.clipboardData.files])) e.preventDefault()
-            }}
-            onKeyDown={(e) => {
-              if (e.nativeEvent.isComposing || ac.onKeyDown(e)) return
-              // On the recipient whose mention holds the caret, else this chat's agent, else the first.
-              const at = mentionAt(text, e.currentTarget.selectionStart)
-              const r = recipients.find((x) => x.key === at) ?? recipients.find((x) => x.agent && x.agent.id === agent?.id) ?? recipients[0]
-              // Tab skips Send (Shift+Tab from the chip reaches it) to the first recipient's chip, in the bar under the box.
-              const chip = e.currentTarget.closest('.composer')?.querySelector<HTMLButtonElement>('.recipient-chip')
-              if (comboOf(e) === 'Tab' && chip) {
-                e.preventDefault()
-                chip.focus()
-              } else if (isShortcut(e, 'send')) {
-                e.preventDefault()
-                void send()
-              } else if (isShortcut(e, 'pickModel') && r) {
-                // Its settings, at the Model.
-                e.preventDefault()
-                const id = `${panelId}${r.key}`
-                document.querySelector<HTMLButtonElement>(`[popovertarget="${CSS.escape(id)}"]`)?.click()
-                const panel = document.getElementById(id)
-                const select = panel?.querySelector<HTMLSelectElement>('select[name="Model"]') ?? panel?.querySelector('select')
-                if (select) openPicker(select)
-              } else if (isShortcut(e, 'pickProject') && projectSelect.current) {
-                e.preventDefault()
-                openPicker(projectSelect.current)
-              }
-            }}
-          />
+          <div className="composer-text">
+            <Mirror text={text} colors={colors} />
+            <textarea
+              name="prompt"
+              ref={input}
+              value={text}
+              placeholder={agent ? (members.length > 1 ? 'Message everyone…' : 'Message the agent…') : provider ? 'What should the agent do?' : 'No ready providers — check Settings'}
+              rows={1}
+              {...ac.inputProps}
+              onChange={(e) => {
+                setText(e.target.value)
+                ac.track(e.target)
+              }}
+              onSelect={(e) => ac.track(e.currentTarget)}
+              onPaste={(e) => {
+                if (addFiles([...e.clipboardData.files])) e.preventDefault()
+              }}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing || ac.onKeyDown(e)) return
+                // On the recipient whose mention holds the caret, else this chat's agent, else the first.
+                const at = mentionAt(text, e.currentTarget.selectionStart)
+                const r = recipients.find((x) => x.key === at) ?? recipients.find((x) => x.agent && x.agent.id === agent?.id) ?? recipients[0]
+                // Tab skips Send (Shift+Tab from the chip reaches it) to the first recipient's chip, in the bar under the box.
+                const chip = e.currentTarget.closest('.composer')?.querySelector<HTMLButtonElement>('.recipient-chip')
+                if (comboOf(e) === 'Tab' && chip) {
+                  e.preventDefault()
+                  chip.focus()
+                } else if (isShortcut(e, 'send')) {
+                  e.preventDefault()
+                  void send()
+                } else if (isShortcut(e, 'pickModel') && r) {
+                  // Its settings, at the Model.
+                  e.preventDefault()
+                  const id = `${panelId}${r.key}`
+                  document.querySelector<HTMLButtonElement>(`[popovertarget="${CSS.escape(id)}"]`)?.click()
+                  const panel = document.getElementById(id)
+                  const select = panel?.querySelector<HTMLSelectElement>('select[name="Model"]') ?? panel?.querySelector('select')
+                  if (select) openPicker(select)
+                } else if (isShortcut(e, 'pickProject') && projectSelect.current) {
+                  e.preventDefault()
+                  openPicker(projectSelect.current)
+                }
+              }}
+            />
+          </div>
           {running.length > 0 && empty ? (
             <button className="send stop" title="Stop" onClick={() => void stop()}>
               <Square size={12} fill="currentColor" />

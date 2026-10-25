@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { mentions } from './mentions.ts'
+import { mentionSpans, mentions } from './mentions.ts'
 
 const handles = ['agent', 'code-reviewer', 'code-reviewer-2']
 
@@ -27,4 +27,12 @@ test('unique, first-seen order; code spans and fences close properly', () => {
   assert.deepEqual(mentions('``x` @agent`', handles), []) // `` has no closing ``, then ` @agent` is a span
   assert.deepEqual(mentions('é@agent _@agent -@agent @@agent x/@agent @agent-', handles), [])
   assert.deepEqual(mentions('hi\n@agent: done!@code-reviewer', handles), ['agent', 'code-reviewer'])
+})
+
+test('spans: every mention where it stands, past code', () => {
+  assert.deepEqual(mentionSpans('```\n@agent\n```\n`@agent` @Agent, @code-reviewer @agent @nobody', handles), [
+    { handle: 'agent', start: 24, end: 30 },
+    { handle: 'code-reviewer', start: 32, end: 46 },
+    { handle: 'agent', start: 47, end: 53 },
+  ])
 })

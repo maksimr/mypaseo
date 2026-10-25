@@ -55,20 +55,38 @@
   gap: 4px;
   padding: 8px;
 }
-/* One line as high as Attach Files and Send (32px). */
-.composer textarea {
+/* The textarea over its mirror (Mirror.tsx), which draws its text: the mentions in their agents' colors. One grid cell
+   holds both, so they wrap alike, and the box scrolls them together. */
+.composer-text {
   flex: 1;
   min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  max-height: 40vh;
+  overflow-y: auto;
+  scroll-padding-block: 6px; /* the caret's line shows with its padding */
+  font-family: var(--mono);
+}
+.composer-text > * {
+  grid-area: 1 / 1;
+  padding: 6px 8px;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+/* One line as high as Attach Files and Send (32px). */
+.composer textarea {
   field-sizing: content;
   min-height: calc(1lh + 12px);
-  max-height: 40vh;
-  overflow-x: hidden;
-  padding: 6px 8px;
+  overflow: hidden;
   border: 0;
   outline: none;
   resize: none;
   background: none;
-  font-family: var(--mono);
+  color: transparent;
+  caret-color: var(--text);
+}
+.composer textarea::placeholder {
+  color: var(--text-faint);
 }
 /* Bottom-up so the best match sits next to the input. */
 .autocomplete {

@@ -230,7 +230,7 @@
     padding-inline: 16px; /* mono: room for ~32 characters a line */
     font-size: 18px; /* Claude's mobile web size */
   }
-  .composer textarea {
+  .composer-text {
     font-size: 18px;
   }
   /* The bar shows only the open tab; the chevron drops down the full list. No Open in Editor on a phone: a chat's
