@@ -12,6 +12,30 @@
   display: flex;
   flex-direction: column;
 }
+/* The timeline fades out under the tab bar once scrolled, as .scroll-fade does (base.css), but under a sheet rather
+   than a mask, so a member's name (.msg-author) sticks over the fade, right under the bar. Without scroll-driven
+   animations, a hard edge. */
+@supports (animation-timeline: scroll()) {
+  .chat-scroll::before {
+    content: '';
+    position: sticky;
+    top: 0;
+    z-index: 2; /* over .work-head's 1; .msg-author's and .chat-foot's 2 come after it */
+    flex: none;
+    height: 16px;
+    margin-bottom: -16px; /* takes no room */
+    background: linear-gradient(var(--bg), transparent);
+    pointer-events: none;
+    animation: chat-fade linear both;
+    animation-timeline: scroll();
+    animation-range: 0 16px;
+  }
+}
+@keyframes chat-fade {
+  from {
+    opacity: 0;
+  }
+}
 /* The New agent view: a title with its hint tight under it, as one block, and Import Session set apart below. */
 .new-agent {
   gap: 0;
@@ -209,14 +233,13 @@
   color: var(--text-faint);
   font-size: 12px;
 }
-/* In a room: the member a run of messages and steps comes from, held on top while its run (.msg-run) scrolls by, past
-   .scroll-fade's 16px (its text starts ~4px into its line). Frosted like .rail-sheet, under the name only, and tinted
-   so the text behind doesn't show through it; the padding sits in the negative margin, so the name stays lined up with
-   the text. */
+/* In a room: the member a run of messages and steps comes from, held on top while its run (.msg-run) scrolls by, over
+   the chat's fade (.chat-scroll::before). Frosted like .rail-sheet, under the name only, and tinted so the text behind
+   doesn't show through it; the padding sits in the negative margin, so the name stays lined up with the text. */
 .msg-author {
   position: sticky;
-  top: 12px;
-  z-index: 2; /* over the positioned .msg, .msg-foot and the .work-head its run's end pushes up */
+  top: 0;
+  z-index: 2; /* over the positioned .msg, .msg-foot, the .work-head its run's end pushes up and the fade before it */
   display: flex;
   align-items: center;
   gap: 6px;
@@ -293,9 +316,9 @@
   list-style: none;
   cursor: pointer;
 }
-/* In a room, under its member's name (.msg-author: 12px down, one line of the same font). */
+/* In a room, under its member's name (.msg-author: one line of the same font). */
 .msg-run .work-head {
-  top: calc(12px + 1lh);
+  top: 1lh;
 }
 .work-head::-webkit-details-marker {
   display: none;

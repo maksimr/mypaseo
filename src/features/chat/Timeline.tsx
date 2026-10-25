@@ -5,7 +5,6 @@ import { errorText, type Agent, type TimelineItem, type ToolCall, type ToolDetai
 import { formatCombo, isShortcut, useShortcut } from '../../keymap'
 import { Code } from '../../components/Code'
 import { CopyButton, Markdown } from '../../components/Markdown'
-import { ProviderIcon } from '../../components/ProviderIcon'
 import * as rooms from '../../rooms'
 import { useDaemon } from '../../store'
 import type { RoomItem } from '../rooms/roomView'
@@ -115,7 +114,6 @@ export function Timeline({
           <div key={who.key} className="msg-run">
             {author && (
               <div className="msg-author">
-                <ProviderIcon provider={author.agent.provider} size={13} color={author.color} />
                 <span style={{ color: author.color }}>@{author.handle}</span>
                 {who.private && <> · <Direct /></>}
               </div>

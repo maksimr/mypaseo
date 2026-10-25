@@ -225,7 +225,7 @@ export function Chat({
     <div className="chat">
       <ContextCard cwd={target.workspace?.workspaceDirectory} members={lead && named} />
       <div
-        className="chat-scroll scroll-fade"
+        className="chat-scroll"
         ref={scroller}
         onScroll={(e) => {
           const el = e.currentTarget
