@@ -72,8 +72,12 @@ export function mentionAt(text: string, caret: number) {
   return head ? (head[1] + /^[a-z0-9-]*/i.exec(text.slice(caret))![0]).toLowerCase() : undefined
 }
 
-/**
- * Drops the `@` of each mention of handle (rooms/mentions.ts rules), so the word stays and mentions no one.
- * shortcut: also inside code, where mentions don't count; skip code spans if someone mentions a handle in code.
- */
-export const unmention = (text: string, handle: string) => text.replace(new RegExp(`(?<![\\p{L}\\p{N}_./@-])@(${handle})(?![a-z0-9-])`, 'giu'), '$1')
+// Each mention of handle (rooms/mentions.ts rules).
+// shortcut: also inside code, where mentions don't count; skip code spans if someone mentions a handle in code.
+const mentionsOf = (handle: string) => new RegExp(`(?<![\\p{L}\\p{N}_./@-])@(${handle})(?![a-z0-9-])`, 'giu')
+
+/** Drops the `@` of each mention of handle, so the word stays and mentions no one. */
+export const unmention = (text: string, handle: string) => text.replace(mentionsOf(handle), '$1')
+
+/** Turns each mention of handle into one of `to`. */
+export const remention = (text: string, handle: string, to: string) => text.replace(mentionsOf(handle), `@${to}`)

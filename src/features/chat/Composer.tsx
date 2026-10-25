@@ -8,7 +8,7 @@ import { RESERVED, slug, uniqueHandle } from '../rooms/handles'
 import { JoinChip } from '../rooms/JoinChip'
 import { handleOf, roomId, roomMembers } from '../rooms/members'
 import { mentions } from '../rooms/mentions'
-import { mentionAt, unmention } from './autocomplete'
+import { mentionAt, remention, unmention } from './autocomplete'
 import { contextOptions, forkEnd, forkId, hhmm, pickRange, type ForkPoint, type Mark, type Share } from './share'
 import { dropImageRef, imageRef } from './imageRefs'
 import { ImageEditor, type PastedImage } from './ImageEditor'
@@ -20,6 +20,7 @@ import { useAutocomplete } from './useAutocomplete'
 import { ContextMeter } from './ContextMeter'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import { Pick } from '../../components/Pick'
+import type { PickOption } from '../../components/Options'
 import { modelOptions } from '../../modelOptions'
 import type { Target } from './target'
 
@@ -59,8 +60,8 @@ const systemPromptOf = (profile?: AgentProfile) => (profile?.notes ? `${ARTIFACT
 const drafts = new Map<string, string>()
 const imageDrafts = new Map<string, PastedImage[]>()
 const fileDrafts = new Map<string, File[]>()
-/** The Model, Thinking and Context (a contextOptions id) picked on joining chips, by handle. */
-type JoinPick = { handle: string; model?: string; thinking?: string; context?: string }
+/** The Provider (the default agent's), Model, Thinking and Context (a contextOptions id) picked on joining chips, by handle. */
+type JoinPick = { handle: string; provider?: string; model?: string; thinking?: string; context?: string }
 const joinDrafts = new Map<string, JoinPick[]>()
 /** The messages picked with Share From Here. */
 const shareDrafts = new Map<string, Share>()
@@ -199,12 +200,27 @@ export function Composer({
     .flatMap((h) => candidates.filter((c) => c.handle === h))
     .map(({ profile: p, ...c }) => {
       const pick = joinPicks.find((j) => j.handle === c.handle)
-      const e = providers.find((x) => x.provider === c.provider)
+      const provider = p ? c.provider : ready(pick?.provider ?? c.provider)
+      const e = providers.find((x) => x.provider === provider)
       const picked = modelConfig(e, pick?.model ?? (p ? p.model : defaultAgent.model), pick?.thinking ?? (p ? p.thinkingOptionId : defaultAgent.thinking))
       const modeId = p ? p.modeId : (e?.modes ?? []).some((m) => m.id === defaultAgent.mode) ? defaultAgent.mode : undefined
       const context = contexts.find(([id]) => id === pick?.context)?.[0] ?? 'none'
-      return { ...c, ...picked, profile: p, modeId, context }
+      return { ...c, provider, ...picked, profile: p, modeId, context }
     })
+  // A chip's Agent pick, by provider: the default agent on each ready one, and the profiles not mentioned yet.
+  const agentOptions = (handle: string): PickOption[] =>
+    candidates
+      .filter((c) => c.handle === handle || !mentioned.includes(c.handle))
+      .flatMap((c) => (c.profile ? [[c.handle, c.provider]] : usable.map((u) => [`${c.handle}/${u.provider}`, u.provider])))
+      .map(([id, provider]) => [id, `@${id.split('/')[0]}`, providers.find((p) => p.provider === provider)?.label ?? provider])
+  // Another agent in a chip's place: the mentions follow, and it keeps the chip's Context.
+  const swapJoin = (j: (typeof joining)[number], id: string) => {
+    const [handle, provider] = id.split('/')
+    setJoinPicks((prev) => [...prev.filter((x) => x.handle !== j.handle && x.handle !== handle), { handle, provider, context: j.context }])
+    if (handle === j.handle) return
+    setText(remention(text, j.handle, handle))
+    input.current?.focus() // the focused pick goes with its chip
+  }
   // Direct Message (the lock): the post goes to the mentioned members only, and their replies stay out of the room.
   const [locked, setLockedState] = useState(() => dmDrafts.has(draftKey))
   const setLocked = (on: boolean) => {
@@ -537,6 +553,9 @@ export function Composer({
               key={j.handle}
               handle={j.handle}
               provider={j.provider}
+              agent={j.profile ? j.handle : `${j.handle}/${j.provider}`}
+              agents={agentOptions(j.handle)}
+              onAgent={(id) => swapJoin(j, id)}
               model={j.model?.id}
               models={modelOptions(j.models)}
               thinking={j.validThinking}

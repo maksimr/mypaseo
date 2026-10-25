@@ -171,15 +171,15 @@
   align-items: center;
   min-width: 0;
   max-width: 100%;
-  padding: 0 2px 0 8px;
+  padding: 0 2px 0 0;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
 }
-.join-chip > svg {
-  flex: none;
+/* The Agent pick: its handle. */
+.join-chip > .pick:first-child {
+  color: var(--text);
 }
-.join-handle {
-  margin: 0 4px 0 6px;
+.join-chip > .pick:first-child select {
   font-family: var(--mono);
 }
 .composer-image button {

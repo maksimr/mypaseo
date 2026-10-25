@@ -7,6 +7,9 @@ import { ProviderIcon } from '../../components/ProviderIcon'
 export function JoinChip({
   handle,
   provider,
+  agent,
+  agents,
+  onAgent,
   model,
   models,
   thinking,
@@ -20,6 +23,9 @@ export function JoinChip({
 }: {
   handle: string
   provider: string | undefined
+  agent: string
+  agents: PickOption[]
+  onAgent: (id: string) => void
   model: string | undefined
   models: PickOption[]
   thinking: string | undefined
@@ -33,8 +39,8 @@ export function JoinChip({
 }) {
   return (
     <span className="join-chip" role="group" aria-label={`@${handle} joins`}>
-      <ProviderIcon provider={provider} />
-      <span className="join-handle">@{handle}</span>
+      {/* Another agent in its place, keeping the Context. */}
+      <Pick icon={<ProviderIcon provider={provider} />} value={agent} onChange={onAgent} options={agents} title="Agent" />
       {models.length > 0 && <Pick icon={<Sparkles size={14} />} value={model} onChange={onModel} options={models} title="Model" />}
       {thinkingOptions.length > 0 && <Pick icon={<Brain size={14} />} value={thinking} onChange={onThinking} options={thinkingOptions} title="Thinking" />}
       {/* What of the room it gets with its first message. */}
