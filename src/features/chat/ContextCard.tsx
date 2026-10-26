@@ -6,9 +6,9 @@ import { MemberList, type Member } from '../rooms/MemberList'
 import { MemberSettings } from './MemberSettings'
 import { agentSettings, briefOf } from './session'
 
-// Whether chats show their Context card: one setting for every chat, kept across reloads.
+// Whether chats show their Context card: one setting for every chat, kept across reloads. Hidden until turned on.
 const listeners = new Set<() => void>()
-let shown = localStorage.mypaseoContext !== 'hidden'
+let shown = localStorage.mypaseoContext === 'shown'
 const subscribe = (l: () => void) => {
   listeners.add(l)
   return () => listeners.delete(l)
