@@ -19,3 +19,12 @@ export function Spinner({ size = 13, className, ...props }: SVGProps<SVGSVGEleme
     </svg>
   )
 }
+
+/** In place of "Loading…": a spinner in the middle of what its container has left (`.loading` in styles/base.css). */
+export function Loading({ size = 24 }: { size?: number }) {
+  return (
+    <div className="loading">
+      <Spinner size={size} aria-label="Loading" />
+    </div>
+  )
+}

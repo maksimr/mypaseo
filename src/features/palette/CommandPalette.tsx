@@ -3,6 +3,7 @@ import { useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 
 import { useEscape } from '../../a11y'
 import { listAllFiles, rankPaths } from '../chat/autocomplete'
 import { Pick } from '../../components/Pick'
+import { Loading } from '../../components/Spinner'
 import { errorText } from '../../daemon'
 import { focusView } from '../../focus'
 import { SHORTCUTS, SHORTCUT_IDS, binding, comboOf, formatCombo, keysOf, pauseShortcuts, type ShortcutId } from '../../keymap'
@@ -118,7 +119,7 @@ export function CommandPalette({
           }))
         : []
   const status =
-    fileQuery === undefined ? 'No matching commands' : !cwd ? 'No workspace open: pick a project' : typeof shown === 'string' ? shown : !shown ? 'Loading…' : 'No matching files'
+    fileQuery === undefined ? 'No matching commands' : !cwd ? 'No workspace open: pick a project' : typeof shown === 'string' ? shown : !shown ? <Loading size={14} /> : 'No matching files'
   const selected = Math.min(sel, items.length - 1)
 
   return (

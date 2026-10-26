@@ -1,5 +1,5 @@
 import { Import, Search, X } from 'lucide-react'
-import { Spinner } from '../../components/Spinner'
+import { Loading, Spinner } from '../../components/Spinner'
 import { useEffect, useState } from 'react'
 import { useEscape } from '../../a11y'
 import { errorText, type Agent, type DaemonClient, type SessionEntry } from '../../daemon'
@@ -107,7 +107,7 @@ export function ImportSession({ target, onClose, onImported }: { target: Target;
         {importError && <div className="banner err">{importError}</div>}
         <div className="session-list">
           {current?.error && <div className="empty err">{current.error}</div>}
-          {!shown && !current?.error && <div className="empty">Loading sessions…</div>}
+          {!shown && !current?.error && <Loading />}
           {shown?.entries.length === 0 && <div className="empty">No sessions to import</div>}
           {shown?.entries.map((e) => {
             const title = e.title?.trim() || e.firstPromptPreview?.trim() || 'Untitled session'
@@ -132,7 +132,7 @@ export function ImportSession({ target, onClose, onImported }: { target: Target;
           })}
           {shown && shown.entries.length >= limit && limit < 200 && (
             <button className="load-older" onClick={() => setLimit(Math.min(limit + PAGE, 200))}>
-              {current ? 'Load More' : 'Loading…'}
+              {current ? 'Load More' : <Spinner size={13} aria-label="Loading" />}
             </button>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { CaseSensitive, Check, ChevronDown, ChevronUp, GitBranch, Hash, Mail, Tag } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { clickable, navigateRows } from '../../a11y'
+import { Loading } from '../../components/Spinner'
 import { errorText, type DiffFile, type Workspace } from '../../daemon'
 import * as git from '../../git'
 import { isShortcut } from '../../keymap'
@@ -245,7 +246,7 @@ export function CommitGraph({
         </button>
       </div>
       {error && <div className="empty err">{error}. The graph comes from the mypaseo-git daemon plugin, see the README to install or reload it.</div>}
-      {!error && !log && <div className="empty">Loading…</div>}
+      {!error && !log && <Loading />}
       {!error && log && commits.length === 0 && <div className="empty">No commits</div>}
       {commits.length > 0 && (
         <>
@@ -314,7 +315,7 @@ export function CommitDetails({
   }, [daemon, cwd, sha])
 
   if (error) return <div className="empty err">{error}</div>
-  if (!details) return <div className="empty">Loading…</div>
+  if (!details) return <Loading />
   const [subject, ...rest] = details.message.split('\n')
   const body = rest.join('\n').trim()
   return (

@@ -5,6 +5,7 @@ import { ActiveViewContext } from '../../activeView'
 import { artifactDocs } from '../../artifact'
 import { parseNear } from '../../components/Markdown'
 import { ProviderIcon } from '../../components/ProviderIcon'
+import { Loading } from '../../components/Spinner'
 import type { Agent, TimelineItem } from '../../daemon'
 import { useDefaultAgent } from '../../defaultAgent'
 import { formatCombo, isShortcut, useShortcut } from '../../keymap'
@@ -218,7 +219,7 @@ export function Chat({
       >
         {agent ? (
           <>
-            {tl.loading && <div className="empty">Loading…</div>}
+            {tl.loading && <Loading />}
             {tl.error && <div className="empty err">{tl.error}</div>}
             <Timeline items={tl.items} members={named} room={room} times={ownTl.times} marks={marks} onShare={shareFrom} />
           </>

@@ -8,6 +8,7 @@ import { errorText, type DirEntry } from '../../daemon'
 import { useReview } from '../review/review'
 import { useDaemon } from '../../store'
 import { Code } from '../../components/Code'
+import { Loading } from '../../components/Spinner'
 import { CommentNav, ReviewThread } from '../review/ReviewThread'
 
 const sortEntries = (entries: DirEntry[]) =>
@@ -57,7 +58,14 @@ export function FileTree({
 
   const render = (path: string, depth: number): React.ReactNode => {
     const entries = dirs[path]
-    if (entries === undefined) return <div className="row muted" style={{ paddingLeft: 8 + depth * 14 }}>Loading…</div>
+    if (entries === undefined)
+      return depth ? (
+        <div className="row" style={{ paddingLeft: 8 + depth * 14 }}>
+          <Loading size={14} />
+        </div>
+      ) : (
+        <Loading />
+      )
     if (typeof entries === 'string') return <div className="row err" style={{ paddingLeft: 8 + depth * 14 }}>{entries}</div>
     return entries.map((e) => {
       const isDir = e.kind === 'directory'
@@ -180,7 +188,7 @@ export function FileView({ cwd, path, reveal, onHistory }: { cwd: string; path: 
         )}
       </div>
       {!file ? (
-        <div className="empty">Loading…</div>
+        <Loading />
       ) : file.kind === 'text' ? (
         <Code code={file.text} filename={path} lineNumbers after={(n) => <ReviewThread review={review} path={path} side="new" line={n} />} />
       ) : file.kind === 'image' ? (

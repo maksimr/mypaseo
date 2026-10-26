@@ -1,6 +1,6 @@
 import { supportsUsageReports } from '@getpaseo/client/internal/daemon-client'
 import { Gauge, RotateCw } from 'lucide-react'
-import { Spinner } from '../../components/Spinner'
+import { Loading, Spinner } from '../../components/Spinner'
 import { useEffect, useId, useState } from 'react'
 import { errorText, type Agent, type UsageReport } from '../../daemon'
 import { useDaemon } from '../../store'
@@ -119,7 +119,7 @@ function AgentUsage({ agentId }: { agentId: string }) {
       {error ? (
         <div className="muted">Unable to load usage: {error}</div>
       ) : !reports ? (
-        <div className="muted">Loading usage…</div>
+        <Loading size={14} />
       ) : (
         reports.map((r) => <UsageCard key={r.id} entry={r} refreshing={refreshing} onRefresh={refresh} />)
       )}

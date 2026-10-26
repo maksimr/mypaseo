@@ -103,6 +103,18 @@ h2 {
     animation-duration: 6s;
   }
 }
+/* components/Spinner (Loading): its container stacks it under what comes before (a sticky toolbar), and it fills the
+   rest with the spinner in the middle. */
+:has(> .loading) {
+  display: flex;
+  flex-direction: column;
+}
+.loading {
+  flex: 1;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+}
 @keyframes spin {
   to {
     transform: rotate(360deg);

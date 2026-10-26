@@ -5,6 +5,7 @@ import { errorText, type DraftConfig, type SlashCommand } from '../../daemon'
 import { useDaemon } from '../../store'
 import { comboOf } from '../../keymap'
 import { ProviderIcon } from '../../components/ProviderIcon'
+import { Loading } from '../../components/Spinner'
 import { ProfileIcon } from '../rooms/ProfileIcon'
 
 type Look = { icon?: string; color?: string }
@@ -92,7 +93,7 @@ export function useAutocomplete({
           ]
         : []
   const loaded = trigger?.kind === '/' ? cmds : files
-  const status = typeof loaded === 'string' ? loaded : !loaded ? 'Loading…' : trigger?.kind === '/' ? 'No commands' : 'No files'
+  const status = typeof loaded === 'string' ? loaded : !loaded ? <Loading size={14} /> : trigger?.kind === '/' ? 'No commands' : 'No files'
   const open = trigger !== null && (trigger.kind === '@' || commandsKey !== undefined)
 
   const selKey = trigger ? `${trigger.kind}${trigger.start}:${trigger.query}` : ''

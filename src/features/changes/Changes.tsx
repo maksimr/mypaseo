@@ -1,5 +1,5 @@
 import { Check, ChevronDown, ChevronRight, ChevronUp, ChevronsDownUp, ChevronsUpDown, FileCode, Minus, Undo2 } from 'lucide-react'
-import { Spinner } from '../../components/Spinner'
+import { Loading, Spinner } from '../../components/Spinner'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { clickable } from '../../a11y'
 import { ActiveViewContext } from '../../activeView'
@@ -383,7 +383,7 @@ export function ChangesView({
           onCommit={(input) => void commit(input)}
         />
       )}
-      {diff.loading && <div className="empty">Loading diff…</div>}
+      {diff.loading && <Loading />}
       {diff.error && <div className="empty err">{diff.error}</div>}
       {diff.tooLarge && <div className="empty">Diff is too large to display</div>}
       {!diff.loading && !diff.error && shown.length === 0 && (

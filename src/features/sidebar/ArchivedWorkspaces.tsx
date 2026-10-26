@@ -1,5 +1,5 @@
 import { ArchiveRestore, GitBranch, Trash2 } from 'lucide-react'
-import { Spinner } from '../../components/Spinner'
+import { Loading, Spinner } from '../../components/Spinner'
 import { useEffect, useState } from 'react'
 import { errorText } from '../../daemon'
 import { useDaemon } from '../../store'
@@ -62,8 +62,14 @@ export function ArchivedWorkspaces({ hostId, projectId, activeIds }: { hostId: s
   if (error || !list?.length)
     return (
       <div className="row workspace archived">
-        <span className="chevron" />
-        <span className="truncate">{error ?? (list ? 'No archived workspaces' : 'Loading…')}</span>
+        {error || list ? (
+          <>
+            <span className="chevron" />
+            <span className="truncate">{error ?? 'No archived workspaces'}</span>
+          </>
+        ) : (
+          <Loading size={14} />
+        )}
       </div>
     )
   return list.map((w) => {

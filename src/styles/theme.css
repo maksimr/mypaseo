@@ -39,8 +39,6 @@
   --toggle-on: light-dark(#4a6bd6, #3b5a85);
   --toggle-on-knob: light-dark(#ffffff, #e8eef6);
   --swatch-ring: rgba(127, 127, 127, 0.6); /* around a pen color (image editor) */
-  --spinner: light-dark(#4a6bd6, #a5ccff); /* components/Spinner: the arc, over its ring */
-  --spinner-track: light-dark(#bccbe6, #59738a);
 
   /* Diffs */
   --add-bg: light-dark(rgba(80, 170, 70, 0.15), rgba(161, 193, 129, 0.12));
