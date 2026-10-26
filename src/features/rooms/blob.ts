@@ -44,9 +44,11 @@ export const points = (radii: number[]) =>
     return [50 + r * Math.cos(a), 50 + r * Math.sin(a)]
   })
 
-/** A smooth closed path through an outline's points: a Catmull-Rom spline as cubic Béziers. */
-export function outline(radii: number[]) {
-  const p = points(radii)
+/** A smooth closed path through an outline's points. */
+export const outline = (radii: number[]) => spline(points(radii))
+
+/** A smooth closed path through points: a Catmull-Rom spline as cubic Béziers. */
+export function spline(p: number[][]) {
   const n = p.length
   const at = (i: number) => p[(i + n) % n]
   const xy = (x: number, y: number) => `${+x.toFixed(1)} ${+y.toFixed(1)}`
