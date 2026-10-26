@@ -1,4 +1,4 @@
-import { Loader2, Lock, Share } from 'lucide-react'
+import { Lock, Share } from 'lucide-react'
 import { Fragment, memo, useContext, useEffect, useMemo, useState } from 'react'
 import { ActiveViewContext } from '../../activeView'
 import { errorText, type Agent, type TimelineItem, type ToolCall, type ToolDetail } from '../../daemon'
@@ -12,7 +12,7 @@ import type { RoomItem } from '../rooms/roomView'
 import type { Mark } from './share'
 import { toolArg } from './toolArg'
 import { rows, type Row } from './work'
-import { WorkGroup } from './WorkGroup'
+import { Busy, WorkGroup } from './WorkGroup'
 
 /** color: its profile's, a CSS color; icon: its profile's. */
 type Member = { agent: Agent; handle: string; color?: string; icon?: string }
@@ -86,7 +86,7 @@ export function Timeline({
     // Keyed by the room's key: other members' items arriving shift the indices.
     <Fragment key={room ? room[row.index].key : row.index}>
       {'steps' in row ? (
-        <WorkGroup index={row.index} steps={row.steps} live={live.has(row)} since={live.get(row)?.agent.lastUserMessageAt} expanded={expanded}>
+        <WorkGroup index={row.index} steps={row.steps} live={live.has(row)} since={live.get(row)?.agent.lastUserMessageAt} icon={live.get(row)?.icon} color={live.get(row)?.color} expanded={expanded}>
           {row.steps.map((item, i) => (
             <Item key={i} index={row.index + i} item={item} expanded={expanded} />
           ))}
@@ -126,7 +126,7 @@ export function Timeline({
       })}
       {working.map((m) => (
         <div key={m.agent.id} className="msg muted working">
-          <Loader2 size={13} className="spin" /> {room ? `@${m.handle} is working…` : 'Working…'}
+          <Busy icon={m.icon} color={m.color} /> {room ? `@${m.handle} is working…` : 'Working…'}
         </div>
       ))}
       {members.map(
