@@ -155,7 +155,7 @@ export default function App() {
     showPanel(p)
     if (p) setPanelTab(p)
   }
-  const panelView = isGit || panelTab === 'terminals' || panelTab === 'artifacts' ? panelTab : 'files' // closed: what a swipe slides in
+  const panelView = isGit || panelTab === 'terminals' || panelTab === 'artifacts' ? panelTab : 'files'
   const [settings, setSettings] = useState<{ hostId: string; section?: Section } | null>(null)
   const [palette, setPalette] = useState(false)
   const [chatText, setChatText] = useState('') // handed to the composer when the chat tab mounts
@@ -181,12 +181,10 @@ export default function App() {
   const { tab, setTab, files, artifacts, changesTab, graphTab, graphPath, commit, setCommit, commitTab, commitFocus, focus, fileLine } = tabs
   const { openFile, openChanges, openGraph, closeChanges, closeGraph, closeCommit, closeFile, openArtifact, closeArtifact, showComment } = tabs
   const commitDiff = useCommitDiff(hostId, isGit ? cwd : undefined, commitTab)
-  // Touch: dragging in from the left edge slides out the sidebar, from the right edge the file panel;
-  // on narrow windows, dragging an open one toward its edge slides it back.
+  // Touch, on narrow windows: dragging an open sidebar or file panel toward its edge slides it closed.
   const appRef = useRef<HTMLDivElement>(null)
   const [swipe, slideClosed] = useEdgeSwipe(
     appRef,
-    (side) => (side === 'left' ? !sidebar : !!cwd && !panel),
     () => matchMedia(NARROW).matches,
     (side, open) => (side === 'left' ? setSidebar(open) : setPanel(open ? panelTab : null)),
   )
@@ -494,7 +492,7 @@ export default function App() {
         {(sidebar || (panel && cwd)) && <div className="scrim" onClick={dismiss} />}
 
         {panel && cwd && <Resizer side="right" label="Resize File Panel" width={panelW} onResize={setPanelW} />}
-        {(panel || swipe?.side === 'right') && cwd && workspace && (
+        {panel && cwd && workspace && (
           <Panel
             tabs={tabs}
             workspace={workspace}

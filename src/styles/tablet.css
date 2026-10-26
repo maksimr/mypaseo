@@ -435,24 +435,11 @@
     }
   }
 }
-/* Edge swipe (swipe.ts): the pane follows the finger over the center (--swipe-dx), then settles open or closed. */
-.app.swipe-left .sidebar,
-.app.swipe-right .panel {
-  display: flex;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  z-index: 4;
-  box-shadow: 0 0 24px var(--shadow-50);
-}
+/* Swipe (swipe.ts): an open pane follows the finger toward its edge (--swipe-dx), then settles open or closed. */
 .app.swipe-left .sidebar {
-  left: 0;
-  width: var(--sidebar-w);
   translate: min(0px, calc(var(--swipe-dx) - 100%));
 }
 .app.swipe-right .panel {
-  right: 0;
-  width: var(--panel-w);
   translate: max(0px, calc(var(--swipe-dx) + 100%));
 }
 .app.swipe-open :is(.sidebar, .panel) {
