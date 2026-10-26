@@ -126,9 +126,9 @@ export default function App() {
   // The selection's host; with nothing selected (or still loading), the first one.
   const hostId = (workspace ?? project)?.hostId ?? hosts[0].id
   const agent = agents.find((a) => a.id === sel.agentId)
-  // One chat tab per workspace agent, in sidebar order; undefined is the "New agent" composer.
-  const wsAgents = workspace ? agents.filter((a) => a.workspaceId === workspace.id).sort(byRecent) : []
-  const chatTabs = wsAgents.some((a) => a.id === agent?.id) ? wsAgents : [agent, ...wsAgents]
+  // One chat tab per workspace agent, oldest first so a new one opens after the others; undefined is the "New agent" composer, last.
+  const wsAgents = workspace ? agents.filter((a) => a.workspaceId === workspace.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt)) : []
+  const chatTabs = wsAgents.some((a) => a.id === agent?.id) ? wsAgents : [...wsAgents, agent]
   const openChat = (a?: Agent) => {
     if (target) select({ projectId: target.projectId, workspaceId: workspace?.id, agentId: a?.id })
     setTab('chat')
