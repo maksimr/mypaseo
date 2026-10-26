@@ -178,7 +178,7 @@ export default function App() {
   const diff = useCheckoutDiff(hostId, isGit ? cwd : undefined)
   const terms = useTerminals(hostId, workspace)
   const tabs = useTabs({ workspaceId: sel.workspaceId, isGit, diff, terms, setPanel, dismiss })
-  const { tab, setTab, files, artifacts, changesTab, graphTab, graphPath, commit, setCommit, commitTab, commitFocus, focus, fileLine } = tabs
+  const { tab, setTab, beside, files, artifacts, changesTab, graphTab, graphPath, commit, setCommit, commitTab, commitFocus, focus, fileLine } = tabs
   const { openFile, openChanges, openGraph, closeChanges, closeGraph, closeCommit, closeFile, openArtifact, closeArtifact, showComment } = tabs
   const commitDiff = useCommitDiff(hostId, isGit ? cwd : undefined, commitTab)
   // Touch, on narrow windows: dragging an open sidebar or file panel toward its edge slides it closed.
@@ -250,15 +250,7 @@ export default function App() {
       const tabStep = isShortcut(e, 'nextTab') ? 1 : isShortcut(e, 'prevTab') ? -1 : 0
       if (target && tabStep) {
         e.preventDefault()
-        const order: (Tab | Agent | undefined)[] = [
-          ...chatTabs,
-          ...terms.terminals.map((t) => `term:${t.id}` as const),
-          ...(changesTab ? ['changes' as const] : []),
-          ...(graphTab ? ['graph' as const] : []),
-          ...(commitTab ? ['commit' as const] : []),
-          ...files.map((p) => `file:${p}` as const),
-          ...artifacts.map((a) => `art:${a.id}` as const),
-        ]
+        const order: (Tab | Agent | undefined)[] = [...chatTabs, ...tabs.order]
         const next = order[(order.indexOf(tab === 'chat' ? agent : tab) + tabStep + order.length) % order.length]
         if (typeof next === 'string') setTab(next)
         else openChat(next)
@@ -338,7 +330,7 @@ export default function App() {
   /** Closing a terminal tab stops its shell, like in Paseo desktop. */
   const closeTerminal = (id: string) => {
     terms.kill(id).catch((e) => alert(`Could not close terminal: ${errorText(e)}`))
-    if (tab === `term:${id}`) setTab('chat')
+    if (tab === `term:${id}`) setTab(beside(tab))
   }
   const addToChat = (ref: string) => {
     setChatText((t) => `${t}${t ? ' ' : ''}${ref} `)

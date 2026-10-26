@@ -76,6 +76,21 @@ export function useTabs({
     if (tabsWs === workspaceId && !visited.includes(k)) setVisited([...visited, k])
   }
 
+  /** The tabs after the chats, in the tab bar's order. */
+  const order: Tab[] = [
+    ...terms.terminals.map((t) => `term:${t.id}` as const),
+    ...(changesTab ? ['changes' as const] : []),
+    ...(graphTab ? ['graph' as const] : []),
+    ...(commitTab ? ['commit' as const] : []),
+    ...files.map((p) => `file:${p}` as const),
+    ...artifacts.map((a) => `art:${a.id}` as const),
+  ]
+  /** The tab to show on closing tab k, as in a browser: the one to its right, else to its left (the chat, past the first). */
+  const beside = (k: Tab): Tab => {
+    const i = order.indexOf(k)
+    return order[i + 1] ?? order[i - 1] ?? 'chat'
+  }
+
   const openFile = (path: string, line?: number) => {
     setFiles((f) => (f.includes(path) ? f : [...f, path]))
     setFileLine(line ? { path, line } : null)
@@ -94,7 +109,7 @@ export function useTabs({
   }
   const closeArtifact = (id: string) => {
     setArtifacts((as) => as.filter((a) => a.id !== id))
-    if (tab === `art:${id}`) setTab('chat')
+    if (tab === `art:${id}`) setTab(beside(tab))
   }
   // A panel section also opens its center tab: the diff for Changes, the graph for Git Graph (whose section shows the picked commit).
   const openChanges = () => {
@@ -110,19 +125,19 @@ export function useTabs({
   }
   const closeChanges = () => {
     setChangesPick(false)
-    if (tab === 'changes') setTab('chat')
+    if (tab === 'changes') setTab(beside(tab))
   }
   const closeGraph = () => {
     setGraphTab(false)
-    if (tab === 'graph') setTab('chat')
+    if (tab === 'graph') setTab(beside(tab))
   }
   const closeCommit = () => {
     setCommitTab(undefined)
-    if (tab === 'commit') setTab(graphTab ? 'graph' : 'chat')
+    if (tab === 'commit') setTab(beside(tab))
   }
   const closeFile = (path: string) => {
     setFiles((f) => f.filter((p) => p !== path))
-    if (tab === `file:${path}`) setTab('chat')
+    if (tab === `file:${path}`) setTab(beside(tab))
   }
   const showChange = (path: string) => {
     setChangesPick(true)
@@ -148,6 +163,8 @@ export function useTabs({
     setTab,
     visited,
     visit,
+    order,
+    beside,
     files,
     artifacts,
     changesTab,
