@@ -1,14 +1,14 @@
-import { Dices, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Options } from '../../components/Options'
 import type { AgentProfile, ProviderEntry } from '../../daemon'
 import { saveDefaultAgent, useDefaultAgent, type DefaultAgent } from '../../defaultAgent'
 import { modelOptions } from '../../modelOptions'
 import { setProfiles, useHost, useHostId } from '../../store'
-import { blobOf, newBlob } from '../rooms/blob'
 import { COLORS, colorVar, isCustom } from '../rooms/colors'
 import { slug } from '../rooms/handles'
 import { ProfileIcon } from '../rooms/ProfileIcon'
+import { IconPicker } from './IconPicker'
 import { handleError } from './profiles'
 import { matches, type SectionProps } from './section'
 
@@ -256,20 +256,7 @@ function ProfileEditor({
           />
         </div>
       </div>
-      <div className="field">
-        <div className="field-label">Icon</div>
-        <div className="profile-icon-field">
-          <ProfileIcon icon={d.icon} color={colorVar(d.color)} size={32} fallback={null} />
-          <button className="btn" type="button" onClick={() => set({ icon: newBlob() })}>
-            <Dices size={13} /> Generate
-          </button>
-          {blobOf(d.icon) && (
-            <button className="btn ghost" type="button" aria-label="Remove Icon" onClick={() => set({ icon: undefined })}>
-              Remove
-            </button>
-          )}
-        </div>
-      </div>
+      <IconPicker icon={d.icon} color={colorVar(d.color)} onChange={(icon) => set({ icon })} />
       {!isDefault && (
         <label className="field">
           <div className="field-label">Role in group chats</div>

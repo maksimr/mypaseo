@@ -323,10 +323,84 @@
   height: 8px;
   border-radius: 50%;
 }
-.profile-icon-field {
+/* The icon cells, then Random Blob */
+.profile-icon-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+}
+.profile-icon-row > .icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+/* Icon cells: the radio hides under its icon, a ring marks the checked one, as the colors' do. */
+.profile-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 3px;
+}
+.profile-icons label {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.profile-icons label:hover {
+  background: var(--bg-hover);
+}
+.profile-icons input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.profile-icons label:has(:checked) {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 3px var(--text);
+}
+.profile-icons label:has(:focus-visible) {
+  outline: 1px solid var(--accent);
+  outline-offset: 4px;
+}
+.profile-icons .no-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--swatch-ring);
+}
+/* A custom blob drawn large, its points' handles on top (`IconPicker.tsx`). */
+.blob-outline {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+.blob-outline > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.blob-outline circle[role='slider'] {
+  fill: var(--bg);
+  stroke: var(--text);
+  stroke-width: 1.5;
+  cursor: grab;
+  touch-action: none;
+}
+.blob-outline circle[role='slider']:active {
+  cursor: grabbing;
+}
+.blob-outline circle[role='slider']:focus-visible {
+  outline: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
 }
 .profile-colors,
 .profile-colors > [role='radiogroup'] {
@@ -349,8 +423,9 @@
   cursor: pointer;
   forced-color-adjust: none; /* the swatch is the information */
 }
-/* No Color: a ring struck through */
-.profile-colors .no-color {
+/* No Color, No Icon: a ring struck through */
+.profile-colors .no-color,
+.profile-icons .no-icon {
   background: linear-gradient(to top right, transparent 45%, var(--swatch-ring) 45% 55%, transparent 55%);
 }
 /* Custom Color: a ring of the named colors, its color inside once picked */

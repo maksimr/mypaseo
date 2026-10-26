@@ -1,10 +1,14 @@
 import type { ReactNode } from 'react'
-import { blobOf, type BlobIcon } from './blob'
+import { BLOB, blobOf, outline, type Eyes, type Shape } from './blob'
+
+type Body = { body: ReactNode; face: [number, number] }
 
 /** Bodies on a 100×100 grid, and the middle of their face. Overlapping parts share one fill, so they read as one shape;
  *  a stroke in it rounds corners. */
-const BODIES: Record<BlobIcon['shape'], { body: ReactNode; face: [number, number] }> = {
+const BODIES: Record<Shape, Body> = {
   circle: { body: <circle cx={50} cy={50} r={42} />, face: [50, 48] },
+  blob: { body: <path d={outline(BLOB)} />, face: [50, 48] },
+  hexagon: { body: <path d="M50 13L82 31.5V68.5L50 87L18 68.5V31.5Z" strokeWidth={12} strokeLinejoin="round" />, face: [50, 50] },
   drop: { body: <path d="M50 6C58 6 86 34 86 60A36 36 0 0 1 14 60C14 34 42 6 50 6Z" />, face: [50, 62] },
   triangle: { body: <path d="M50 18L85 79H15Z" strokeWidth={18} strokeLinejoin="round" />, face: [50, 62] },
   cloud: {
@@ -22,23 +26,11 @@ const BODIES: Record<BlobIcon['shape'], { body: ReactNode; face: [number, number
     face: [50, 54],
   },
   pill: { body: <rect x={8} y={20} width={84} height={60} rx={30} />, face: [50, 50] },
-  clover: {
-    body: (
-      <>
-        <circle cx={32} cy={33} r={21} />
-        <circle cx={67} cy={31} r={21} />
-        <circle cx={70} cy={66} r={21} />
-        <circle cx={33} cy={68} r={21} />
-        <circle cx={50} cy={50} r={24} />
-      </>
-    ),
-    face: [51, 50],
-  },
   squircle: { body: <rect x={12} y={12} width={76} height={76} rx={26} />, face: [50, 50] },
 }
 
 /** Each eye a w×h capsule turned by `eye` degrees, their centers `gap` apart, the pair turned by `pair` degrees. */
-const EYES: Record<BlobIcon['eyes'], { w: number; h: number; gap: number; eye: number; pair: number }> = {
+const EYES: Record<Eyes, { w: number; h: number; gap: number; eye: number; pair: number }> = {
   tall: { w: 10, h: 22, gap: 24, eye: 0, pair: 0 },
   short: { w: 8, h: 14, gap: 20, eye: 0, pair: 0 },
   dash: { w: 17, h: 7, gap: 21, eye: 0, pair: 18 },
@@ -60,19 +52,17 @@ export function ProfileIcon({
 }) {
   const blob = blobOf(icon)
   if (!blob) return fallback
-  const shape = BODIES[blob.shape]
+  const shape: Body = typeof blob.body === 'string' ? BODIES[blob.body] : { body: <path d={outline(blob.body)} />, face: [50, 48] }
   const [x, y] = shape.face
   const body = color ?? 'var(--text-muted)'
   const e = EYES[blob.eyes]
   return (
     <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden>
-      <g transform={`rotate(${blob.tilt} 50 50)`}>
-        <g style={{ fill: body, stroke: body, strokeWidth: 0 }}>{shape.body}</g>
-        <g style={{ fill: 'var(--bg)' }} transform={`translate(${x + blob.look.x} ${y + blob.look.y}) rotate(${e.pair})`}>
-          {[-e.gap / 2, e.gap / 2].map((cx) => (
-            <rect key={cx} x={cx - e.w / 2} y={-e.h / 2} width={e.w} height={e.h} rx={Math.min(e.w, e.h) / 2} transform={`rotate(${e.eye} ${cx} 0)`} />
-          ))}
-        </g>
+      <g style={{ fill: body, stroke: body, strokeWidth: 0 }}>{shape.body}</g>
+      <g style={{ fill: 'var(--bg)' }} transform={`translate(${x} ${y}) rotate(${e.pair})`}>
+        {[-e.gap / 2, e.gap / 2].map((cx) => (
+          <rect key={cx} x={cx - e.w / 2} y={-e.h / 2} width={e.w} height={e.h} rx={Math.min(e.w, e.h) / 2} transform={`rotate(${e.eye} ${cx} 0)`} />
+        ))}
       </g>
     </svg>
   )
