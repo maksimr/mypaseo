@@ -71,20 +71,24 @@
   margin: 0;
 }
 /* Over the page or code, so it has its own background; shown while that is hovered or focused, always on touch. */
-.artifact-open,
+.artifact-actions,
 .code-copy {
   position: absolute;
   top: 6px;
   right: 6px;
+  border-radius: 5px;
   background: var(--bg-elev);
   visibility: hidden;
 }
-.artifact:is(:hover, :focus-within) .artifact-open,
+.artifact-actions {
+  display: flex;
+}
+.artifact:is(:hover, :focus-within) .artifact-actions,
 .code-block:is(:hover, :focus-within) .code-copy {
   visibility: visible;
 }
 @media (hover: none) {
-  .artifact-open,
+  .artifact-actions,
   .code-copy {
     visibility: visible;
   }

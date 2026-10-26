@@ -44,11 +44,17 @@ function CodeBlock({ className, children, node }: React.ComponentProps<'code'> &
   const doc = lang && artifactDoc(lang, text)
   const pos = node?.position
   // A page still streaming in would reload on every chunk: it shows as code until its closing fence arrives.
-  if (doc && pos && fenceClosed(source.slice(pos.start.offset, pos.end.offset))) return <Artifact doc={doc} />
+  const copy = text.replace(/\n$/, '')
+  if (doc && pos && fenceClosed(source.slice(pos.start.offset, pos.end.offset)))
+    return (
+      <Artifact doc={doc}>
+        <CopyButton text={copy} />
+      </Artifact>
+    )
   return (
     <div className="code-block">
       <Code code={text} filename={`snippet.${lang ?? 'txt'}`} />
-      <CopyButton text={text.replace(/\n$/, '')} className="code-copy" />
+      <CopyButton text={copy} className="code-copy" />
     </div>
   )
 }

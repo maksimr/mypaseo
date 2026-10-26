@@ -94,7 +94,7 @@
     opacity: 1;
   }
   /* iOS keeps :hover on the last tapped control until the next tap: no hover backgrounds; a press lights it instead. */
-  .icon-btn:not(.artifact-open):hover,
+  .icon-btn:hover,
   .tab-close:hover,
   .tab:not(.on):hover,
   .row:not(.active):hover,
@@ -102,7 +102,7 @@
   .pick:hover select {
     background: none;
   }
-  .icon-btn:not(.artifact-open):active,
+  .icon-btn:active,
   .tab-close:active,
   .tab:not(.on):active,
   .row:not(.active):active,
