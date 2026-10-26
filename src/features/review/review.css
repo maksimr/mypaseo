@@ -99,15 +99,19 @@
 .selection-action {
   position: fixed;
   z-index: 20;
+  display: flex;
+  transform: translate(11.5px, -50%); /* first icon centered over the thread's: 3px bar + 12px padding + 6.5px half icon - 10px half button */
+  border-radius: 5px;
+  background: var(--bg-hover);
+  color: var(--accent);
+}
+.selection-action button {
   display: grid;
   place-items: center;
   width: 20px;
   height: 20px;
-  padding: 0;
-  transform: translate(11.5px, -50%); /* icon centered over the thread's: 3px bar + 12px padding + 6.5px half icon - 10px half button */
-  border: 0;
   border-radius: 5px;
-  background: var(--bg-hover);
-  color: var(--accent);
-  cursor: pointer;
+}
+.selection-action button:hover {
+  background: var(--bg-active);
 }

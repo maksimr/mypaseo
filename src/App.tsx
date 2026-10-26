@@ -514,6 +514,7 @@ export default function App() {
         {cwd && tab !== 'chat' && (
           <SelectionAction
             title="Add Comment"
+            cwd={cwd}
             onAdd={(s) => {
               getSelection()?.removeAllRanges()
               startComment(reviewKey(hostId, cwd), s)

@@ -1,10 +1,12 @@
-import { MessageCircle } from 'lucide-react'
+import { Check, Copy, MessageCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { errorText } from '../../daemon'
 import { hoveredRef, selectionRef, type SelectedLines } from './selection'
 
-/** Gutter button beside the last selected line of a file or diff, or else the hovered line; acts on those lines. */
-export function SelectionAction({ title, onAdd }: { title: string; onAdd: (s: SelectedLines) => void }) {
+/** Gutter buttons beside the last selected line of a file or diff, or else the hovered line; act on those lines. Copy Path copies "<cwd>/path:start-end". */
+export function SelectionAction({ title, onAdd, cwd }: { title: string; onAdd: (s: SelectedLines) => void; cwd: string }) {
   const [at, setAt] = useState<{ s: SelectedLines; top: number; left: number } | null>(null)
+  const [copied, setCopied] = useState<string | null>(null)
   useEffect(() => {
     let hovered: SelectedLines | null = null
     const update = () => {
@@ -40,16 +42,24 @@ export function SelectionAction({ title, onAdd }: { title: string; onAdd: (s: Se
     }
   }, [])
   if (!at) return null
+  const path = `${cwd}/${at.s.ref}`
+  const copy = () =>
+    navigator.clipboard.writeText(path).then(
+      () => {
+        setCopied(path)
+        setTimeout(() => setCopied(null), 1200)
+      },
+      (err) => alert(`Could not copy: ${errorText(err)}`),
+    )
   return (
-    <button
-      className="selection-action"
-      style={{ top: at.top, left: at.left }}
-      title={title}
-      aria-label={title}
-      onMouseDown={(e) => e.preventDefault()} // keep the selection
-      onClick={() => onAdd(at.s)}
-    >
-      <MessageCircle size={13} />
-    </button>
+    // onMouseDown: keep the selection
+    <div className="selection-action" style={{ top: at.top, left: at.left }} onMouseDown={(e) => e.preventDefault()}>
+      <button title="Copy Path" aria-label="Copy Path" onClick={copy}>
+        {copied === path ? <Check size={13} /> : <Copy size={13} />}
+      </button>
+      <button title={title} aria-label={title} onClick={() => onAdd(at.s)}>
+        <MessageCircle size={13} />
+      </button>
+    </div>
   )
 }
