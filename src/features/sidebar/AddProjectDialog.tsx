@@ -1,4 +1,5 @@
-import { Folder, Loader2, X } from 'lucide-react'
+import { Folder, X } from 'lucide-react'
+import { Spinner } from '../../components/Spinner'
 import { useEffect, useId, useState, type FormEvent } from 'react'
 import { errorText } from '../../daemon'
 import { useEscape } from '../../a11y'
@@ -132,7 +133,7 @@ export function AddProjectDialog({ onClose }: { onClose: () => void }) {
             <kbd>Esc</kbd> Cancel
           </button>
           <button className="btn primary" disabled={busy || !cwd.trim()}>
-            {busy && <Loader2 size={13} className="spin" />} Add Project
+            {busy && <Spinner size={13} />} Add Project
           </button>
         </footer>
       </form>

@@ -1,4 +1,5 @@
-import { ArchiveRestore, GitBranch, Loader2, Trash2 } from 'lucide-react'
+import { ArchiveRestore, GitBranch, Trash2 } from 'lucide-react'
+import { Spinner } from '../../components/Spinner'
 import { useEffect, useState } from 'react'
 import { errorText } from '../../daemon'
 import { useDaemon } from '../../store'
@@ -80,7 +81,7 @@ export function ArchivedWorkspaces({ hostId, projectId, activeIds }: { hostId: s
           )}
         </span>
         {busy[w.id] ? (
-          <Loader2 size={13} className="spin status-mark" aria-label={busy[w.id] === 'restore' ? 'Restoring…' : 'Removing…'} />
+          <Spinner size={13} className="status-mark" aria-label={busy[w.id] === 'restore' ? 'Restoring…' : 'Removing…'} />
         ) : (
           <>
             <button className="icon-btn hover-only" title="Restore" onClick={() => void restore(w.id, w.restoreIds)}>

@@ -1,4 +1,5 @@
-import { ChevronRight, Loader2 } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
+import { Spinner } from '../../components/Spinner'
 import { useEffect, useState, type ReactNode } from 'react'
 import { blobOf } from '../rooms/blob'
 import { BusyIcon } from '../rooms/ProfileIcon'
@@ -66,7 +67,7 @@ export function WorkGroup({
 /** A running agent's profile blob (`icon`, in `color`) on the move; else a spinner. */
 export function Busy({ icon, color }: { icon?: string; color?: string }) {
   const blob = blobOf(icon)
-  return blob ? <BusyIcon blob={blob} color={color} size={26} /> : <Loader2 size={13} className="spin" />
+  return blob ? <BusyIcon blob={blob} color={color} size={26} /> : <Spinner size={13} />
 }
 
 function Now({ step }: { step: Step }) {

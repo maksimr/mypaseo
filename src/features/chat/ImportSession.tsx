@@ -1,4 +1,5 @@
-import { Import, Loader2, Search, X } from 'lucide-react'
+import { Import, Search, X } from 'lucide-react'
+import { Spinner } from '../../components/Spinner'
 import { useEffect, useState } from 'react'
 import { useEscape } from '../../a11y'
 import { errorText, type Agent, type DaemonClient, type SessionEntry } from '../../daemon'
@@ -124,7 +125,7 @@ export function ImportSession({ target, onClose, onImported }: { target: Target;
                   </div>
                 </div>
                 <button className="btn" disabled={importing !== null} onClick={() => void importSession(e)}>
-                  {importing === e.providerHandleId ? <Loader2 size={13} className="spin" /> : <Import size={13} />} Import
+                  {importing === e.providerHandleId ? <Spinner size={13} /> : <Import size={13} />} Import
                 </button>
               </div>
             )

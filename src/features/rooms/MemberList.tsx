@@ -1,4 +1,5 @@
-import { ChevronRight, Loader2, ShieldQuestion } from 'lucide-react'
+import { ChevronRight, ShieldQuestion } from 'lucide-react'
+import { Spinner } from '../../components/Spinner'
 import type { Agent } from '../../daemon'
 import { ProfileIcon } from './ProfileIcon'
 
@@ -25,7 +26,7 @@ export function MemberName({ member: { agent: a, handle }, lead }: { member: Mem
         </span>
       ) : a.status === 'running' ? (
         <span className="member-status">
-          <Loader2 size={11} className="spin" />
+          <Spinner size={11} />
           Working
         </span>
       ) : a.status === 'error' ? (

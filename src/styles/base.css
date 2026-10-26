@@ -86,8 +86,22 @@ h2 {
 .rot90 {
   transform: rotate(90deg);
 }
+/* components/Spinner */
 .spin {
   animation: spin 1s linear infinite;
+}
+.spin > circle {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 4;
+}
+.spin > circle + circle {
+  stroke: var(--text-muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation-duration: 6s;
+  }
 }
 @keyframes spin {
   to {

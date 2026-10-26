@@ -1,4 +1,5 @@
-import { GitBranch, Loader2, X } from 'lucide-react'
+import { GitBranch, X } from 'lucide-react'
+import { Spinner } from '../../components/Spinner'
 import { useState, type FormEvent } from 'react'
 import { errorText, type Workspace } from '../../daemon'
 import { useEscape } from '../../a11y'
@@ -83,7 +84,7 @@ export function RenameWorkspaceDialog({ workspace: w, onClose }: { workspace: Wo
             <kbd>Esc</kbd> Cancel
           </button>
           <button className="btn primary" disabled={busy}>
-            {busy && <Loader2 size={13} className="spin" />} Rename
+            {busy && <Spinner size={13} />} Rename
           </button>
         </footer>
       </form>

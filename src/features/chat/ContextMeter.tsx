@@ -1,5 +1,6 @@
 import { supportsUsageReports } from '@getpaseo/client/internal/daemon-client'
-import { Gauge, Loader2, RotateCw } from 'lucide-react'
+import { Gauge, RotateCw } from 'lucide-react'
+import { Spinner } from '../../components/Spinner'
 import { useEffect, useId, useState } from 'react'
 import { errorText, type Agent, type UsageReport } from '../../daemon'
 import { useDaemon } from '../../store'
@@ -197,7 +198,7 @@ function RefreshButton({ entry, refreshing, onRefresh }: { entry: UsageReport; r
       onMouseEnter={tick}
       onFocus={tick}
     >
-      {refreshing ? <Loader2 size={14} className="spin" /> : <RotateCw size={14} />}
+      {refreshing ? <Spinner size={14} /> : <RotateCw size={14} />}
       <span id={tipId} role="tooltip" className="usage-tip">
         {updatedLabel(entry.fetchedAt, now)}
       </span>

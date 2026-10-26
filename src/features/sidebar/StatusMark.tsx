@@ -1,4 +1,5 @@
-import { Loader2, ShieldQuestion } from 'lucide-react'
+import { ShieldQuestion } from 'lucide-react'
+import { Spinner } from '../../components/Spinner'
 import type { ReactNode } from 'react'
 import type { Agent } from '../../daemon'
 
@@ -8,7 +9,7 @@ export function StatusMark({ agents, idle = null }: { agents: Agent[]; idle?: Re
   if (agents.some((a) => a.pendingPermissions.length > 0))
     return <ShieldQuestion size={13} color="var(--yellow)" className="status-mark" aria-label="Needs your action" />
   if (agents.some((a) => a.status === 'running'))
-    return <Loader2 size={13} className="spin muted status-mark" aria-label="Running" />
+    return <Spinner size={13} className="status-mark" aria-label="Running" />
   if (agents.some((a) => a.requiresAttention))
     return <span className="dot attention status-mark" title="Needs attention" />
   if (agents.some((a) => a.status === 'error')) return <span className="dot failed status-mark" title="Error" />

@@ -1,4 +1,5 @@
-import { ArrowUp, Folder, GitBranch, Loader2, Lock, MessageCircle, Paperclip, Plus, Square, X } from 'lucide-react'
+import { ArrowUp, Folder, GitBranch, Lock, MessageCircle, Paperclip, Plus, Square, X } from 'lucide-react'
+import { Spinner } from '../../components/Spinner'
 import { useContext, useEffect, useId, useRef, useState } from 'react'
 import { ActiveViewContext } from '../../activeView'
 import { ARTIFACT_PROMPT } from '../../artifact'
@@ -669,7 +670,7 @@ export function Composer({
             </button>
           ) : (
             <button className="send" title={`Send (${formatCombo(sendKey)})`} disabled={empty || busy || !provider} onClick={() => void send()}>
-              {busy ? <Loader2 size={14} className="spin" /> : <ArrowUp size={14} />}
+              {busy ? <Spinner size={14} /> : <ArrowUp size={14} />}
             </button>
           )}
         </div>

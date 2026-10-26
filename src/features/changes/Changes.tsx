@@ -1,4 +1,5 @@
-import { Check, ChevronDown, ChevronRight, ChevronUp, ChevronsDownUp, ChevronsUpDown, FileCode, Loader2, Minus, Undo2 } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, ChevronUp, ChevronsDownUp, ChevronsUpDown, FileCode, Minus, Undo2 } from 'lucide-react'
+import { Spinner } from '../../components/Spinner'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { clickable } from '../../a11y'
 import { ActiveViewContext } from '../../activeView'
@@ -362,7 +363,7 @@ export function ChangesView({
             <button className="text-btn" title={`Commit (${formatCombo(commitKey)})`} disabled={!canCommit} onClick={() => setCommitting(true)}>
               {commitBusy ? (
                 <>
-                  <Loader2 size={12} className="spin" style={{ verticalAlign: -2 }} /> Committing…
+                  <Spinner size={12} style={{ verticalAlign: -2 }} /> Committing…
                 </>
               ) : (
                 'Commit'

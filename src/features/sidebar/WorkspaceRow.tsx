@@ -1,4 +1,5 @@
-import { Archive, Check, ChevronDown, ChevronRight, Copy, Ellipsis, GitBranch, Loader2, Mail, MailOpen, Pencil, Pin, PinOff, Plus, Trash2, Users, X } from 'lucide-react'
+import { Archive, Check, ChevronDown, ChevronRight, Copy, Ellipsis, GitBranch, Mail, MailOpen, Pencil, Pin, PinOff, Plus, Trash2, Users, X } from 'lucide-react'
+import { Spinner } from '../../components/Spinner'
 import { useState, type MouseEvent } from 'react'
 import { errorText, type Agent, type Workspace } from '../../daemon'
 import { clickable } from '../../a11y'
@@ -167,7 +168,7 @@ export function WorkspaceRow({
           </button>
         )}
         {syncing ? (
-          <Loader2 size={13} className="spin muted status-mark" aria-label={syncing === 'pull' ? 'Pulling…' : 'Pushing…'} />
+          <Spinner size={13} className="status-mark" aria-label={syncing === 'pull' ? 'Pulling…' : 'Pushing…'} />
         ) : (
           <>
             <StatusMark

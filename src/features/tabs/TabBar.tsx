@@ -1,4 +1,5 @@
-import { ChevronDown, FileCode, FileDiff, GitCommitHorizontal, History, Loader2, Shapes, SquareTerminal, X } from 'lucide-react'
+import { ChevronDown, FileCode, FileDiff, GitCommitHorizontal, History, Shapes, SquareTerminal, X } from 'lucide-react'
+import { Spinner } from '../../components/Spinner'
 import { clickable } from '../../a11y'
 import { GitGraphIcon } from '../../components/icons'
 import { ProviderIcon } from '../../components/ProviderIcon'
@@ -61,7 +62,7 @@ export function TabBar({
                 <X size={12} />
               </button>
             )}
-            {a?.status === 'running' && <Loader2 size={13} className="spin muted status-mark" aria-label="Working" />}
+            {a?.status === 'running' && <Spinner size={13} className="status-mark" aria-label="Working" />}
           </div>
         ))}
         {terms.terminals.map((x) => (
@@ -78,7 +79,7 @@ export function TabBar({
             >
               <X size={12} />
             </button>
-            {x.activity?.state === 'working' && <Loader2 size={13} className="spin muted status-mark" aria-label="Working" />}
+            {x.activity?.state === 'working' && <Spinner size={13} className="status-mark" aria-label="Working" />}
           </div>
         ))}
         {changesTab && (

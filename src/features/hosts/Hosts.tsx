@@ -1,4 +1,5 @@
-import { Loader2, Plus, Server, Settings, X } from 'lucide-react'
+import { Plus, Server, Settings, X } from 'lucide-react'
+import { Spinner } from '../../components/Spinner'
 import { useState, type FormEvent } from 'react'
 import { useEscape } from '../../a11y'
 import { createClient, errorText } from '../../daemon'
@@ -97,7 +98,7 @@ export function AddHostDialog({ onClose }: { onClose: () => void }) {
             <kbd>Esc</kbd> Cancel
           </button>
           <button className="btn primary" disabled={busy || !address.trim()}>
-            {busy && <Loader2 size={13} className="spin" />} Add Host
+            {busy && <Spinner size={13} />} Add Host
           </button>
         </footer>
       </form>
