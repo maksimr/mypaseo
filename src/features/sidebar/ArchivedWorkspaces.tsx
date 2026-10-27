@@ -50,22 +50,21 @@ export function ArchivedWorkspaces({ hostId, projectId, activeIds }: { hostId: s
       await Promise.all(restoreIds.map((a) => daemon.refreshAgent(a)))
     })
   // The daemon has no workspace delete; without agents the workspace isn't found any more.
-  const remove = (id: string, name: string, agentIds: string[]) => {
-    if (!confirm(`Remove workspace "${name}"? Its agents are deleted for good.`)) return
-    void act(id, 'remove', async () => {
+  const remove = (id: string, agentIds: string[]) =>
+    act(id, 'remove', async () => {
       await Promise.all(agentIds.map((a) => daemon.deleteAgent(a)))
       setEntries((es) => es?.filter((e) => e.agent.workspaceId !== id))
     })
-  }
 
   const list = entries && archivedWorkspaces(entries, activeIds)
-  if (error || !list?.length)
+  if (list && !list.length && !error) return null
+  if (error || !list)
     return (
       <div className="row workspace archived">
-        {error || list ? (
+        {error ? (
           <>
             <span className="chevron" />
-            <span className="truncate">{error ?? 'No archived workspaces'}</span>
+            <span className="truncate">{error}</span>
           </>
         ) : (
           <Loading size={14} />
@@ -93,7 +92,7 @@ export function ArchivedWorkspaces({ hostId, projectId, activeIds }: { hostId: s
             <button className="icon-btn hover-only" title="Restore" onClick={() => void restore(w.id, w.restoreIds)}>
               <ArchiveRestore size={11} strokeWidth={1.75} />
             </button>
-            <button className="icon-btn hover-only" title="Remove" onClick={() => remove(w.id, w.name, w.agentIds)}>
+            <button className="icon-btn hover-only" title="Remove" onClick={() => void remove(w.id, w.agentIds)}>
               <Trash2 size={11} strokeWidth={1.75} />
             </button>
           </>

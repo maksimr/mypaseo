@@ -2,8 +2,19 @@
 .sidebar-head {
   border-bottom: 0;
 }
+/* Project names stand out as headers; workspace rows are a little dimmed until selected (archived ones are muted). */
+.row.project {
+  font-weight: 600;
+}
+.row.project .host-badge {
+  font-weight: 400;
+}
 .row.workspace {
   padding-left: 14px;
+  color: color-mix(in oklab, var(--text) 75%, var(--text-muted));
+}
+.row.workspace.active {
+  color: var(--text);
 }
 .row.workspace:has(.workspace-branch) {
   height: auto;
