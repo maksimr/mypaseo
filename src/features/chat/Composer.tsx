@@ -23,6 +23,7 @@ import { ContextMeter } from './ContextMeter'
 import { RecipientSummary } from './RecipientSummary'
 import { Recipients, type Recipient } from './Recipients'
 import { agentSettings, modelConfig, sendSetting, sessionSettings, type Session } from './session'
+import { setStarting, standIn, useStarting } from './starting'
 import { Pick } from '../../components/Pick'
 import type { PickOption } from '../../components/Options'
 import type { Target } from './target'
@@ -123,6 +124,8 @@ export function Composer({
   const reviewCwd = target.workspace?.workspaceDirectory
   const review = useReview(reviewCwd)
   const [busy, setBusy] = useState(false)
+  // A stand-in for an agent a send is still starting (starting.ts) takes no messages yet.
+  const starting = useStarting(agent?.id) !== undefined
   const [dragging, setDragging] = useState(false)
   const isGit = projects.find((p) => p.projectId === target.projectId)?.projectKind === 'git'
   const [worktree, setWorktree] = useState(false)
@@ -270,6 +273,12 @@ export function Composer({
   }, [share]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const cwd = agent?.cwd ?? target.workspace?.workspaceDirectory ?? target.rootPath
+  // Before a folder's first agent the daemon lists the folder's models, in a pi process of its own for pi: a second
+  // or so on send, so a new agent's composer asks for them as it opens.
+  const draftCwd = agent ? undefined : cwd
+  useEffect(() => {
+    if (draftCwd) void daemon.getProvidersSnapshot({ cwd: draftCwd }).catch(() => {})
+  }, [daemon, draftCwd])
   const ac = useAutocomplete({
     input,
     text,
@@ -368,8 +377,10 @@ export function Composer({
     const comments = review.comments
     // Like Paseo desktop's Send Feedback; without text the chat would show an empty message.
     const prompt = text.trim() || (comments.length ? 'Please address this code review.' : '')
-    if ((!prompt && !images.length && !files.length) || busy) return
+    if ((!prompt && !images.length && !files.length) || busy || starting) return
     setBusy(true)
+    // A new agent's chat opens before the agent starts, with the draft.
+    let opened = false
     try {
       // At send, not at pick: removed files never reach the daemon, and the upload lands on the host that runs the agent.
       const attachments = []
@@ -398,34 +409,54 @@ export function Composer({
           })
         await rooms.post(daemon, { roomId: id, text: prompt, to: mentioned, dm, images, attachments })
       }
-      // In the target's workspace, else in a new workspace (or scratch folder) of its project.
-      const create = async (config: Omit<Parameters<DaemonClient['createAgent']>[0], 'cwd' | 'workspaceId'>) => {
+      // In the target's workspace, else in a new workspace (or scratch folder) of its project. With `open`, the chat
+      // opens on a stand-in once the daemon has the workspace: the agent's process takes seconds more to start.
+      const create = async (config: Omit<Parameters<DaemonClient['createAgent']>[0], 'cwd' | 'workspaceId'>, open?: (a: Agent) => void) => {
         const { workspace } = target
-        if (workspace) {
-          const created = await daemon.createAgent({ ...config, cwd: workspace.workspaceDirectory, workspaceId: workspace.id })
-          return rememberAgent(hostId, created)
-        } else {
-          const scratch = isScratch(target.rootPath)
-          let path = target.rootPath
-          if (scratch) {
-            // Each scratch gets its own folder, named by its UTC start time.
-            const name = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')
-            const dir = await daemon.createFileEntry({ cwd: path, parentPath: '.', name, kind: 'directory' })
-            if (!dir.success) throw new Error(dir.error ?? 'Could not create the scratch folder')
-            path = `${path}/${name}`
+        let shown: Agent | undefined
+        let ready = false
+        const onEvent: Parameters<DaemonClient['createAgent']>[0]['onEvent'] = (s) => {
+          ready ||= !!s.agent
+          if (!open || shown || ready || !s.agentId || !s.workspaceId || !config.provider) return
+          setStarting(s.agentId, prompt)
+          const dir = s.workspace?.workspaceDirectory ?? workspace?.workspaceDirectory ?? target.rootPath
+          shown = rememberAgent(hostId, standIn(s.agentId, s.workspaceId, dir, prompt, { ...config, provider: config.provider }))
+          open(shown)
+        }
+        try {
+          if (workspace) {
+            const created = await daemon.createAgent({ ...config, cwd: workspace.workspaceDirectory, workspaceId: workspace.id, onEvent })
+            return rememberAgent(hostId, created)
+          } else {
+            const scratch = isScratch(target.rootPath)
+            let path = target.rootPath
+            if (scratch) {
+              // Each scratch gets its own folder, named by its UTC start time.
+              const name = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')
+              const dir = await daemon.createFileEntry({ cwd: path, parentPath: '.', name, kind: 'directory' })
+              if (!dir.success) throw new Error(dir.error ?? 'Could not create the scratch folder')
+              path = `${path}/${name}`
+            }
+            const res = await daemon.createWorkspace({
+              source:
+                worktree && isGit
+                  ? // daemon branches off the default branch; an empty name gets a generated one
+                    { kind: 'worktree', cwd: target.rootPath, projectId: target.projectId, worktreeSlug: worktreeName.trim() || undefined }
+                  : { kind: 'directory', path, projectId: target.projectId },
+              agent: { ...config, cwd: path },
+              // The daemon titles the workspace after the prompt, instead of the timestamp folder.
+              firstAgentContext: scratch ? { prompt } : undefined,
+              onEvent,
+            })
+            if (res.error || !res.agent) throw new Error(res.error ?? 'Workspace was created without an agent')
+            return rememberAgent(hostId, res.agent)
           }
-          const res = await daemon.createWorkspace({
-            source:
-              worktree && isGit
-                ? // daemon branches off the default branch; an empty name gets a generated one
-                  { kind: 'worktree', cwd: target.rootPath, projectId: target.projectId, worktreeSlug: worktreeName.trim() || undefined }
-                : { kind: 'directory', path, projectId: target.projectId },
-            agent: { ...config, cwd: path },
-            // The daemon titles the workspace after the prompt, instead of the timestamp folder.
-            firstAgentContext: scratch ? { prompt } : undefined,
-          })
-          if (res.error || !res.agent) throw new Error(res.error ?? 'Workspace was created without an agent')
-          return rememberAgent(hostId, res.agent)
+        } catch (e) {
+          // Archived drops it from the store; an agent that started stays.
+          if (shown && !ready) rememberAgent(hostId, { ...shown, archivedAt: new Date().toISOString() })
+          throw e
+        } finally {
+          if (shown) setStarting(shown.id)
         }
       }
       if (agent && !room && !joining.length) {
@@ -444,8 +475,14 @@ export function Composer({
               modeId: modes.some((m) => m.id === mode) ? (mode ?? undefined) : undefined,
               systemPrompt: systemPromptOf(),
             }
-        if (!rest.length) onCreated(await create({ ...config, initialPrompt: prompt, images, attachments }))
-        else {
+        if (!rest.length) {
+          const created = await create({ ...config, initialPrompt: prompt, images, attachments }, (a) => {
+            opened = true
+            clearDraft()
+            onCreated(a)
+          })
+          if (!opened) onCreated(created)
+        } else {
           // Else the daemon titles it after its first message, the plugin's delivery.
           const lead = await create({ ...config, title: prompt.split('\n')[0].slice(0, 60).trim() || `@${first.handle}` })
           try {
@@ -464,10 +501,18 @@ export function Composer({
           }
         }
       }
-      clearDraft()
+      // An opened chat's draft went with it, and another may have been started since.
+      if (!opened) clearDraft()
       // Only the sent ones: comments added while sending stay.
       deleteComments(review.key, comments.map((c) => c.id))
     } catch (e) {
+      // Its stand-in is gone: the draft is back for a retry.
+      if (opened) {
+        setText(text)
+        setImages(images)
+        setFiles(files)
+        setJoinPicks(joinPicks)
+      }
       alert(`Send failed: ${errorText(e)}`)
     } finally {
       setBusy(false)
@@ -664,13 +709,13 @@ export function Composer({
               }}
             />
           </div>
-          {running.length > 0 && empty ? (
+          {running.length > 0 && empty && !starting ? (
             <button className="send stop" title="Stop" onClick={() => void stop()}>
               <Square size={12} fill="currentColor" />
             </button>
           ) : (
-            <button className="send" title={`Send (${formatCombo(sendKey)})`} disabled={empty || busy || !provider} onClick={() => void send()}>
-              {busy ? <Spinner size={14} /> : <ArrowUp size={14} />}
+            <button className="send" title={`Send (${formatCombo(sendKey)})`} disabled={empty || busy || starting || !provider} onClick={() => void send()}>
+              {busy || starting ? <Spinner size={14} /> : <ArrowUp size={14} />}
             </button>
           )}
         </div>

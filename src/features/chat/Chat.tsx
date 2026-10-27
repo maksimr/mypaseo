@@ -21,6 +21,7 @@ import { ContextCard } from './ContextCard'
 import { PermissionCard } from './PermissionCard'
 import { itemAcross } from './reading'
 import { ownMarks, roomMarks, type Mark } from './share'
+import { useStarting } from './starting'
 import type { Target } from './target'
 
 /** Whether the user is writing in the composer: it has focus and unsent text. */
@@ -61,8 +62,12 @@ export function Chat({
   const members = lead ? [lead, ...roomMembers(agents, lead.id).filter((m) => m.id !== lead.id)] : agent ? [agent] : []
   const named = members.map((m) => ({ agent: m, handle: handleOf(m, profiles), ...lookOf(m, profiles, defaultAgent) }))
   const roomTl = useRoomTimeline(lead?.id ?? null, named.map((m) => ({ agentId: m.agent.id, handle: m.handle, running: m.agent.status === 'running' })))
-  const ownTl = useTimeline(lead ? null : (agent?.id ?? null))
+  // A send still starting this agent (starting.ts): its prompt shows until the daemon's timeline has it.
+  const starting = useStarting(agent?.id)
+  const [sent] = useState(starting)
+  const ownTl = useTimeline(lead || starting !== undefined ? null : (agent?.id ?? null))
   const tl: { items: TimelineItem[]; loading: boolean; error: string | null; partial?: boolean } = lead ? roomTl : ownTl
+  const items: TimelineItem[] = sent && !tl.items.length ? [{ type: 'user_message', text: sent }] : tl.items
   const permissions = named.flatMap((m) => m.agent.pendingPermissions.map((request) => ({ ...m, request })))
   const scroller = useRef<HTMLDivElement>(null)
   const atBottom = useRef(true)
@@ -221,7 +226,7 @@ export function Chat({
           <>
             {tl.loading && <Loading />}
             {tl.error && <div className="empty err">{tl.error}</div>}
-            <Timeline items={tl.items} members={named} room={room} times={ownTl.times} marks={marks} onShare={shareFrom} />
+            <Timeline items={items} members={named} room={room} times={ownTl.times} marks={marks} onShare={shareFrom} />
           </>
         ) : (
           <div className="empty-chat new-agent">
