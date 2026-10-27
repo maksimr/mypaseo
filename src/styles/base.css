@@ -288,6 +288,7 @@ code.inline {
 }
 .panel-tabs {
   padding-left: 6px;
+  border-bottom: none;
   container-type: inline-size;
 }
 /* All five labels need ~490px; narrower, only the open tab keeps its label, the rest show icons (named by title). */
