@@ -93,7 +93,7 @@ export function ProjectRow({
           onMoveByKey(e)
         }}
       >
-        {isScratch(p.projectRootPath) ? <Scratches /> : open ? <FolderExpanded /> : <Folder size={15} />}
+        {isScratch(p.projectRootPath) ? <Scratches /> : open ? <FolderExpanded /> : <Folder size={15} strokeWidth={1.5} />}
         <span className="truncate">{name}</span>
         <span className="chevron hover-only">{open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
         <span className="grow" />
