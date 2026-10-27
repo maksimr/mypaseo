@@ -67,7 +67,8 @@ export function Chat({
   const [sent] = useState(starting)
   const ownTl = useTimeline(lead || starting !== undefined ? null : (agent?.id ?? null))
   const tl: { items: TimelineItem[]; loading: boolean; error: string | null; partial?: boolean } = lead ? roomTl : ownTl
-  const items: TimelineItem[] = sent && !tl.items.length ? [{ type: 'user_message', text: sent }] : tl.items
+  // Not in a room: Timeline reads its room at the items' indices, and the room has no entry for the prompt.
+  const items: TimelineItem[] = sent && !lead && !tl.items.length ? [{ type: 'user_message', text: sent }] : tl.items
   const permissions = named.flatMap((m) => m.agent.pendingPermissions.map((request) => ({ ...m, request })))
   const scroller = useRef<HTMLDivElement>(null)
   const atBottom = useRef(true)
