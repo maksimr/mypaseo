@@ -1,4 +1,4 @@
-import { Archive, Check, ChevronDown, ChevronRight, Copy, Ellipsis, GitBranch, Mail, MailOpen, Pencil, Pin, PinOff, Plus, Trash2, Users, X } from 'lucide-react'
+import { Archive, Check, ChevronDown, ChevronRight, Copy, Ellipsis, GitBranch, Mail, MailOpen, Pencil, Pin, PinOff, Plus, Trash2, Users } from 'lucide-react'
 import { Spinner } from '../../components/Spinner'
 import { useState, type CSSProperties, type MouseEvent } from 'react'
 import { errorText, type Agent, type Workspace } from '../../daemon'
@@ -310,13 +310,13 @@ export function WorkspaceRow({
               ) : (
                 <button
                   className="icon-btn hover-swap"
-                  title="Close"
+                  title="Archive"
                   onClick={(e) => {
                     e.stopPropagation()
                     onCloseAgent(a)
                   }}
                 >
-                  <X size={11} strokeWidth={1.75} />
+                  <Archive size={11} strokeWidth={1.75} />
                 </button>
               )}
               <StatusMark agents={shown} />
