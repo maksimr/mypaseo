@@ -1,7 +1,11 @@
 /* An agent's subagents at the bottom of its chat, after the timeline's items (Subagents.tsx): a head that opens a tree
-   of rows. */
+   of rows, on a faint sheet. */
 .subagents {
   margin: 12px 0 6px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in oklab, var(--text) 8%, transparent);
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--text) 3%, transparent);
   color: var(--text-faint);
 }
 .subagents-bar {
