@@ -11,9 +11,10 @@ const FEATURE_DEPS = {
   'git-graph': ['changes'],
   palette: ['chat'],
   settings: ['hosts', 'rooms'],
-  sidebar: ['hosts', 'rooms'],
+  sidebar: ['hosts', 'rooms', 'subagents'],
+  subagents: ['chat'],
   // The layout that puts the views into tabs and the side panel.
-  tabs: ['artifacts', 'changes', 'chat', 'files', 'git-graph', 'review', 'rooms', 'terminal'],
+  tabs: ['artifacts', 'changes', 'chat', 'files', 'git-graph', 'review', 'rooms', 'subagents', 'terminal'],
 }
 
 const features = readdirSync(`${__dirname}/src/features`)

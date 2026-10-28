@@ -7,6 +7,7 @@
 @import './components/markdown.css';
 @import './components/code.css';
 @import './features/chat/composer.css';
+@import './features/subagents/subagents.css';
 @import './features/files/files.css';
 @import './features/changes/changes.css';
 @import './styles/modal.css';

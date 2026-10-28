@@ -154,9 +154,10 @@
 .row.agent.active {
   color: var(--text);
 }
-/* A room's other members nest one step under its lead's row (roomTree.ts); the lead shows the member count. */
-.row.agent.member > :first-child {
-  margin-left: 14px;
+/* A room's other members nest one step under its lead's row (roomTree.ts), and subagents one step under their
+   parent's (subagents/parent.ts `subtree`), per level (WorkspaceRow.tsx `--level`); the lead shows the member count. */
+.row.agent > :first-child {
+  margin-left: calc(var(--level, 0) * 14px);
 }
 .room-count {
   display: inline-flex;
@@ -164,9 +165,10 @@
   gap: 2px;
   font-size: 0.85em;
 }
-/* A room lead's chevron, in place of its 9px provider icon: shifted left so the title lines up with other agents'. */
-.room-chevron {
-  margin-left: -5px;
+/* The chevron of a room's lead or a subagent's parent, in place of its 9px provider icon: shifted left so the title
+   lines up with other agents'. */
+.row.agent > .agent-chevron {
+  margin-left: calc(var(--level, 0) * 14px - 5px);
 }
 .tree .row .room-count svg {
   width: 1em;

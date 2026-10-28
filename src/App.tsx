@@ -17,6 +17,9 @@ import { Settings, type Section } from './features/settings/Settings'
 import { isLead, roomMembers } from './features/rooms/members'
 import { Sidebar, type Selection } from './features/sidebar/Sidebar'
 import { roomTree } from './features/sidebar/roomTree'
+import { parentIn, topLevel } from './features/subagents/parent'
+import { Subagents } from './features/subagents/Subagents'
+import { SubagentView } from './features/subagents/SubagentView'
 import { TerminalView } from './features/terminal/Terminal'
 import { UpdateBanner } from './features/update/UpdateBanner'
 import { errorText, type Agent, type Workspace } from './daemon'
@@ -94,9 +97,9 @@ export default function App() {
     setBack(s.agentId ? undefined : sel.agentId ? sel : back)
     localStorage.mypaseoSelection = JSON.stringify(s)
   }
-  // The newest top-level agent, as the sidebar's workspace row: a room opens at its lead, not a member.
+  // The newest top-level agent, as the sidebar's workspace row: a room opens at its lead, not a member, nor a subagent.
   const openWorkspace = (w: Workspace) =>
-    select({ projectId: w.projectId, workspaceId: w.id, agentId: roomTree(agents.filter((a) => a.workspaceId === w.id).sort(byRecent))[0]?.agent.id })
+    select({ projectId: w.projectId, workspaceId: w.id, agentId: roomTree(topLevel(agents.filter((a) => a.workspaceId === w.id)).sort(byRecent))[0]?.agent.id })
   const [activeOnly, setActiveOnly] = useState(() => localStorage.mypaseoActiveOnly === 'true')
   const listed = () => sidebarWorkspaces(projects, workspaces, agents, pinned, activeOnly, sel.workspaceId)
   /** Archives or removes a workspace; if it was selected, selects the one above it in the sidebar. */
@@ -113,6 +116,12 @@ export default function App() {
    * selected agent goes, selects the next one left in its workspace (or the composer).
    */
   const closeAgent = async (a: Agent) => {
+    // A subagent's tab closes to its parent, as in Paseo desktop: it goes on, on the parent's track, whose Archive closes it.
+    const parent = parentIn(a, agents)
+    if (parent) {
+      if (a.id === sel.agentId) select({ ...sel, agentId: parent.id })
+      return
+    }
     const closing = isLead(a) ? roomMembers(agents, a.id) : [a]
     if (closing.length > 1 && !confirm(`Close the room? Its ${closing.length} agents are archived.`)) return
     const list = agents.filter((x) => x.workspaceId === a.workspaceId).sort(byRecent)
@@ -127,7 +136,9 @@ export default function App() {
   const hostId = (workspace ?? project)?.hostId ?? hosts[0].id
   const agent = agents.find((a) => a.id === sel.agentId)
   // One chat tab per workspace agent, oldest first so a new one opens after the others; undefined is the "New agent" composer, last.
-  const wsAgents = workspace ? agents.filter((a) => a.workspaceId === workspace.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt)) : []
+  // A subagent's tab only while it's open: its parent's track lists them.
+  const inWorkspace = workspace ? agents.filter((a) => a.workspaceId === workspace.id) : []
+  const wsAgents = inWorkspace.filter((a) => a.id === sel.agentId || !parentIn(a, inWorkspace)).sort((a, b) => a.createdAt.localeCompare(b.createdAt))
   const chatTabs = wsAgents.some((a) => a.id === agent?.id) ? wsAgents : [...wsAgents, agent]
   const openChat = (a?: Agent) => {
     if (target) select({ projectId: target.projectId, workspaceId: workspace?.id, agentId: a?.id })
@@ -265,6 +276,7 @@ export default function App() {
         else if (tab === 'commit') closeCommit()
         else if (tab.startsWith('term:')) closeTerminal(tab.slice('term:'.length))
         else if (tab.startsWith('art:')) closeArtifact(tab.slice('art:'.length))
+        else if (tab.startsWith('sub:')) tabs.closeSubagent(tab)
         else closeFile(tab.slice('file:'.length))
       }
       if (workspace && isShortcut(e, 'newTerminal')) {
@@ -367,14 +379,19 @@ export default function App() {
       const a = artifacts.find((x) => `art:${x.id}` === k)
       return a ? <ArtifactView doc={a.doc} /> : null
     }
+    if (k.startsWith('sub:')) {
+      const s = tabs.subagents.find((x) => x.key === k)
+      return s ? <SubagentView parentAgentId={s.parentAgentId} subagentId={s.subagentId} cwd={cwd} onOpenProvider={tabs.openSubagent} /> : null
+    }
     const i = chatTabs.findIndex((a) => chatKey(a) === k)
     if (i < 0) return null
     const a = chatTabs[i]
+    const openAgent = (a: Agent) => select({ projectId: target.projectId, workspaceId: a.workspaceId, agentId: a.id })
     return (
       <Chat
         agent={a}
         target={target}
-        onCreated={(a) => select({ projectId: target.projectId, workspaceId: a.workspaceId, agentId: a.id })}
+        onCreated={openAgent}
         onImport={() => setImportTarget(target)}
         initialText={a === agent ? chatText : ''}
         onInitialTextUsed={() => setChatText('')}
@@ -382,6 +399,7 @@ export default function App() {
         onDraftProvider={setDraftProvider}
         onShowComment={showComment}
         reveal={a && artifact?.agentId === a.id ? artifact : undefined}
+        track={a && <Subagents agent={a} onOpenAgent={openAgent} onOpenProvider={tabs.openSubagent} />}
       />
     )
   }

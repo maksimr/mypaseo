@@ -1,0 +1,102 @@
+/* An agent's subagents at the bottom of its chat, after the timeline's items (Subagents.tsx): a head that opens a tree
+   of rows. */
+.subagents {
+  margin: 12px 0 6px;
+  color: var(--text-faint);
+}
+.subagents-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.subagents-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 2px 0;
+  color: inherit;
+  font: inherit;
+}
+.subagents-head:hover {
+  color: var(--text-muted);
+}
+.subagents-head > svg,
+.subagents-time {
+  flex: none;
+}
+.subagents-chevron {
+  transition: rotate 0.15s;
+}
+.subagents-head[aria-expanded='false'] > .subagents-chevron {
+  rotate: -90deg;
+}
+/* With the pointer on the head only, like the sidebar's hover actions; touch shows it. */
+@media (hover: hover) {
+  .subagents-bar:not(:hover, :focus-within) > .subagents-archive {
+    visibility: hidden;
+  }
+}
+/* The rows, indented under the head. */
+.subagents-rows {
+  max-height: 40vh;
+  overflow-y: auto;
+  margin-left: 6px;
+  padding-left: 15px;
+}
+.subagent {
+  display: grid;
+  grid-template-columns: 13px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.subagent-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text);
+}
+.subagent:is(.done, .canceled) .subagent-line {
+  color: var(--text-muted);
+}
+.subagent-ended,
+.subagent-time,
+.subagent-chevron {
+  flex: none;
+}
+.subagent-time,
+.subagent-chevron {
+  color: var(--text-faint);
+}
+.subagent:is(:hover, :focus-visible) .subagent-chevron {
+  color: var(--text);
+}
+.subagent-actions {
+  display: flex;
+}
+.subagent-actions > .icon-btn {
+  width: 20px;
+  height: 20px;
+}
+@media (hover: hover) {
+  .subagent:not(:hover, :focus-within) > .subagent-actions {
+    visibility: hidden;
+  }
+}
+/* Its latest step, under its task. */
+.subagent-activity {
+  grid-column: 2 / -1;
+  color: var(--text-muted);
+}
+.subagent-activity.input {
+  color: var(--yellow);
+}
+.subagent-activity.failed {
+  color: var(--red);
+}
+.subagent-file {
+  color: var(--accent);
+}

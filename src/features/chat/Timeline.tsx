@@ -1,5 +1,5 @@
 import { Lock, Share } from 'lucide-react'
-import { Fragment, memo, useContext, useEffect, useMemo, useState } from 'react'
+import { Fragment, memo, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ActiveViewContext } from '../../activeView'
 import { errorText, type Agent, type TimelineItem, type ToolCall, type ToolDetail } from '../../daemon'
 import { formatCombo, isShortcut, useShortcut } from '../../keymap'
@@ -27,6 +27,7 @@ export function Timeline({
   times,
   marks,
   onShare,
+  children,
 }: {
   items: TimelineItem[]
   /** Whose items these are: the chat's agent, or a room's members. A running one shows what it's doing (its steps
@@ -39,6 +40,8 @@ export function Timeline({
   /** Share From Here: each item's mark, at the same index as items, where it works; the pick, `end` with Shift. */
   marks?: (Mark | undefined)[]
   onShare?: (m: Mark, end: boolean) => void
+  /** After the items: the agent's subagents. */
+  children?: ReactNode
 }) {
   // Like pi's Ctrl+O (here Ctrl+" by default): expand or collapse every tool output at once.
   const [expanded, setExpanded] = useState(false)
@@ -138,6 +141,7 @@ export function Timeline({
             </div>
           ),
       )}
+      {children}
     </div>
   )
 }

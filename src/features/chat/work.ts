@@ -71,6 +71,23 @@ export function doing(step: Step): string {
   return `${DOING[k]} ${FILES.includes(k) ? arg.split('/').at(-1) : arg}`.trim()
 }
 
+const VERB: Record<Kind, string> = {
+  command: 'ran',
+  read: 'read',
+  edit: 'edited',
+  write: 'wrote',
+  search: 'searched',
+  fetch: 'fetched',
+  agent: 'delegated',
+  tool: '',
+}
+
+/** A tool call as a log line, for a subagent's latest step: "read" "src/app.ts", `file` when `arg` is a path. */
+export function act(t: ToolCall): { verb: string; arg: string; file: boolean } {
+  const k = kind(t)
+  return { verb: VERB[k] || t.name, arg: toolArg(t).split('\n')[0], file: FILES.includes(k) }
+}
+
 // Verb, one, many.
 const DONE: Record<Kind, [string, string, string]> = {
   command: ['ran', 'a command', 'commands'],

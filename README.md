@@ -66,6 +66,14 @@ private: the plugin ignores their mentions and never sends them to the other mem
 the routing, not from the agents. Members share the workspace's files, and with Paseo Tools for
 Agents on (Settings → General) an agent can read any other agent's session.
 
+## Subagents
+
+As in Paseo desktop, an agent's subagents sit on a track at the bottom of its chat. Its head reads "Delegated 3 tasks
+· 2 running" and opens to a row per task with its state, time and latest step. Paseo agents it started (with Paseo Tools
+for Agents on) leave the sidebar and the tab bar. A row opens one's chat, closing that tab goes back to the parent,
+and archiving the parent archives them. Subagents of its provider (Claude Code's Task tool, Codex's, pi's) open
+read-only in a tab. Archive Finished clears the finished ones.
+
 ## GitHub Pages
 
 `.github/workflows/pages.yml` builds and deploys every push to `main` (one-time: repo Settings → Pages → Source:

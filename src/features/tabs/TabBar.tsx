@@ -6,6 +6,7 @@ import { ProviderIcon } from '../../components/ProviderIcon'
 import type { Agent } from '../../daemon'
 import { ContextToggle } from '../chat/ContextCard'
 import { handleOf, isLead, roomId } from '../rooms/members'
+import { SubagentTab } from '../subagents/SubagentView'
 import { formatCombo, useShortcut } from '../../keymap'
 import { totals, type DiffState } from '../changes/useCheckoutDiff'
 import type { useTerminals } from '../terminal/useTerminals'
@@ -35,7 +36,7 @@ export function TabBar({
   onCloseAgent: (a: Agent) => void
   onCloseTerminal: (id: string) => void
 }) {
-  const { tab, setTab, changesTab, closeChanges, graphTab, graphPath, closeGraph, commitTab, closeCommit, files, closeFile, artifacts, closeArtifact } = tabs
+  const { tab, setTab, changesTab, closeChanges, graphTab, graphPath, closeGraph, commitTab, closeCommit, files, closeFile, artifacts, closeArtifact, subagents, closeSubagent } = tabs
   const closeAgentKey = useShortcut('closeAgent')
   const t = totals(diff.files)
   const slide = useSlide(tab === 'chat' ? `chat:${agent?.id}` : tab)
@@ -175,6 +176,22 @@ export function TabBar({
             >
               <X size={12} />
             </button>
+          </div>
+        ))}
+        {subagents.map((s) => (
+          <div key={s.key} className={`tab agent-tab ${tab === s.key ? 'on' : ''}`} {...clickable(() => setTab(s.key))}>
+            <SubagentTab parentAgentId={s.parentAgentId} subagentId={s.subagentId}>
+              <button
+                className="tab-close hover-swap"
+                title={`Close (${formatCombo(closeAgentKey)})`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  closeSubagent(s.key)
+                }}
+              >
+                <X size={12} />
+              </button>
+            </SubagentTab>
           </div>
         ))}
       </div>

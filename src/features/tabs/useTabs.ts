@@ -5,9 +5,11 @@ import type { DiffState } from '../changes/useCheckoutDiff'
 import type { useTerminals } from '../terminal/useTerminals'
 import type { PanelView } from './Panel'
 
-export type Tab = 'chat' | 'changes' | 'graph' | 'commit' | `file:${string}` | `term:${string}` | `art:${string}`
+export type Tab = 'chat' | 'changes' | 'graph' | 'commit' | `file:${string}` | `term:${string}` | `art:${string}` | `sub:${string}`
 export type Tabs = ReturnType<typeof useTabs>
 type ArtifactTab = { id: string; doc: string; title: string }
+/** A provider subagent's conversation (subagents/SubagentView). */
+type SubagentTab = { key: `sub:${string}`; parentAgentId: string; subagentId: string }
 
 let nextArtifact = 0 // artifact tab ids, unique across workspaces
 
@@ -31,6 +33,7 @@ export function useTabs({
   const [visited, setVisited] = useState<string[]>([]) // views shown since the workspace opened, in that order
   const [files, setFiles] = useState<string[]>([])
   const [artifacts, setArtifacts] = useState<ArtifactTab[]>([])
+  const [subagents, setSubagents] = useState<SubagentTab[]>([])
   // undefined: shown while the workspace has changes; true/false: the user opened or closed it.
   const [changesPick, setChangesPick] = useState<boolean>()
   const [graphTab, setGraphTab] = useState(false)
@@ -53,15 +56,16 @@ export function useTabs({
   const [savedTabs, setSavedTabs] = useState(
     new Map<
       string | undefined,
-      { tab: Tab; files: string[]; artifacts: ArtifactTab[]; changesPick?: boolean; graphTab: boolean; graphPath?: string; commit?: string; commitTab?: string }
+      { tab: Tab; files: string[]; artifacts: ArtifactTab[]; subagents: SubagentTab[]; changesPick?: boolean; graphTab: boolean; graphPath?: string; commit?: string; commitTab?: string }
     >(),
   )
   if (tabsWs !== workspaceId) {
-    setSavedTabs(new Map(savedTabs).set(tabsWs, { tab, files, artifacts, changesPick, graphTab, graphPath, commit, commitTab }))
+    setSavedTabs(new Map(savedTabs).set(tabsWs, { tab, files, artifacts, subagents, changesPick, graphTab, graphPath, commit, commitTab }))
     const s = savedTabs.get(workspaceId)
     setTabsWs(workspaceId)
     setFiles(s?.files ?? [])
     setArtifacts(s?.artifacts ?? [])
+    setSubagents(s?.subagents ?? [])
     setChangesPick(s?.changesPick)
     setGraphTab(s?.graphTab ?? false)
     setGraphPath(s?.graphPath)
@@ -84,6 +88,7 @@ export function useTabs({
     ...(commitTab ? ['commit' as const] : []),
     ...files.map((p) => `file:${p}` as const),
     ...artifacts.map((a) => `art:${a.id}` as const),
+    ...subagents.map((s) => s.key),
   ]
   /** The tab to show on closing tab k, as in a browser: the one to its right, else to its left (the chat, past the first). */
   const beside = (k: Tab): Tab => {
@@ -110,6 +115,17 @@ export function useTabs({
   const closeArtifact = (id: string) => {
     setArtifacts((as) => as.filter((a) => a.id !== id))
     if (tab === `art:${id}`) setTab(beside(tab))
+  }
+  /** Opening the same subagent again shows its tab. */
+  const openSubagent = (parentAgentId: string, subagentId: string) => {
+    const key = `sub:${parentAgentId}/${subagentId}` as const
+    setSubagents((ss) => (ss.some((s) => s.key === key) ? ss : [...ss, { key, parentAgentId, subagentId }]))
+    setTab(key)
+    dismiss()
+  }
+  const closeSubagent = (key: string) => {
+    setSubagents((ss) => ss.filter((s) => s.key !== key))
+    if (tab === key) setTab(beside(tab))
   }
   // A panel section also opens its center tab: the diff for Changes, the graph for Git Graph (whose section shows the picked commit).
   const openChanges = () => {
@@ -187,6 +203,9 @@ export function useTabs({
     closeFile,
     openArtifact,
     closeArtifact,
+    subagents,
+    openSubagent,
+    closeSubagent,
     showChange,
     showComment,
   }

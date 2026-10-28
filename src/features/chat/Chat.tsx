@@ -1,5 +1,5 @@
 import { ArrowDown, Import, Reply } from 'lucide-react'
-import { Fragment, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
 import { ActiveViewContext } from '../../activeView'
 import { artifactDocs } from '../../artifact'
@@ -41,6 +41,7 @@ export function Chat({
   onDraftProvider,
   onShowComment,
   reveal,
+  track,
 }: {
   agent: Agent | undefined
   target: Target
@@ -53,6 +54,8 @@ export function Chat({
   onShowComment: (c: ReviewComment) => void
   /** An artifact to scroll to, by its iframe document; a new object scrolls again. */
   reveal?: { doc: string }
+  /** At the bottom of the chat: the agent's subagents. App passes them: their feature builds on the chat, not the other way. */
+  track?: ReactNode
 }) {
   const daemon = useDaemon()
   const { agents, profiles } = useHost()
@@ -227,7 +230,9 @@ export function Chat({
           <>
             {tl.loading && <Loading />}
             {tl.error && <div className="empty err">{tl.error}</div>}
-            <Timeline items={items} members={named} room={room} times={ownTl.times} marks={marks} onShare={shareFrom} />
+            <Timeline items={items} members={named} room={room} times={ownTl.times} marks={marks} onShare={shareFrom}>
+              {track}
+            </Timeline>
           </>
         ) : (
           <div className="empty-chat new-agent">

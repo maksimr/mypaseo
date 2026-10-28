@@ -1,10 +1,10 @@
 import { Archive, Check, ChevronDown, ChevronRight, Copy, Ellipsis, GitBranch, Mail, MailOpen, Pencil, Pin, PinOff, Plus, Trash2, Users, X } from 'lucide-react'
 import { Spinner } from '../../components/Spinner'
-import { useState, type MouseEvent } from 'react'
+import { useState, type CSSProperties, type MouseEvent } from 'react'
 import { errorText, type Agent, type Workspace } from '../../daemon'
 import { clickable } from '../../a11y'
 import { formatCombo, useShortcut } from '../../keymap'
-import { client, markRead, markUnread, togglePin } from '../../store'
+import { archiveAgent, client, markRead, markUnread, togglePin } from '../../store'
 import { unreadPick } from '../../unread'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import { Pull, Push } from '../../components/icons'
@@ -13,6 +13,7 @@ import { StatusMark } from './StatusMark'
 import { useRowSwipe } from './rowSwipe'
 import { roomTree } from './roomTree'
 import { roomId } from '../rooms/members'
+import { descendants, subtree, topLevel } from '../subagents/parent'
 import type { Selection } from './Sidebar'
 
 export function WorkspaceRow({
@@ -42,6 +43,8 @@ export function WorkspaceRow({
   syncing?: 'pull' | 'push'
   onSync: (op: 'pull' | 'push') => void
 }) {
+  // Subagents nest under their parent's row.
+  const top = topLevel(agents)
   // A lone agent folds into its workspace row: the row already opens it.
   const collapsed = userCollapsed || agents.length < 2
   // A collapsed workspace hides its agents, so it shows their selection itself.
@@ -73,15 +76,22 @@ export function WorkspaceRow({
   const [copied, setCopied] = useState(false)
   const swipe = useRowSwipe()
   // Rooms nest their members under the lead; the row opens the newest top-level agent, not a member.
-  const tree = roomTree(agents)
-  // A room shows only its lead's row until its chevron opens it.
-  const [openRooms, setOpenRooms] = useState<ReadonlySet<string>>(new Set())
-  const toggleRoom = (id: string) =>
-    setOpenRooms((s) => {
+  const tree = roomTree(top)
+  // A room shows only its lead's row, and an agent none of its subagents', until the row's chevron opens it.
+  const [open, setOpen] = useState<ReadonlySet<string>>(new Set())
+  const toggleOpen = (id: string) =>
+    setOpen((s) => {
       const next = new Set(s)
       if (!next.delete(id)) next.add(id)
       return next
     })
+  // The rows shown, with their indent.
+  const rows = tree
+    .filter(({ agent, nested }) => !nested || open.has(roomId(agent)!))
+    .flatMap(({ agent, nested, room }) => [
+      { agent, room, level: nested ? 1 : 0, sub: false },
+      ...subtree(agent, agents, open, nested ? 2 : 1).map((s) => ({ agent: s.agent, room: 0, level: s.depth, sub: true })),
+    ])
   const saveName = (value: string) => {
     setEditing(false)
     // The daemon trims it, and an empty title clears the override.
@@ -237,28 +247,30 @@ export function WorkspaceRow({
         </button>
       </div>
       {!collapsed &&
-        tree.map(({ agent: a, nested, room }) => {
-          if (nested && !openRooms.has(roomId(a)!)) return null
-          const open = openRooms.has(a.id)
-          // A closed room's row stands for its hidden members too: their selection and status.
-          const shown = room > 0 && !open ? agents.filter((m) => roomId(m) === a.id) : [a]
+        rows.map(({ agent: a, room, level, sub }) => {
+          const opened = open.has(a.id)
+          const subagents = descendants(agents, [a])
+          // A closed row stands for what it hides, a room's members and every subagent under them: their selection and status.
+          const members = room > 0 && !opened ? agents.filter((m) => m !== a && roomId(m) === a.id) : []
+          const shown = opened ? [a] : [a, ...members, ...subagents, ...descendants(agents, members)]
           return (
             <div
               key={a.id}
-              className={`row agent ${nested ? 'member' : ''} ${shown.some((m) => m.id === selection.agentId) ? 'active' : ''}`}
+              className={`row agent ${shown.some((m) => m.id === selection.agentId) ? 'active' : ''}`}
+              style={level ? ({ '--level': level } as CSSProperties) : undefined}
               {...clickable(() => select(a.id))}
             >
-              {room > 0 ? (
+              {room > 0 || subagents.length ? (
                 <button
-                  className="chevron room-chevron"
-                  aria-label={open ? 'Collapse' : 'Expand'}
-                  aria-expanded={open}
+                  className="chevron agent-chevron"
+                  aria-label={opened ? 'Collapse' : 'Expand'}
+                  aria-expanded={opened}
                   onClick={(e) => {
                     e.stopPropagation()
-                    toggleRoom(a.id)
+                    toggleOpen(a.id)
                   }}
                 >
-                  {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                  {opened ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                 </button>
               ) : (
                 <ProviderIcon provider={a.provider} size={9} />
@@ -282,16 +294,31 @@ export function WorkspaceRow({
                   {a.requiresAttention ? <MailOpen size={11} strokeWidth={1.75} /> : <Mail size={11} strokeWidth={1.75} />}
                 </button>
               )}
-              <button
-                className="icon-btn hover-swap"
-                title="Close"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onCloseAgent(a)
-                }}
-              >
-                <X size={11} strokeWidth={1.75} />
-              </button>
+              {sub ? (
+                <button
+                  className="icon-btn hover-swap"
+                  title="Archive"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (a.status === 'running' && !confirm('Archive this subagent? It is still running.')) return
+                    onCloseAgent(a) // a subagent's close only leaves it for its parent, if it was open
+                    void archiveAgent(a)
+                  }}
+                >
+                  <Archive size={11} strokeWidth={1.75} />
+                </button>
+              ) : (
+                <button
+                  className="icon-btn hover-swap"
+                  title="Close"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onCloseAgent(a)
+                  }}
+                >
+                  <X size={11} strokeWidth={1.75} />
+                </button>
+              )}
               <StatusMark agents={shown} />
             </div>
           )
