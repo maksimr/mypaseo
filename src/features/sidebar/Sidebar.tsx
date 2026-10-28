@@ -177,13 +177,13 @@ export function Sidebar({
           ))}
         </nav>
         <div className="sidebar-foot" role="toolbar" aria-label="Status">
-          <button className="icon-btn" title="Hosts" popoverTarget="host-menu" onClick={placeMenu('host-menu', true)}>
+          <button className="icon-btn host-status" title="Hosts" popoverTarget="host-menu" onClick={placeMenu('host-menu', true)}>
             <Server size={15} />
+            <span className={`dot ${downState?.status ?? 'connected'}`} />
+            <span className="truncate">
+              {downState ? `${hosts.length > 1 ? `${hostLabel(down.id)}: ` : ''}${downState.error ?? downState.status}` : 'Connected'}
+            </span>
           </button>
-          <span className={`dot ${downState?.status ?? 'connected'}`} />
-          <span className="muted grow truncate">
-            {downState ? `${hosts.length > 1 ? `${hostLabel(down.id)}: ` : ''}${downState.error ?? downState.status}` : 'Connected'}
-          </span>
           <button className="icon-btn" title={`Settings (${formatCombo(settingsKey)})`} onClick={onOpenSettings}>
             <Settings size={15} />
           </button>

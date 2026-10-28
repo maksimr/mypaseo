@@ -207,3 +207,12 @@
   border-top: 1px solid var(--border);
   font-size: 12px;
 }
+/* Hosts icon, status dot and text as one button: an icon-btn's height and hover, its width from its content. */
+.sidebar-foot .host-status {
+  flex: 0 1 auto;
+  gap: 8px;
+  width: auto;
+  min-width: 0;
+  margin-right: auto;
+  padding: 0 8px 0 4.5px;
+}
