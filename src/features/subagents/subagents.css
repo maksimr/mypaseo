@@ -104,3 +104,18 @@
 .subagent-file {
   color: var(--accent);
 }
+/* A subagent's tab: back to its parent, in place of its provider's icon (TabBack.tsx). The glyph where the icon was. */
+.tab-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  margin: 0 -2px;
+  flex: none;
+  border-radius: 3px;
+}
+.tab-back:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}

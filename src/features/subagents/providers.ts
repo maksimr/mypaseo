@@ -137,7 +137,7 @@ export function useProviderSubagents(parentAgentId: string, loaded: boolean, par
   )
 }
 
-export function useProviderSubagent(parentAgentId: string, subagentId: string) {
+export function useProviderSubagent(parentAgentId: string, subagentId: string | null | undefined) {
   const feed = feedOf(useDaemon())
   return useSyncExternalStore(subscribe, () => feed.lists.get(parentAgentId)?.find((s) => s.id === subagentId))
 }

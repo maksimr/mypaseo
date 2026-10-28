@@ -7,6 +7,7 @@ import type { Agent } from '../../daemon'
 import { ContextToggle } from '../chat/ContextCard'
 import { handleOf, isLead, roomId } from '../rooms/members'
 import { SubagentTab } from '../subagents/SubagentView'
+import { ChatTabIcon } from '../subagents/TabBack'
 import { formatCombo, useShortcut } from '../../keymap'
 import { totals, type DiffState } from '../changes/useCheckoutDiff'
 import type { useTerminals } from '../terminal/useTerminals'
@@ -36,7 +37,7 @@ export function TabBar({
   onCloseAgent: (a: Agent) => void
   onCloseTerminal: (id: string) => void
 }) {
-  const { tab, setTab, changesTab, closeChanges, graphTab, graphPath, closeGraph, commitTab, closeCommit, files, closeFile, artifacts, closeArtifact, subagents, closeSubagent } = tabs
+  const { tab, setTab, changesTab, closeChanges, graphTab, graphPath, closeGraph, commitTab, closeCommit, files, closeFile, artifacts, closeArtifact, subagents, openSubagent, closeSubagent } = tabs
   const closeAgentKey = useShortcut('closeAgent')
   const t = totals(diff.files)
   const slide = useSlide(tab === 'chat' ? `chat:${agent?.id}` : tab)
@@ -49,7 +50,9 @@ export function TabBar({
       <div ref={slide} className="tabs" id="tab-list" popover="auto" onClick={(e) => e.currentTarget.hidePopover()}>
         {shown.map((a) => (
           <div key={a?.id ?? 'new'} className={`tab agent-tab ${tab === 'chat' && a === agent ? 'on' : ''}`} {...clickable(() => onOpenChat(a))}>
-            <ProviderIcon provider={a ? a.provider : draftProvider} size={13} />
+            <ChatTabIcon agent={a} onOpenAgent={onOpenChat}>
+              <ProviderIcon provider={a ? a.provider : draftProvider} size={13} />
+            </ChatTabIcon>
             <span className="truncate">{a ? a.title || (roomId(a) ? `@${handleOf(a, [])}` : 'Agent') : 'New agent'}</span>
             {a && (
               <button
@@ -180,7 +183,7 @@ export function TabBar({
         ))}
         {subagents.map((s) => (
           <div key={s.key} className={`tab agent-tab ${tab === s.key ? 'on' : ''}`} {...clickable(() => setTab(s.key))}>
-            <SubagentTab parentAgentId={s.parentAgentId} subagentId={s.subagentId}>
+            <SubagentTab parentAgentId={s.parentAgentId} subagentId={s.subagentId} onOpenAgent={onOpenChat} onOpenProvider={openSubagent}>
               <button
                 className="tab-close hover-swap"
                 title={`Close (${formatCombo(closeAgentKey)})`}

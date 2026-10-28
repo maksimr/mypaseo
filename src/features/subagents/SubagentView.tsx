@@ -2,10 +2,13 @@ import { useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
 import { parseNear } from '../../components/Markdown'
 import { ProviderIcon } from '../../components/ProviderIcon'
 import { Loading, Spinner } from '../../components/Spinner'
+import type { Agent } from '../../daemon'
+import { useHost } from '../../store'
 import { Timeline } from '../chat/Timeline'
 import { useProviderSubagent, useProviderSubagents, useSubagentTimeline } from './providers'
 import { providerRow } from './rows'
 import { Track } from './Subagents'
+import { BackToParent } from './TabBack'
 
 type Props = { parentAgentId: string; subagentId: string }
 
@@ -45,12 +48,30 @@ export function SubagentView({ parentAgentId, subagentId, cwd, onOpenProvider }:
   )
 }
 
-/** A subagent tab's icon and name, then `children` (its close button), then a spinner while it runs. */
-export function SubagentTab({ parentAgentId, subagentId, children }: Props & { children: ReactNode }) {
+/**
+ * A subagent tab's back to its parent (the subagent that started it, else the agent) and name, then `children` (its
+ * close button), then a spinner while it runs.
+ */
+export function SubagentTab({
+  parentAgentId,
+  subagentId,
+  onOpenAgent,
+  onOpenProvider,
+  children,
+}: Props & { onOpenAgent: (a: Agent) => void; onOpenProvider: (parentAgentId: string, subagentId: string) => void; children: ReactNode }) {
+  const { agents } = useHost()
   const s = useProviderSubagent(parentAgentId, subagentId)
+  const up = useProviderSubagent(parentAgentId, s?.parentSubagentId)
+  const agent = agents.find((a) => a.id === parentAgentId)
   return (
     <>
-      <ProviderIcon provider={s?.provider} size={13} />
+      {up ? (
+        <BackToParent label={providerRow(up).label} onBack={() => onOpenProvider(parentAgentId, up.id)} />
+      ) : agent ? (
+        <BackToParent label={agent.title || 'Agent'} onBack={() => onOpenAgent(agent)} />
+      ) : (
+        <ProviderIcon provider={s?.provider} size={13} />
+      )}
       <span className="truncate">{s ? providerRow(s).label : 'Subagent'}</span>
       {children}
       {s?.status === 'running' && <Spinner size={13} className="status-mark" aria-label="Working" />}
