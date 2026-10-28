@@ -3,7 +3,7 @@ import { useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { errorText, type Agent, type Project, type Workspace } from '../../daemon'
 import { clickable } from '../../a11y'
 import { formatCombo, useShortcut } from '../../keymap'
-import { byRecent, client, hostLabel, isScratch, moveProject, projectName, projectWorkspaces as sortedWorkspaces, useStore } from '../../store'
+import { client, hostLabel, isScratch, moveProject, projectName, projectWorkspaces as sortedWorkspaces, useStore } from '../../store'
 import { FolderExpanded, Scratches } from '../../components/icons'
 import { placeMenu } from '../../components/menu'
 import { ArchivedWorkspaces } from './ArchivedWorkspaces'
@@ -147,7 +147,7 @@ export function ProjectRow({
           <WorkspaceRow
             key={w.id}
             workspace={w}
-            agents={agents.filter((a) => a.workspaceId === w.id).sort(byRecent)}
+            agents={agents.filter((a) => a.workspaceId === w.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt))}
             collapsed={collapsed.has(w.id)}
             pinned={pinned.includes(w.id)}
             onToggle={() => onToggle(w.id)}

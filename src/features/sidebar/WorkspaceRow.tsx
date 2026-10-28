@@ -100,7 +100,7 @@ export function WorkspaceRow({
 
   return (
     <>
-      <div className={`row workspace ${active ? 'active' : ''} ${swipe.className}`} {...clickable(() => select(tree[0]?.agent.id))} {...swipe.props}>
+      <div className={`row workspace ${active ? 'active' : ''} ${swipe.className}`} {...clickable(() => select(tree.findLast((t) => !t.nested)?.agent.id))} {...swipe.props}>
         {agents.length > 1 ? (
           <button
             className="chevron"
