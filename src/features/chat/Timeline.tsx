@@ -1,4 +1,4 @@
-import { Lock, Share } from 'lucide-react'
+import { Lock, Reply, Share } from 'lucide-react'
 import { Fragment, memo, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ActiveViewContext } from '../../activeView'
 import { errorText, type Agent, type TimelineItem, type ToolCall, type ToolDetail } from '../../daemon'
@@ -27,6 +27,7 @@ export function Timeline({
   times,
   marks,
   onShare,
+  onQuote,
   children,
 }: {
   items: TimelineItem[]
@@ -40,6 +41,8 @@ export function Timeline({
   /** Share From Here: each item's mark, at the same index as items, where it works; the pick, `end` with Shift. */
   marks?: (Mark | undefined)[]
   onShare?: (m: Mark, end: boolean) => void
+  /** Quote Reply on an agent's message: its text, or the part of it selected. */
+  onQuote?: (text: string) => void
   /** After the items: the agent's subagents. */
   children?: ReactNode
 }) {
@@ -97,18 +100,27 @@ export function Timeline({
       ) : room && row.item.type === 'plugin' ? (
         <RoomEvent index={row.index} roomId={room[row.index].agentId} item={row.item} open={row.index > resumed} share={share(row.index)} time={time(row.index)} />
       ) : (
-        <Item index={row.index} item={row.item} expanded={expanded} to={to(row)} share={share(row.index)} time={time(row.index)} />
+        <Item index={row.index} item={row.item} expanded={expanded} to={to(row)} share={share(row.index)} quote={!!onQuote} time={time(row.index)} />
       )}
     </Fragment>
   )
   return (
-    // Share From Here clicks are handled here: the memoized items take no callback, which would change with the marks.
+    // Share From Here and Quote Reply clicks are handled here: the memoized items take no callback, which would change
+    // with the marks.
     <div
       className="timeline"
+      onMouseDown={(e) => {
+        if ((e.target as Element).closest('.quote-reply')) e.preventDefault() // keeps the selection it quotes
+      }}
       onClick={(e) => {
-        const at = (e.target as Element).closest('.share-here')?.closest<HTMLElement>('[data-item]')
-        const m = at && marks?.[Number(at.dataset.item)]
-        if (m) onShare?.(m, e.shiftKey)
+        const button = (e.target as Element).closest('.share-here, .quote-reply')
+        const at = button?.closest<HTMLElement>('[data-item]')
+        if (!at) return
+        const i = Number(at.dataset.item)
+        const item = items[i]
+        if (button!.classList.contains('quote-reply')) {
+          if (item.type === 'assistant_message') onQuote?.(selectedIn(at) || item.text)
+        } else if (marks?.[i]) onShare?.(marks[i], e.shiftKey)
       }}
     >
       {runs.flatMap(({ who, rows }) => {
@@ -164,14 +176,26 @@ function ShareButton() {
   )
 }
 
+/** The text selected inside `el`, if the whole selection is. */
+const selectedIn = (el: Element) => {
+  const s = getSelection()
+  return s && !s.isCollapsed && el.contains(s.anchorNode) && el.contains(s.focusNode) ? s.toString().trim() : ''
+}
+
 const day = new Intl.DateTimeFormat(undefined, { month: 'numeric', day: 'numeric' })
 const clock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
 
-/** Under a message, shown on hover: Copy, Share From Here where it works, and when it was stamped. */
-function MessageFoot({ text, time, share }: { text: string; time?: string; share?: boolean }) {
+/** Under a message, shown on hover: Copy, Quote Reply and Share From Here where they work, and when it was stamped.
+ *  Timeline handles Quote Reply's click. */
+function MessageFoot({ text, time, share, quote }: { text: string; time?: string; share?: boolean; quote?: boolean }) {
   return (
     <div className="msg-foot">
       <CopyButton text={text} />
+      {quote && (
+        <button className="icon-btn quote-reply" title="Quote Reply">
+          <Reply size={13} />
+        </button>
+      )}
       {share && <ShareButton />}
       {time && (
         <time dateTime={time}>
@@ -286,6 +310,7 @@ const Item = memo(function Item({
   expanded,
   to,
   share,
+  quote,
   time,
 }: {
   index: number
@@ -293,6 +318,7 @@ const Item = memo(function Item({
   expanded: boolean
   to?: string
   share?: boolean
+  quote?: boolean
   time?: string
 }) {
   switch (item.type) {
@@ -302,7 +328,7 @@ const Item = memo(function Item({
       return (
         <div className="msg assistant" data-item={index}>
           <Markdown text={item.text} />
-          <MessageFoot text={item.text} time={time} share={share} />
+          <MessageFoot text={item.text} time={time} share={share} quote={quote} />
         </div>
       )
     case 'reasoning':

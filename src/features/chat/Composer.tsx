@@ -84,6 +84,7 @@ export function Composer({
   onDraftProvider,
   onShowComment,
   share,
+  quote,
   forks = [],
 }: {
   agent?: Agent
@@ -96,6 +97,8 @@ export function Composer({
   onShowComment: (c: ReviewComment) => void
   /** Share From Here on a message (Chat); a new object each time. */
   share?: { mark: Mark; end: boolean }
+  /** Quote Reply on a message (Chat); a new object each time. */
+  quote?: { text: string }
   /** In a chat without a room: the messages a fork of its agent can end at, oldest first. */
   forks?: ForkPoint[]
 }) {
@@ -117,6 +120,19 @@ export function Composer({
     setText(text ? `${text}${/\s$/.test(text) ? '' : ' '}${initialText}` : initialText)
     onInitialTextUsed?.()
   }, [initialText]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Quote Reply: a Markdown quote after the draft, the caret on a line under it.
+  useEffect(() => {
+    if (!quote) return
+    const q = quote.text.trim().split('\n').map((l) => (l ? `> ${l}` : '>')).join('\n')
+    // eslint-disable-next-line react/set-state-in-effect -- a hand-off from Chat, a new object per click
+    setText(`${text.trimEnd() ? `${text.trimEnd()}\n\n` : ''}${q}\n\n`)
+    requestAnimationFrame(() => {
+      const el = input.current
+      if (!el) return
+      el.setSelectionRange(el.value.length, el.value.length)
+      el.parentElement!.scrollTop = el.parentElement!.scrollHeight // .composer-text scrolls, not the textarea
+    })
+  }, [quote]) // eslint-disable-line react-hooks/exhaustive-deps
   const [images, setImages] = useDraftList(imageDrafts, draftKey)
   const [files, setFiles] = useDraftList(fileDrafts, draftKey)
   const [editing, setEditing] = useState<number | null>(null)

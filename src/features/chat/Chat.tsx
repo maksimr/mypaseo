@@ -113,6 +113,12 @@ export function Chat({
     setShare({ mark, end })
     showComposer()
   }
+  // Quote Reply: the composer adds the quote to the draft.
+  const [quote, setQuote] = useState<{ text: string }>()
+  const quoteReply = (text: string) => {
+    setQuote({ text })
+    showComposer()
+  }
   // It works in a room, and in a chat without one (for a fork); not in a member's own chat.
   const room = lead ? roomTl.room : undefined
   const solo = agent && !lead && !roomId(agent) ? { id: agent.id, handle: handleOf(agent, profiles) } : undefined
@@ -230,7 +236,7 @@ export function Chat({
           <>
             {tl.loading && <Loading />}
             {tl.error && <div className="empty err">{tl.error}</div>}
-            <Timeline items={items} members={named} room={room} times={ownTl.times} marks={marks} onShare={shareFrom}>
+            <Timeline items={items} members={named} room={room} times={ownTl.times} marks={marks} onShare={shareFrom} onQuote={quoteReply}>
               {track}
             </Timeline>
           </>
@@ -273,6 +279,7 @@ export function Chat({
               onDraftProvider={onDraftProvider}
               onShowComment={onShowComment}
               share={share}
+              quote={quote}
               forks={own?.filter((f) => f !== undefined)}
             />
           </div>
