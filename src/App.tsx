@@ -92,14 +92,18 @@ export default function App() {
   const [sel, setSel] = useState<Selection>(() => JSON.parse(localStorage.mypaseoSelection ?? '{}'))
   // The agent selection a "New agent" composer was opened from, so Ctrl+W on the composer returns there.
   const [back, setBack] = useState<Selection>()
+  // Agents whose chat tab was closed: they stay in the sidebar, and selecting one reopens its tab. Memory only.
+  const [closedTabs, setClosedTabs] = useState<ReadonlySet<string>>(new Set())
   const select = (s: Selection) => {
     setSel(s)
     setBack(s.agentId ? undefined : sel.agentId ? sel : back)
     localStorage.mypaseoSelection = JSON.stringify(s)
+    const id = s.agentId
+    if (id) setClosedTabs((c) => (c.has(id) ? new Set([...c].filter((x) => x !== id)) : c))
   }
   // The newest top-level agent, as the sidebar's workspace row: a room opens at its lead, not a member, nor a subagent.
   const openWorkspace = (w: Workspace) =>
-    select({ projectId: w.projectId, workspaceId: w.id, agentId: roomTree(topLevel(agents.filter((a) => a.workspaceId === w.id)).sort(byRecent))[0]?.agent.id })
+    select({ projectId: w.projectId, workspaceId: w.id, agentId: roomTree(topLevel(agents.filter((a) => a.workspaceId === w.id && !closedTabs.has(a.id))).sort(byRecent))[0]?.agent.id })
   const [activeOnly, setActiveOnly] = useState(() => localStorage.mypaseoActiveOnly === 'true')
   const listed = () => sidebarWorkspaces(projects, workspaces, agents, pinned, activeOnly, sel.workspaceId)
   /** Archives or removes a workspace; if it was selected, selects the one above it in the sidebar. */
@@ -138,8 +142,20 @@ export default function App() {
   // One chat tab per workspace agent, oldest first so a new one opens after the others; undefined is the "New agent" composer, last.
   // A subagent's tab only while it's open: its parent's track lists them.
   const inWorkspace = workspace ? agents.filter((a) => a.workspaceId === workspace.id) : []
-  const wsAgents = inWorkspace.filter((a) => a.id === sel.agentId || !parentIn(a, inWorkspace)).sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  const wsAgents = inWorkspace
+    .filter((a) => a.id === sel.agentId || (!parentIn(a, inWorkspace) && !closedTabs.has(a.id)))
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
   const chatTabs = wsAgents.some((a) => a.id === agent?.id) ? wsAgents : [...wsAgents, agent]
+  /** Closes an agent's tab, not the agent; a lead's takes its room's members' along. The open one hands over to its neighbor tab. */
+  const closeTab = (a: Agent) => {
+    if (parentIn(a, agents)) return void closeAgent(a) // a subagent's tab goes back to its parent
+    const closing = (isLead(a) ? roomMembers(agents, a.id) : [a]).map((x) => x.id)
+    setClosedTabs((c) => new Set([...c, ...closing]))
+    if (!sel.agentId || !closing.includes(sel.agentId)) return
+    const open = wsAgents.filter((x) => x === a || !closing.includes(x.id))
+    const i = open.indexOf(a)
+    select({ ...sel, agentId: (open[i + 1] ?? open[i - 1])?.id })
+  }
   const openChat = (a?: Agent) => {
     if (target) select({ projectId: target.projectId, workspaceId: workspace?.id, agentId: a?.id })
     setTab('chat')
@@ -267,10 +283,10 @@ export default function App() {
         else openChat(next)
       }
       const composer = tab === 'chat' && !agent
-      if (target && isShortcut(e, 'closeAgent') && (!composer || agents.some((a) => a.id === back?.agentId))) {
+      if (target && isShortcut(e, 'closeAgent') && (!composer || agents.some((a) => a.id === back?.agentId && !closedTabs.has(a.id)))) {
         e.preventDefault()
         if (composer) select(back!)
-        else if (tab === 'chat') void closeAgent(agent!)
+        else if (tab === 'chat') closeTab(agent!)
         else if (tab === 'changes') closeChanges()
         else if (tab === 'graph') closeGraph()
         else if (tab === 'commit') closeCommit()
@@ -456,7 +472,7 @@ export default function App() {
             diff={diff}
             cwd={cwd}
             onOpenChat={openChat}
-            onCloseAgent={(a) => void closeAgent(a)}
+            onCloseAgent={closeTab}
             onCloseTerminal={closeTerminal}
           />
 

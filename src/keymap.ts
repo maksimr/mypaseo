@@ -33,7 +33,7 @@ export const SHORTCUTS = {
   prevTab: { group: 'Tabs', label: 'Previous Tab', description: 'Go to the previous tab of the current workspace.', default: 'Ctrl+Shift+BracketLeft' },
   // Ctrl on Mac too: ⌘W closes the browser tab. Off Mac, Chrome keeps Ctrl+W for itself outside an installed app window.
   // Id kept as closeAgent so saved rebindings still apply.
-  closeAgent: { group: 'Tabs', label: 'Close Tab', description: 'Close the open tab. On a chat tab, archive its agent.', default: 'Ctrl+KeyW' },
+  closeAgent: { group: 'Tabs', label: 'Close Tab', description: 'Close the open tab.', default: 'Ctrl+KeyW' },
   // Ctrl on Mac too, as asked. Off Mac, Chrome keeps Ctrl+Shift+N (incognito) outside an installed app window.
   newAgent: { group: 'Tabs', label: 'New Agent', description: 'Open the new agent composer in the selected workspace.', default: 'Ctrl+Shift+KeyN' },
   // Paseo desktop's binding, Ctrl on Mac too: browsers keep ⌘⇧T (reopen tab). Off Mac, Chrome keeps Ctrl+Shift+T outside an installed app window.
