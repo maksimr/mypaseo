@@ -8,11 +8,12 @@ import { hostLabel, useDaemon, useHost, useHostId, useStore } from '../../store'
 import { HostSection } from './HostSection'
 import { General } from './GeneralSection'
 import { Providers } from './ProvidersSection'
+import { Metadata } from './MetadataSection'
 import { Profiles } from './ProfilesSection'
 import { Shortcuts } from './KeymapSection'
 import { anchor, GENERAL_GROUPS, type Patch } from './section'
 
-const SECTIONS = ['Host', 'General', 'Providers', 'Profiles', 'Keymap'] as const
+const SECTIONS = ['Host', 'General', 'Providers', 'Metadata', 'Profiles', 'Keymap'] as const
 export type Section = (typeof SECTIONS)[number]
 const toggled = <T,>(set: Set<T>, v: T, on = !set.has(v)) => {
   const next = new Set(set)
@@ -53,6 +54,7 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
     Host: [],
     General: GENERAL_GROUPS.map((g) => [g, anchor('general', g)]),
     'Providers': providers.map((p) => [p.label ?? p.provider, anchor('provider', p.provider)]),
+    Metadata: [],
     Profiles: [],
     'Keymap': SHORTCUT_GROUPS.map(([g]) => [g, anchor('keymap', g)]),
   }
@@ -67,7 +69,7 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
   const q = query.trim().toLowerCase()
   const shown = q ? SECTIONS : [section]
   // The config error belongs to the sections that read the config; Host shows its connection error under Address.
-  const bannerAt = shown.find((s) => s === 'General' || s === 'Providers' || s === 'Profiles')
+  const bannerAt = shown.find((s) => s === 'General' || s === 'Providers' || s === 'Metadata' || s === 'Profiles')
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="settings" role="dialog" aria-label="Settings">
@@ -122,6 +124,8 @@ export function Settings({ initialSection = 'General', onClose }: { initialSecti
                   )
                 ) : s === 'General' ? (
                   <General config={config} patch={patch} q={q} error={s === bannerAt ? error : null} />
+                ) : s === 'Metadata' ? (
+                  <Metadata config={config} patch={patch} q={q} error={s === bannerAt ? error : null} />
                 ) : s === 'Profiles' ? (
                   <Profiles config={config} patch={patch} q={q} error={s === bannerAt ? error : null} />
                 ) : (
