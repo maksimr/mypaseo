@@ -7,8 +7,8 @@ export type ProviderSubagent = Awaited<ReturnType<DaemonClient['listProviderSuba
 export type Status = 'running' | 'input' | 'done' | 'failed' | 'canceled'
 
 /** A row of the track: a Paseo agent the agent started (`paseo`), or one of its provider's subagents. `end`: when it
- *  stopped; none while it goes on. */
-export type Row = { kind: 'paseo' | 'provider'; id: string; provider: string; label: string; status: Status; start: string; end?: string }
+ *  stopped; none while it goes on. `subtitle`: the effective model, or the provider's own formatted model details. */
+export type Row = { kind: 'paseo' | 'provider'; id: string; provider: string; subtitle?: string; label: string; status: Status; start: string; end?: string }
 
 function agentStatus(a: Agent): Status {
   if (a.pendingPermissions.length) return 'input'
@@ -19,7 +19,7 @@ function agentStatus(a: Agent): Status {
 export function paseoRow(a: Agent): Row {
   const status = agentStatus(a)
   const live = status === 'running' || status === 'input'
-  return { kind: 'paseo', id: a.id, provider: a.provider, label: a.title?.trim() || 'New agent', status, start: a.createdAt, end: live ? undefined : a.updatedAt }
+  return { kind: 'paseo', id: a.id, provider: a.provider, subtitle: a.runtimeInfo?.model ?? a.model ?? undefined, label: a.title?.trim() || 'New agent', status, start: a.createdAt, end: live ? undefined : a.updatedAt }
 }
 
 const PROVIDER_STATUS: Record<ProviderSubagent['status'], Status> = { running: 'running', completed: 'done', failed: 'failed', canceled: 'canceled' }
@@ -28,7 +28,7 @@ const PROVIDER_STATUS: Record<ProviderSubagent['status'], Status> = { running: '
 export function providerRow(s: ProviderSubagent): Row {
   const status = PROVIDER_STATUS[s.status]
   const label = s.description?.trim() || s.title?.trim() || 'Subagent'
-  return { kind: 'provider', id: s.id, provider: s.provider, label, status, start: s.createdAt, end: status === 'running' ? undefined : s.updatedAt }
+  return { kind: 'provider', id: s.id, provider: s.provider, subtitle: s.subtitle ?? undefined, label, status, start: s.createdAt, end: status === 'running' ? undefined : s.updatedAt }
 }
 
 /** The track's head, "Delegated 3 tasks · 2 running", and the state its mark shows: a wait on a permission before the

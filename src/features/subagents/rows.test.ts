@@ -24,11 +24,15 @@ test('times run to now while a row goes on, else to its end', () => {
   assert.equal(duration(2 * 3600_000 + 5 * 60_000), '2h 5m')
 })
 
-test('a provider subagent is named by its task; a Paseo agent waiting on a permission still runs', () => {
-  const s = { id: 's', provider: 'claude', title: 'Explore', description: ' Find the retry path ', status: 'completed', createdAt: at(0), updatedAt: at(9) } as ProviderSubagent
-  assert.deepEqual(providerRow(s), { kind: 'provider', id: 's', provider: 'claude', label: 'Find the retry path', status: 'done', start: at(0), end: at(9) })
+test('rows keep their task, status and reported model details', () => {
+  const s = { id: 's', provider: 'claude', title: 'Explore', description: ' Find the retry path ', subtitle: 'Explore · Sonnet 4.5 · High', status: 'completed', createdAt: at(0), updatedAt: at(9) } as ProviderSubagent
+  assert.deepEqual(providerRow(s), { kind: 'provider', id: 's', provider: 'claude', subtitle: s.subtitle, label: 'Find the retry path', status: 'done', start: at(0), end: at(9) })
   assert.equal(providerRow({ ...s, description: null }).label, 'Explore')
-  const a = { id: 'a', provider: 'codex', title: null, status: 'running', pendingPermissions: [{}], createdAt: at(0), updatedAt: at(5) } as unknown as Agent
-  assert.deepEqual(paseoRow(a), { kind: 'paseo', id: 'a', provider: 'codex', label: 'New agent', status: 'input', start: at(0), end: undefined })
+  assert.equal(providerRow({ ...s, subtitle: null }).subtitle, undefined)
+  assert.equal(providerRow({ ...s, subtitle: undefined }).subtitle, undefined)
+  const a = { id: 'a', provider: 'codex', model: 'configured-model', runtimeInfo: { model: 'runtime-model' }, title: null, status: 'running', pendingPermissions: [{}], createdAt: at(0), updatedAt: at(5) } as unknown as Agent
+  assert.deepEqual(paseoRow(a), { kind: 'paseo', id: 'a', provider: 'codex', subtitle: 'runtime-model', label: 'New agent', status: 'input', start: at(0), end: undefined })
+  assert.equal(paseoRow({ ...a, runtimeInfo: undefined }).subtitle, 'configured-model')
+  assert.equal(paseoRow({ ...a, runtimeInfo: undefined, model: null }).subtitle, undefined)
   assert.equal(paseoRow({ ...a, status: 'error', pendingPermissions: [] }).end, at(5))
 })

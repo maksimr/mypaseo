@@ -90,10 +90,34 @@
     visibility: hidden;
   }
 }
-/* Its latest step, under its task. */
-.subagent-activity {
+/* Its provider, model and latest step, under its task. */
+.subagent-meta {
   grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  min-width: 0;
+  font-size: 12px;
+}
+.subagent-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+.subagent-identity > svg {
+  flex: none;
+}
+.subagent-model,
+.subagent-activity {
   color: var(--text-muted);
+}
+.subagent-activity::before {
+  content: '·';
+  margin-right: 8px;
+  color: var(--text-faint);
 }
 .subagent-activity.input {
   color: var(--yellow);

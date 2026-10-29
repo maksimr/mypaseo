@@ -1,6 +1,7 @@
 import { Archive, Ban, Check, ChevronDown, ChevronRight, ShieldQuestion, Unlink, X } from 'lucide-react'
 import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react'
 import { clickable } from '../../a11y'
+import { ProviderIcon } from '../../components/ProviderIcon'
 import { Spinner } from '../../components/Spinner'
 import { errorText, type Agent } from '../../daemon'
 import { archiveAgent, useDaemon, useHost } from '../../store'
@@ -98,8 +99,12 @@ function Mark({ status }: { status: Status }) {
 /** What a stopped row says after its task. */
 const ENDED: Partial<Record<Status, string>> = { done: 'done', failed: 'failed', canceled: 'canceled' }
 
-/** Its mark, task, time and actions; under them, `children`: its latest step. */
+/** Its mark, task, time and actions; under them, its identity and latest step. */
 function SubagentRow({ row, now, onOpen, actions, children }: { row: Row; now: number; onOpen: () => void; actions?: ReactNode; children: ReactNode }) {
+  const { providers } = useHost()
+  const entry = providers.find((p) => p.provider === row.provider)
+  const provider = entry?.label ?? row.provider
+  const subtitle = entry?.models?.find((m) => m.id === row.subtitle)?.label ?? row.subtitle
   return (
     <div className={`subagent ${row.status}`} title={row.label} {...clickable(onOpen)}>
       <Mark status={row.status} />
@@ -110,7 +115,13 @@ function SubagentRow({ row, now, onOpen, actions, children }: { row: Row; now: n
         <ChevronRight size={12} className="subagent-chevron" />
       </span>
       <span className="subagent-actions">{actions}</span>
-      {children}
+      <span className="subagent-meta">
+        <span className="subagent-identity" title={[provider, subtitle].filter(Boolean).join(' · ')}>
+          <ProviderIcon provider={row.provider} size={12} />
+          <span className="truncate">{provider}{subtitle && <> · <span className="subagent-model">{subtitle}</span></>}</span>
+        </span>
+        {children}
+      </span>
     </div>
   )
 }
