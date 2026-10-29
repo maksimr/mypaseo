@@ -4,7 +4,7 @@ import { Loading, Spinner } from '../../components/Spinner'
 import { useEffect, useId, useState } from 'react'
 import { errorText, type Agent, type UsageReport } from '../../daemon'
 import { useDaemon } from '../../store'
-import { balanceAmount, contextLabel, contextPct, formatCost, formatTokens, resetLabel, updatedLabel, upsertReport, usedPct, windowTone, windowTrailing, type Tone } from './usage'
+import { balanceAmount, contextLabel, contextPct, formatCost, formatTokens, loadAgentUsage, resetLabel, updatedLabel, upsertReport, usedPct, windowTone, windowTrailing, type Tone } from './usage'
 
 /** Composer ring for how full the agent's context window is; hovering or clicking it opens the details and the account's usage. */
 export function ContextMeter({ agent }: { agent: Agent }) {
@@ -43,7 +43,7 @@ export function ContextMeter({ agent }: { agent: Agent }) {
             )}
             {cost != null && cost > 0 && <div className="muted">Session cost {formatCost(cost)}</div>}
           </div>
-          <AgentUsage agentId={agent.id} />
+          <AgentUsage agent={agent} />
         </div>
       )}
     </span>
@@ -84,11 +84,16 @@ export function ContextGauge({ usage }: { usage: Agent['lastUsage'] }) {
   )
 }
 
-/** The usage of the account the agent runs under, one card per report as it streams in. Nothing on hosts that can't report it. */
-function AgentUsage({ agentId }: { agentId: string }) {
+/** Account usage, or provider-wide usage on older hosts, one card per streamed report. */
+function AgentUsage({ agent }: { agent: Agent }) {
   const daemon = useDaemon()
-  const supported = supportsUsageReports(daemon.getLastServerInfoMessage()?.features)
+  const { id, provider } = agent
+  const model = agent.runtimeInfo?.model ?? agent.model
+  const features = daemon.getLastServerInfoMessage()?.features
+  const supported = supportsUsageReports(features)
+  const usageSources = features?.usageSources === true
   const [reports, setReports] = useState<UsageReport[]>()
+  const [hostWide, setHostWide] = useState(false)
   const [error, setError] = useState<string>()
   const [refreshing, setRefreshing] = useState(false)
   const [refreshFailed, setRefreshFailed] = useState(false)
@@ -96,30 +101,39 @@ function AgentUsage({ agentId }: { agentId: string }) {
   useEffect(() => {
     if (!supported) return
     let live = true
-    daemon
-      .listUsageReports({ agentId }, (r) => live && setReports((cur) => upsertReport(cur, r)))
-      .then((res) => live && setReports(res.reports))
+    loadAgentUsage(daemon, { id, provider, model }, usageSources, { onReport: (r) => live && setReports((cur) => upsertReport(cur, r)) })
+      .then((res) => {
+        if (!live) return
+        setReports(res.reports)
+        setHostWide(res.hostWide)
+      })
       .catch((e) => live && setError(errorText(e)))
     return () => void (live = false)
-  }, [daemon, agentId, supported])
+  }, [daemon, id, provider, model, supported, usageSources])
   const refresh = () => {
     setRefreshing(true)
     setRefreshFailed(false)
-    daemon
-      .listUsageReports({ agentId, forceRefresh: true })
-      .then((res) => setReports(res.reports))
+    loadAgentUsage(daemon, { id, provider, model }, usageSources, { forceRefresh: true })
+      .then((res) => {
+        setReports(res.reports)
+        setHostWide(res.hostWide)
+      })
       .catch(() => setRefreshFailed(true))
       .finally(() => setRefreshing(false))
   }
 
-  if (!supported || reports?.length === 0) return null
   return (
     <>
       <hr />
-      {error ? (
+      {hostWide && reports && reports.length > 0 && <div className="muted">Host account usage</div>}
+      {!supported ? (
+        <div className="muted">Update the host to see account usage.</div>
+      ) : error ? (
         <div className="muted">Unable to load usage: {error}</div>
       ) : !reports ? (
         <Loading size={14} />
+      ) : reports.length === 0 ? (
+        <div className="muted">No account usage reported for this session.</div>
       ) : (
         reports.map((r) => <UsageCard key={r.id} entry={r} refreshing={refreshing} onRefresh={refresh} />)
       )}

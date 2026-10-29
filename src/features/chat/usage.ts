@@ -1,4 +1,4 @@
-import type { Agent, UsageReport } from '../../daemon'
+import type { Agent, DaemonClient, UsageReport } from '../../daemon'
 
 type Window = Extract<UsageReport['report'], { status: 'available' }>['windows'][number]
 type Balance = NonNullable<Extract<UsageReport['report'], { status: 'available' }>['balances']>[number]
@@ -81,6 +81,34 @@ export function balanceAmount(b: Balance): { text: string; pct: number | null } 
   }
   if (b.remaining != null) return { text: `${fmt(b.remaining)} left`, pct: null }
   return { text: b.used != null ? fmt(b.used) : '—', pct: null }
+}
+
+type UsageAgent = Pick<Agent, 'id' | 'provider'> & { model?: string | null }
+
+function usageProvider(agent: UsageAgent) {
+  return agent.provider === 'pi' && /^openai(?:-codex)?\//.test(agent.model ?? '') ? 'codex' : agent.provider
+}
+
+/** Older hosts only report provider-wide usage; the SDK returns nothing for an agentId on those hosts. */
+export function usageScope(agent: UsageAgent, usageSources: boolean) {
+  return usageSources ? { agentId: agent.id } : { reportIds: [usageProvider(agent)] }
+}
+
+/** Codex through pi, or a session not loaded by the daemon, may have only host-level account reports. */
+export async function loadAgentUsage(
+  daemon: Pick<DaemonClient, 'listUsageReports'>,
+  agent: UsageAgent,
+  usageSources: boolean,
+  options: { forceRefresh?: boolean; onReport?: (report: UsageReport) => void } = {},
+) {
+  const { forceRefresh, onReport } = options
+  const scoped = await daemon.listUsageReports({ ...usageScope(agent, usageSources), forceRefresh }, onReport)
+  if (!usageSources || scoped.reports.length > 0 || usageProvider(agent) !== 'codex') {
+    return { reports: scoped.reports, hostWide: !usageSources }
+  }
+  // Discover accounts first: reportIds only selects accounts already known by the daemon.
+  const global = await daemon.listUsageReports({ forceRefresh })
+  return { reports: global.reports.filter((r) => r.sourceId === 'codex'), hostWide: true }
 }
 
 /** A streamed report in place of its previous copy, or appended. */
